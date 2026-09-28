@@ -1,0 +1,2 @@
+import { prisma } from "@/lib/prisma";
+export default async function Logs(){const logs=await prisma.operationLog.findMany({orderBy:{createdAt:"desc"},take:1000});return <><h2>操作日志</h2><table><thead><tr><th>时间</th><th>操作</th><th>对象</th><th>对象编号</th></tr></thead><tbody>{logs.length?logs.map(l=><tr key={l.id}><td>{l.createdAt.toLocaleString("zh-CN")}</td><td>{l.action}</td><td>{l.entityType}</td><td>{l.entityId}</td></tr>):<tr><td colSpan={4}>暂无操作日志。</td></tr>}</tbody></table></>}

@@ -1,0 +1,3 @@
+"use client";
+import {useState} from "react";
+export function CustomerForm(){const [message,setMessage]=useState("");async function submit(e:React.FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);const r=await fetch("/api/customers",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:f.get("code"),name:f.get("name")})});setMessage(r.ok?"已创建客户，请刷新列表。":"创建失败。")}return <section><h3>新增客户</h3><form onSubmit={submit}><input name="code" placeholder="客户编码" required/> <input name="name" placeholder="客户名称" required/> <button>保存</button></form><p>{message}</p></section>}

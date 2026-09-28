@@ -1,0 +1,3 @@
+"use client";
+import {useState} from "react";
+export function PlanAdjustForm({planId}:{planId:string}){const [msg,setMsg]=useState("");async function submit(e:React.FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);const r=await fetch(`/api/plans/${planId}/adjust`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({scheduledAt:new Date(String(f.get("scheduledAt"))).toISOString(),reason:f.get("reason")})});setMsg(r.ok?"已创建替代计划，请刷新列表。":(await r.json()).error)}return <form onSubmit={submit}><input name="scheduledAt" type="datetime-local" required/> <input name="reason" placeholder="调整原因" required/> <button>调整</button><small>{msg}</small></form>}
