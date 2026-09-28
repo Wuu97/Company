@@ -25,6 +25,7 @@ enum ConfirmationStatus {
   PARTIAL
   CONFIRMED
   DEFERRED
+  CANCELLED
 }
 
 model Customer {
@@ -88,6 +89,8 @@ model SoOrder {
   containers ContainerUnit[]
   confirmations CustomerConfirmation[]
   plans LoadingPlan[]
+  cargoItems CargoItem[]
+  versionChanges SoVersionChange[]
   createdAt DateTime @default(now())
   @@index([customerId, carrier, soNumber])
 }
@@ -102,9 +105,36 @@ model SoFileVersion {
   parseStatus ParseStatus @default(PENDING)
   rawExtraction Json?
   correctedFields Json?
+  versionChange SoVersionChange?
   createdAt DateTime @default(now())
   soOrder SoOrder? @relation(fields: [soOrderId], references: [id], onDelete: Restrict)
   @@unique([soOrderId, version])
+}
+
+model CargoItem {
+  id String @id @default(cuid())
+  soOrderId String
+  description String
+  packagesText String?
+  weightText String?
+  volumeText String?
+  sortOrder Int @default(0)
+  createdAt DateTime @default(now())
+  soOrder SoOrder @relation(fields: [soOrderId], references: [id], onDelete: Restrict)
+  @@index([soOrderId, sortOrder])
+}
+
+model SoVersionChange {
+  id String @id @default(cuid())
+  soOrderId String
+  soFileVersionId String
+  changes Json
+  status String @default("PENDING")
+  createdAt DateTime @default(now())
+  confirmedAt DateTime?
+  soOrder SoOrder @relation(fields:[soOrderId],references:[id],onDelete:Restrict)
+  soFileVersion SoFileVersion @relation(fields:[soFileVersionId],references:[id],onDelete:Restrict)
+  @@unique([soFileVersionId])
 }
 
 model ContainerUnit {

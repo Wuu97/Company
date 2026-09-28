@@ -12,9 +12,12 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
     const order=await prisma.$transaction(async tx=>{
       const before=await tx.soOrder.findUniqueOrThrow({where:{id}});
       if(input.data.customerId&&!await tx.customer.findUnique({where:{id:input.data.customerId},select:{id:true}}))throw new Error("客户不存在");
-      const existing=await tx.containerUnit.count({where:{soOrderId:id}});
-      const requested=input.data.containers.reduce((total,item)=>total+item.quantity,0);
-      if(existing>0&&requested!==existing)throw new Error(`已创建 ${existing} 个内部柜子，不能直接改为 ${requested} 个；请使用柜量调整流程。`);
+      const current=await tx.containerUnit.findMany({where:{soOrderId:id},select:{containerType:true,planItems:{where:{active:true},select:{id:true}}}});
+      const existing=current.length;
+      const normalize=(items:{containerType:string;quantity:number}[])=>Object.fromEntries(Object.entries(items.reduce<Record<string,number>>((all,item)=>({...all,[item.containerType]:(all[item.containerType]||0)+item.quantity}),{})).sort());
+      const requested=normalize(input.data.containers);
+      const existingTypes=normalize(current.map(item=>({containerType:item.containerType,quantity:1})));
+      if(existing>0&&JSON.stringify(requested)!==JSON.stringify(existingTypes))throw new Error("柜型或柜量与已创建内部柜子不一致；请使用柜量调整流程。");
       const updated=await tx.soOrder.update({where:{id},data:{customerId:input.data.customerId||before.customerId,soNumber:input.data.soNumber,carrier:input.data.carrier,siCutoffText:input.data.siCutoffText||null,parseStatus:"VERIFIED"}});
       if(existing===0){
         const rows=input.data.containers.flatMap(item=>Array.from({length:item.quantity},()=>({soOrderId:id,containerType:item.containerType,containerNo:item.containerNo||null})));
