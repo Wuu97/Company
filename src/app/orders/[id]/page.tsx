@@ -7,6 +7,7 @@ import { SoVersionUpload } from "@/components/so-version-upload";
 import { CancelActionButton } from "@/components/cancel-action-button";
 import { ApplyVersionChangeButton } from "@/components/apply-version-change-button";
 import { ContainerAdjustmentForm } from "@/components/container-adjustment-form";
+import { OrderStatusForm } from "@/components/order-status-form";
 
 export default async function OrderDetail({params}:{params:Promise<{id:string}>}) {
   const {id}=await params;
@@ -19,6 +20,7 @@ export default async function OrderDetail({params}:{params:Promise<{id:string}>}
   return <>
     <h2>SO 详情：{order.soNumber}</h2>
     <section><b>客户：</b>{order.customer?.name||"待匹配"}　<b>船公司：</b>{order.carrier}　<b>船名：</b>{raw?.vesselName||"未识别"}　<b>航次：</b>{raw?.voyage||"未识别"}　<span className="tag">{order.parseStatus}</span></section>
+    <OrderStatusForm orderId={id} status={order.status}/>
     {order.versionChanges.map(change=><section key={change.id}><h3>新版本差异待确认（v{change.soFileVersion.version}）</h3><pre>{JSON.stringify(change.changes,null,2)}</pre><p className="muted">柜型/柜量变化不会通过此处自动应用，需走专门调整流程。</p><ApplyVersionChangeButton url={`/api/orders/${id}/version-changes/${change.id}/apply`}/></section>)}
     <section><h3>订舱与运输信息</h3><table><tbody><tr><td>客户参考号</td><td>{order.customerReference||"待人工核对"}</td></tr><tr><td>船名 / 航次</td><td>{order.vesselName||raw?.vesselName||"待人工核对"} / {order.voyage||raw?.voyage||"待人工核对"}</td></tr><tr><td>航线</td><td>{order.loadPort||"待人工核对"} → {order.dischargePort||"待人工核对"}</td></tr><tr><td>预计开船 ETD</td><td>{order.etdText||"待人工核对"}</td></tr><tr><td>预计到港 ETA</td><td>{order.etaText||"待人工核对"}</td></tr><tr><td>原文件最晚截止时间</td><td>{order.cutoffText||"待人工核对"}</td></tr><tr><td>有效 SI 截止时间</td><td>{order.siCutoffText||"待人工核对"}</td></tr><tr><td>SI 时间来源</td><td>{siSourceLabels[order.siCutoffSource||""]||"待人工核对"}{order.siCutoffEstimatedFromText?`（依据：${order.siCutoffEstimatedFromText}）`:""}</td></tr><tr><td>SO 原始 SI 时间</td><td>{order.siCutoffOriginalText||"SO 未明确提供"}</td></tr></tbody></table></section>
     <section><h3>提柜与还柜信息</h3><table><tbody><tr><td>提空柜地点</td><td>{order.emptyPickupLocation||"待人工核对"}</td></tr><tr><td>交重柜地点</td><td>{order.fullReturnLocation||"待人工核对"}</td></tr><tr><td>运输方式</td><td>{order.transportMode||"待人工核对"}</td></tr></tbody></table></section>

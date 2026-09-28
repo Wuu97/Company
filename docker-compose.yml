@@ -5,7 +5,8 @@ services:
       POSTGRES_USER: logistics
       POSTGRES_PASSWORD: logistics
       POSTGRES_DB: logistics
-    ports: ["5432:5432"]
+    # Keep the project database isolated from a locally installed PostgreSQL.
+    ports: ["127.0.0.1:5433:5432"]
     volumes: ["postgres_data:/var/lib/postgresql/data"]
 volumes:
   postgres_data:

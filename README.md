@@ -8,3 +8,5 @@
 5. `npm run dev`
 
 Original SO files are stored behind a storage interface; local development uses `FILE_STORAGE_ROOT`. Back up PostgreSQL plus this directory together. Never commit `.env` or production files.
+
+The project database is exposed at `127.0.0.1:5433` to avoid colliding with a locally installed PostgreSQL on port 5432.

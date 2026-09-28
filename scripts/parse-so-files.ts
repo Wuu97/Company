@@ -21,7 +21,8 @@ async function parseFile(file: { storageKey: string; originalName: string }) {
 }
 
 async function main() {
-  const staleBefore = new Date(Date.now() - 15 * 60_000);
+  const leaseTimeoutMs = Number(process.env.PARSE_LEASE_TIMEOUT_MS || 15 * 60_000);
+  const staleBefore = new Date(Date.now() - leaseTimeoutMs);
   const eligible = process.env.RETRY_FAILED === "1" ? { parseStatus: "FAILED" } : { OR: [{ parseStatus: "PENDING" }, { parseStatus: "PROCESSING", processingStartedAt: { lt: staleBefore } }] };
   const files = await db.soFileVersion.findMany({ where: { ...eligible, ...(process.env.SO_FILE_VERSION_ID ? { id: process.env.SO_FILE_VERSION_ID } : {}) }, include: { soOrder: true } });
   let processedCount = 0; let failedCount = 0;
@@ -32,9 +33,11 @@ async function main() {
       const claimable = file.parseStatus === "PROCESSING" ? { processingStartedAt: { lt: staleBefore } } : { parseStatus: file.parseStatus };
       const claimed = await db.soFileVersion.updateMany({ where: { id: file.id, ...claimable }, data: { parseStatus: "PROCESSING", processingStartedAt: new Date(), processingToken } });
       if (claimed.count !== 1) continue;
+      if (file.parseStatus === "PROCESSING") await db.operationLog.create({ data: { action: "SO_PARSE_LEASE_RECOVERED", entityType: "SoFileVersion", entityId: file.id, after: { leaseTimeoutMs } } });
       const order = file.soOrder;
       if (!order) throw new Error("文件未关联 SO");
       const { parsed, siCutoff, values, extraction } = await parseFile(file);
+      if (process.env.PARSE_DELAY_MS) await new Promise(resolve => setTimeout(resolve, Number(process.env.PARSE_DELAY_MS)));
       await db.$transaction(async tx => {
         await tx.$queryRaw`SELECT id FROM "SoOrder" WHERE id=${order.id} FOR UPDATE`;
         const currentOrder = await tx.soOrder.findUniqueOrThrow({ where: { id: order.id }, include: { containers: { where: { active: true } } } });

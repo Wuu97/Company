@@ -1,0 +1,4 @@
+"use client";
+import { useState } from "react";
+const labels:Record<string,string>={PENDING_REVIEW:"待核对",CONFIRMED:"已确认",IN_PROGRESS:"执行中",COMPLETED:"已完成",CANCELLED:"已取消"};
+export function OrderStatusForm({orderId,status}:{orderId:string;status:string}){const [value,setValue]=useState(status);const [message,setMessage]=useState("");async function submit(){const res=await fetch(`/api/orders/${orderId}/status`,{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({status:value})});if(res.ok)location.reload();else setMessage((await res.json()).error||"更新失败");}return <section><h3>订单业务状态</h3><select value={value} onChange={e=>setValue(e.target.value)}>{Object.entries(labels).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select> <button type="button" onClick={submit} disabled={value===status}>更新状态</button>{message&&<p className="error">{message}</p>}</section>;}

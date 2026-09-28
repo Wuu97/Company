@@ -48,6 +48,7 @@ model SoOrder {
   soNumber            String
   carrier             String
   parseStatus         ParseStatus            @default(PENDING)
+  status              OrderStatus            @default(PENDING_REVIEW)
   createdAt           DateTime               @default(now())
   siCutoffText        String?
   siCutoffSource      String?
@@ -210,6 +211,14 @@ enum ParseStatus {
   PARSED
   FAILED
   VERIFIED
+}
+
+enum OrderStatus {
+  PENDING_REVIEW
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
 }
 
 enum PlanStatus {
