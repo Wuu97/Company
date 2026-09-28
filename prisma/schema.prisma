@@ -203,6 +203,7 @@ model OperationLog {
 
 enum ParseStatus {
   PENDING
+  PROCESSING
   PARSED
   FAILED
   VERIFIED

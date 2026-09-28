@@ -69,8 +69,12 @@ test("计划调整与取消同一计划并发时只保留一种最终状态", as
       request.post(`/api/plans/${plan.id}/cancel`),
     ]);
     expect([adjust.status(), cancel.status()].sort()).toEqual([200, 409]);
+    const plans = await db.loadingPlan.findMany({ where: { soOrderId: order.id }, include: { items: { where: { active: true } } } });
+    expect(plans.filter(item => item.status === "CONFIRMED").length + plans.filter(item => item.status === "CANCELLED").length).toBe(1);
+    expect(plans.filter(item => item.status === "CONFIRMED").every(item => item.items.length === 1)).toBe(true);
   } finally {
-    await db.operationLog.deleteMany({ where: { entityId: { in: [order.id, plan.id] } } });
+    const planIds = (await db.loadingPlan.findMany({ where: { soOrderId: order.id }, select: { id: true } })).map(item => item.id);
+    await db.operationLog.deleteMany({ where: { entityId: { in: [order.id, ...planIds] } } });
     await db.loadingPlanItem.deleteMany({ where: { loadingPlan: { soOrderId: order.id } } });
     await db.loadingPlanChange.deleteMany({ where: { fromPlanId: plan.id } });
     await db.loadingPlan.deleteMany({ where: { soOrderId: order.id } });

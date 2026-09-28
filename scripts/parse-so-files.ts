@@ -20,15 +20,17 @@ async function parseFile(file: { storageKey: string; originalName: string }) {
 }
 
 async function main() {
-  const files = await db.soFileVersion.findMany({ where: { parseStatus: "PENDING", ...(process.env.SO_FILE_VERSION_ID ? { id: process.env.SO_FILE_VERSION_ID } : {}) }, include: { soOrder: { include: { containers: true } } } });
+  const files = await db.soFileVersion.findMany({ where: { parseStatus: process.env.RETRY_FAILED === "1" ? "FAILED" : "PENDING", ...(process.env.SO_FILE_VERSION_ID ? { id: process.env.SO_FILE_VERSION_ID } : {}) }, include: { soOrder: { include: { containers: true } } } });
   let processedCount = 0; let failedCount = 0;
   for (const file of files) {
     try {
+      const claimed = await db.soFileVersion.updateMany({ where: { id: file.id, parseStatus: file.parseStatus }, data: { parseStatus: "PROCESSING" } });
+      if (claimed.count !== 1) continue;
       const order = file.soOrder;
       if (!order) throw new Error("文件未关联 SO");
       const { parsed, siCutoff, values, extraction } = await parseFile(file);
       const changes: Record<string, unknown> = Object.fromEntries(fields.filter(key => values[key] !== undefined && values[key] !== order[key]).map(key => [key, { from: order[key], to: values[key] }]));
-      const oldTypes = order.containers.reduce<Record<string, number>>((all, container) => ({ ...all, [container.containerType]: (all[container.containerType] || 0) + 1 }), {});
+      const oldTypes = order.containers.filter(container => container.active).reduce<Record<string, number>>((all, container) => ({ ...all, [container.containerType]: (all[container.containerType] || 0) + 1 }), {});
       const newTypes = parsed.containers.reduce<Record<string, number>>((all, container) => ({ ...all, [container.containerType]: (all[container.containerType] || 0) + container.quantity }), {});
       if (JSON.stringify(oldTypes) !== JSON.stringify(newTypes)) changes.containers = { from: oldTypes, to: newTypes };
       await db.$transaction(async tx => {
