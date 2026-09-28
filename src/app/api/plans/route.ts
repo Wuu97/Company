@@ -1,5 +1,29 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-const schema=z.object({soOrderId:z.string().min(1),factoryId:z.string().min(1),scheduledAt:z.string().datetime(),containerUnitIds:z.array(z.string()).min(1),reason:z.string().optional()});
-export async function POST(request:Request){const input=schema.safeParse(await request.json());if(!input.success)return NextResponse.json({error:"计划资料无效"},{status:400});if(new Set(input.data.containerUnitIds).size!==input.data.containerUnitIds.length)return NextResponse.json({error:"柜子不能重复选择"},{status:400});try{const plan=await prisma.$transaction(async tx=>{const order=await tx.soOrder.findUnique({where:{id:input.data.soOrderId},select:{customerId:true}});if(!order)throw new Error("SO 不存在");const factory=await tx.factory.findUnique({where:{id:input.data.factoryId},select:{customerId:true}});if(!factory||factory.customerId!==order.customerId)throw new Error("工厂不属于当前 SO 客户");const containers=await tx.containerUnit.findMany({where:{id:{in:input.data.containerUnitIds},soOrderId:input.data.soOrderId},select:{id:true}});if(containers.length!==input.data.containerUnitIds.length)throw new Error("存在不属于当前 SO 的内部柜子");const conflicts=await tx.loadingPlanItem.findMany({where:{containerUnitId:{in:input.data.containerUnitIds},active:true},select:{containerUnitId:true}});if(conflicts.length)throw new Error("存在已归属有效计划的内部柜子");const plan=await tx.loadingPlan.create({data:{soOrderId:input.data.soOrderId,factoryId:input.data.factoryId,scheduledAt:new Date(input.data.scheduledAt),status:"CONFIRMED",reason:input.data.reason}});await tx.loadingPlanItem.createMany({data:input.data.containerUnitIds.map(containerUnitId=>({loadingPlanId:plan.id,containerUnitId}))});await tx.operationLog.create({data:{action:"LOADING_PLAN_CREATED",entityType:"LoadingPlan",entityId:plan.id,after:input.data}});return plan});return NextResponse.json(plan,{status:201})}catch(e){return NextResponse.json({error:e instanceof Error?e.message:"计划创建失败"},{status:409})}}
+import { createLoadingPlan } from "@/lib/services/orders";
+
+const schema = z.object({
+  soOrderId: z.string().min(1),
+  factoryId: z.string().min(1),
+  scheduledAt: z.string().datetime(),
+  containerUnitIds: z.array(z.string()).min(1),
+  reason: z.string().optional(),
+});
+
+export async function POST(request: Request) {
+  const input = schema.safeParse(await request.json());
+  if (!input.success) return NextResponse.json({ error: "计划资料无效" }, { status: 400 });
+  if (new Set(input.data.containerUnitIds).size !== input.data.containerUnitIds.length) {
+    return NextResponse.json({ error: "柜子不能重复选择" }, { status: 400 });
+  }
+
+  try {
+    const plan = await createLoadingPlan(input.data);
+    return NextResponse.json(plan, { status: 201 });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "计划创建失败" },
+      { status: 409 },
+    );
+  }
+}

@@ -50,6 +50,12 @@ model SoOrder {
   parseStatus         ParseStatus            @default(PENDING)
   createdAt           DateTime               @default(now())
   siCutoffText        String?
+  siCutoffSource      String?
+  siCutoffOriginalText String?
+  siCutoffEstimatedFromText String?
+  openingText         String?
+  vgmCutoffText       String?
+  portCutoffText      String?
   etbNeedsReview      Boolean                @default(false)
   etbObservedAt       DateTime?
   etbSource           String?
