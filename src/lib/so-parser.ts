@@ -59,7 +59,7 @@ export class CmaCgmParser implements SoParser {
     const openingText = dateNearLabel(text, /Cargo Receiving Date/i);
     const vgmCutoffText = dateNearLabel(text, /VGM Cut-Off Date\/Time/i);
     const portCutoffText = dateNearLabel(text, /Port Cut-off Date\/Time/i);
-    const siCutoffText = dateNearLabel(text, /SI Cut-off Date\/Time/i);
+    const siCutoffText = oneDate(text.split(/\r?\n/).find(line => /SI Cut-off Date\/Time/i.test(line)) ?? "");
     return { soNumber: first(text, /Shipping Order No\.:\s*([A-Z0-9-]+)/i), carrier: "CMA CGM", vesselName: vessel?.[1]?.trim(), voyage: vessel?.[2]?.trim(), openingText, vgmCutoffText, portCutoffText, siCutoffText, containers: containerType ? [{ containerType, quantity }] : [], raw: { opening: openingText, vgmCutoff: vgmCutoffText, portCutoff: portCutoffText, siCutoff: siCutoffText } };
   }
 }
@@ -68,8 +68,9 @@ export class TailwindParser implements SoParser {
   canParse({ text }: ParserInput) { return /TAILWIND|Book No\./i.test(text); }
   parse({ text }: ParserInput): ParsedSO {
     const vessel = text.match(/Vessel\s*\/\s*Voyage\s*:\s*([^/\n]+)\s*\/\s*([^\s\n]+)/i);
-    const containerType = first(text, /Container Summary Details[\s\S]*?\b(\d{2}[A-Z]{2})\b/i);
-    const quantity = Number(first(text, /Container Summary Details[\s\S]*?Quantity\s*\n?\s*(\d+)/i) ?? 0);
+    const containerRow = text.match(/S\.No\.\s+Quantity\s+Size[\s\S]*?\n\s*\d+\s+(\d+)\s+(\d{2}[A-Z]{2})/i);
+    const containerType = containerRow?.[2] ?? first(text, /Container Summary Details[\s\S]*?\b(\d{2}[A-Z]{2})\b/i);
+    const quantity = Number(containerRow?.[1] ?? first(text, /Container Summary Details[\s\S]*?Quantity\s*\n?\s*(\d+)/i) ?? 0);
     const etd = lineValue(text, "Load Port ETD") ?? "";
     const eta = lineValue(text, "Discharge Port ETA") ?? "";
     return { soNumber: first(text, /Book No\.\s*:\s*([A-Z0-9-]+)/i), carrier: "TAILWIND", vesselName: vessel?.[1]?.trim(), voyage: vessel?.[2]?.trim(), customerReference: lineValue(text, "Shipper Ref\\. No\\."), loadPort: lineValue(text, "Port of Load"), dischargePort: lineValue(text, "Port of Discharge"), etdText: oneDate(etd), etaText: allDates(eta)[1] ?? allDates(eta)[0] ?? "", cutoffText: lineValue(text, "Load Port ETA Cut off"), emptyPickupLocation: lineValue(text, "Pick Empty at"), fullReturnLocation: lineValue(text, "Deliver To"), transportMode: lineValue(text, "Transport Mode"), containers: containerType ? [{ containerType, quantity: quantity || 1 }] : [], raw: { etd, eta } };

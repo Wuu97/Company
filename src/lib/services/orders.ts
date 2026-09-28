@@ -33,6 +33,7 @@ export async function addPlanItem(planId:string, containerUnitId:string) {
 /** Creates a confirmed loading plan after validating the whole SO/factory/container relationship. */
 export async function createLoadingPlan(input: CreateLoadingPlanInput) {
   return prisma.$transaction(async tx => {
+    await tx.$queryRaw`SELECT id FROM "SoOrder" WHERE id=${input.soOrderId} FOR UPDATE`;
     const order = await tx.soOrder.findUnique({
       where: { id: input.soOrderId },
       select: { customerId: true },
@@ -102,7 +103,10 @@ export async function adjustContainers(input: AdjustContainersInput) {
     const desiredTotal = input.containers.reduce((total, item) => total + item.quantity, 0);
     if (desiredTotal < (confirmations._sum.quantity ?? 0)) throw new Error("调整后的柜量不能少于已确认柜量。");
 
-    const desired = new Map(input.containers.map(item => [item.containerType, item.quantity]));
+    const desired = input.containers.reduce((totals, item) => {
+      totals.set(item.containerType, (totals.get(item.containerType) ?? 0) + item.quantity);
+      return totals;
+    }, new Map<string, number>());
     const keepIds = new Set<string>();
     for (const [containerType, quantity] of desired) {
       current.filter(container => container.containerType === containerType).slice(0, quantity).forEach(container => keepIds.add(container.id));
