@@ -9,6 +9,12 @@ export type CreateLoadingPlanInput = {
   reason?: string;
 };
 
+export type AdjustContainersInput = {
+  orderId: string;
+  containers: Array<{ containerType: string; quantity: number }>;
+  reason: string;
+};
+
 export async function createContainer(orderId:string, containerType:string, containerNo?:string) {
   return prisma.$transaction(async tx => {
     const count=await tx.containerUnit.count({where:{soOrderId:orderId}});
@@ -79,5 +85,44 @@ export async function createLoadingPlan(input: CreateLoadingPlanInput) {
       },
     });
     return plan;
+  });
+}
+
+export async function adjustContainers(input: AdjustContainersInput) {
+  return prisma.$transaction(async tx => {
+    await tx.$queryRaw`SELECT id FROM "SoOrder" WHERE id=${input.orderId} FOR UPDATE`;
+    const [order, activePlanItems, confirmations, current] = await Promise.all([
+      tx.soOrder.findUniqueOrThrow({ where: { id: input.orderId } }),
+      tx.loadingPlanItem.count({ where: { containerUnit: { soOrderId: input.orderId }, active: true } }),
+      tx.customerConfirmation.aggregate({ where: { soOrderId: input.orderId, status: { in: ["PARTIAL", "CONFIRMED"] } }, _sum: { quantity: true } }),
+      tx.containerUnit.findMany({ where: { soOrderId: input.orderId, active: true }, orderBy: { internalCode: "asc" } }),
+    ]);
+    if (activePlanItems) throw new Error("存在生效装柜计划；请先调整或取消计划后再调整柜量。");
+
+    const desiredTotal = input.containers.reduce((total, item) => total + item.quantity, 0);
+    if (desiredTotal < (confirmations._sum.quantity ?? 0)) throw new Error("调整后的柜量不能少于已确认柜量。");
+
+    const desired = new Map(input.containers.map(item => [item.containerType, item.quantity]));
+    const keepIds = new Set<string>();
+    for (const [containerType, quantity] of desired) {
+      current.filter(container => container.containerType === containerType).slice(0, quantity).forEach(container => keepIds.add(container.id));
+    }
+    const toDeactivate = current.filter(container => !keepIds.has(container.id));
+    const additions = [...desired].flatMap(([containerType, quantity]) => Array.from(
+      { length: Math.max(0, quantity - current.filter(container => container.containerType === containerType).length) },
+      () => containerType,
+    ));
+    if (toDeactivate.some(container => container.containerNo)) throw new Error("带实际柜号的内部柜子不能自动移除，请人工处理。");
+
+    if (toDeactivate.length) await tx.containerUnit.updateMany({ where: { id: { in: toDeactivate.map(container => container.id) } }, data: { active: false } });
+    if (additions.length) {
+      const total = await tx.containerUnit.count({ where: { soOrderId: input.orderId } });
+      await tx.containerUnit.createMany({ data: additions.map((containerType, index) => ({
+        soOrderId: input.orderId, containerType,
+        internalCode: nextInternalContainerCode(input.orderId, total + index + 1),
+      })) });
+    }
+    await tx.operationLog.create({ data: { action: "SO_CONTAINERS_ADJUSTED", entityType: "SoOrder", entityId: order.id, after: input } });
+    return { added: additions.length, removed: toDeactivate.length };
   });
 }

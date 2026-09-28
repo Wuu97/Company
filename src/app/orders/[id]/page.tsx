@@ -6,10 +6,11 @@ import { SoFilePreview } from "@/components/so-file-preview";
 import { SoVersionUpload } from "@/components/so-version-upload";
 import { CancelActionButton } from "@/components/cancel-action-button";
 import { ApplyVersionChangeButton } from "@/components/apply-version-change-button";
+import { ContainerAdjustmentForm } from "@/components/container-adjustment-form";
 
 export default async function OrderDetail({params}:{params:Promise<{id:string}>}) {
   const {id}=await params;
-  const [order,customers]=await Promise.all([prisma.soOrder.findUnique({where:{id},include:{customer:true,files:true,containers:true,confirmations:true,plans:{include:{factory:true,items:true}},versionChanges:{where:{status:"PENDING"},include:{soFileVersion:true}}}}),prisma.customer.findMany({select:{id:true,name:true},orderBy:{name:"asc"}})]);
+  const [order,customers]=await Promise.all([prisma.soOrder.findUnique({where:{id},include:{customer:true,files:{orderBy:{version:"asc"}},containers:true,confirmations:true,plans:{include:{factory:true,items:true}},versionChanges:{where:{status:"PENDING"},include:{soFileVersion:true}}}}),prisma.customer.findMany({select:{id:true,name:true},orderBy:{name:"asc"}})]);
   if(!order)notFound();
   const raw=order.files.at(-1)?.rawExtraction as {soNumber?:string;carrier?:string;vesselName?:string;voyage?:string;raw?:Record<string,string>;containers?:{containerType:string;quantity:number}[]}|null;
   const times=raw?.raw||{}; const timeLabels:Record<string,string>={opening:"开仓/收货时间",etd:"装货港 ETD",eta:"卸货港 ETA",cutoff:"截关/补料截止时间",portCutoff:"截关时间",vgmCutoff:"VGM 截止时间",siCutoff:"补料（SI）截止时间"};
@@ -24,6 +25,7 @@ export default async function OrderDetail({params}:{params:Promise<{id:string}>}
     <section><h3>ETB 信息</h3><p><b>当前 ETB：</b>{order.etbText||"待查询"}</p><p><b>来源：</b>{order.etbSource||"未查询"}　<b>观测时间：</b>{order.etbObservedAt?order.etbObservedAt.toLocaleString("zh-CN"):"—"}</p>{order.etbNeedsReview&&<span className="tag warning-tag">ETB 变化待人工核对</span>}</section>
     <section><h3>SO 自动解析结果</h3><p className="muted">系统展示解析出的业务字段，人工只需对照上传的 PDF 核对。</p><table><tbody>{Object.entries(times).filter(([key])=>key!=="extractedText").map(([key,value])=><tr key={key}><td>{timeLabels[key]||key}</td><td>{value||"待人工核对"}</td></tr>)}</tbody></table>{order.files.at(-1)&&<a className="open-pdf-link" href={`/api/files/${order.files.at(-1)!.id}`} target="_blank" rel="noreferrer">▶ 打开上传的 SO PDF</a>}</section>
     <SoReviewForm orderId={id} soNumber={order.soNumber} carrier={order.carrier} customerId={order.customerId} customers={customers} siCutoffText={order.siCutoffText||times.siCutoff||""} initialContainers={order.containers.length?Object.entries(order.containers.reduce<Record<string,number>>((all,c)=>({...all,[c.containerType]:(all[c.containerType]||0)+1}),{})).map(([containerType,quantity])=>({containerType,quantity})):raw?.containers||[]}/>
+    <ContainerAdjustmentForm orderId={id} initialContainers={Object.entries(order.containers.filter(container=>container.active).reduce<Record<string,number>>((all,container)=>({...all,[container.containerType]:(all[container.containerType]||0)+1}),{})).map(([containerType,quantity])=>({containerType,quantity}))}/>
     <OrderActions orderId={id}/>
     <SoVersionUpload orderId={id}/>
     <section><h3>上传的 SO 文件</h3>{order.files.map(f=><SoFilePreview key={f.id} fileId={f.id} fileName={f.originalName} version={f.version}/>)}</section>
