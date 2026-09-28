@@ -61,12 +61,12 @@ model Sailing {
 
 model SoOrder {
   id String @id @default(cuid())
-  customerId String
+  customerId String?
   sailingId String?
   soNumber String
   carrier String
   parseStatus ParseStatus @default(PENDING)
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Restrict)
   sailing Sailing? @relation(fields: [sailingId], references: [id])
   files SoFileVersion[]
   containers ContainerUnit[]
