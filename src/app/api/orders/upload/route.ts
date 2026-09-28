@@ -18,6 +18,8 @@ export async function POST(request:Request) {
   const order=await prisma.$transaction(async tx=>{
     const so=soOrderId?await tx.soOrder.findUnique({where:{id:soOrderId}}):await tx.soOrder.create({data:{soNumber:"待解析",carrier:"待解析",parseStatus}});
     if(!so)throw new Error("SO 不存在");
+    // Serialize version allocation for an existing order.
+    await tx.$queryRaw`SELECT id FROM "SoOrder" WHERE id=${so.id} FOR UPDATE`;
     const latest=await tx.soFileVersion.aggregate({where:{soOrderId:so.id},_max:{version:true}});
     const version=(latest._max.version||0)+1;
     await tx.soFileVersion.create({data:{soOrderId:so.id,storageKey:saved.key,originalName:file.name,sha256:saved.sha256,version,parseStatus,rawExtraction:parsed as object|undefined}});

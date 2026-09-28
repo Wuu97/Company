@@ -7,12 +7,201 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Customer {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  name      String
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  factories Factory[]
+  orders    SoOrder[]
+}
+
+model Factory {
+  id           String        @id @default(cuid())
+  customerId   String
+  name         String
+  address      String
+  contactName  String?
+  contactPhone String?
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  plans        LoadingPlan[]
+
+  @@unique([customerId, name])
+}
+
+model Sailing {
+  id         String    @id @default(cuid())
+  terminal   String
+  carrier    String
+  vesselName String
+  voyage     String
+  orders     SoOrder[]
+
+  @@unique([terminal, carrier, vesselName, voyage])
+}
+
+model SoOrder {
+  id                  String                 @id @default(cuid())
+  customerId          String?
+  sailingId           String?
+  soNumber            String
+  carrier             String
+  parseStatus         ParseStatus            @default(PENDING)
+  createdAt           DateTime               @default(now())
+  siCutoffText        String?
+  etbNeedsReview      Boolean                @default(false)
+  etbObservedAt       DateTime?
+  etbSource           String?
+  etbText             String?
+  customerReference   String?
+  cutoffText          String?
+  dischargePort       String?
+  emptyPickupLocation String?
+  etaText             String?
+  etdText             String?
+  fullReturnLocation  String?
+  loadPort            String?
+  transportMode       String?
+  vesselName          String?
+  voyage              String?
+  cargoItems          CargoItem[]
+  containers          ContainerUnit[]
+  confirmations       CustomerConfirmation[]
+  plans               LoadingPlan[]
+  files               SoFileVersion[]
+  customer            Customer?              @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  sailing             Sailing?               @relation(fields: [sailingId], references: [id])
+  versionChanges      SoVersionChange[]
+
+  @@index([customerId, carrier, soNumber])
+}
+
+model SoFileVersion {
+  id              String           @id @default(cuid())
+  soOrderId       String?
+  storageKey      String           @unique
+  originalName    String
+  sha256          String           @unique
+  version         Int
+  parseStatus     ParseStatus      @default(PENDING)
+  rawExtraction   Json?
+  correctedFields Json?
+  createdAt       DateTime         @default(now())
+  soOrder         SoOrder?         @relation(fields: [soOrderId], references: [id], onDelete: Restrict)
+  versionChange   SoVersionChange?
+
+  @@unique([soOrderId, version])
+}
+
+model CargoItem {
+  id           String   @id @default(cuid())
+  soOrderId    String
+  description  String
+  packagesText String?
+  weightText   String?
+  volumeText   String?
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  soOrder      SoOrder  @relation(fields: [soOrderId], references: [id])
+
+  @@index([soOrderId, sortOrder])
+}
+
+model SoVersionChange {
+  id              String        @id @default(cuid())
+  soOrderId       String
+  soFileVersionId String        @unique
+  changes         Json
+  status          String        @default("PENDING")
+  createdAt       DateTime      @default(now())
+  confirmedAt     DateTime?
+  soFileVersion   SoFileVersion @relation(fields: [soFileVersionId], references: [id])
+  soOrder         SoOrder       @relation(fields: [soOrderId], references: [id])
+}
+
+model ContainerUnit {
+  id            String            @id @default(cuid())
+  internalCode  String            @unique
+  soOrderId     String
+  containerNo   String?
+  containerType String
+  active        Boolean           @default(true)
+  soOrder       SoOrder           @relation(fields: [soOrderId], references: [id])
+  planItems     LoadingPlanItem[]
+
+  @@index([containerNo])
+}
+
+model CustomerConfirmation {
+  id            String             @id @default(cuid())
+  soOrderId     String
+  quantity      Int
+  status        ConfirmationStatus @default(PENDING)
+  confirmedDate DateTime?
+  note          String?
+  createdAt     DateTime           @default(now())
+  soOrder       SoOrder            @relation(fields: [soOrderId], references: [id])
+}
+
+model LoadingPlan {
+  id             String              @id @default(cuid())
+  soOrderId      String
+  factoryId      String
+  scheduledAt    DateTime
+  status         PlanStatus          @default(DRAFT)
+  replacesPlanId String?
+  reason         String?
+  createdAt      DateTime            @default(now())
+  factory        Factory             @relation(fields: [factoryId], references: [id])
+  soOrder        SoOrder             @relation(fields: [soOrderId], references: [id])
+  changesFrom    LoadingPlanChange[] @relation("ChangeFrom")
+  changesTo      LoadingPlanChange[] @relation("ChangeTo")
+  items          LoadingPlanItem[]
+
+  @@index([soOrderId, status])
+}
+
+model LoadingPlanChange {
+  id         String      @id @default(cuid())
+  fromPlanId String
+  toPlanId   String
+  reason     String
+  createdAt  DateTime    @default(now())
+  fromPlan   LoadingPlan @relation("ChangeFrom", fields: [fromPlanId], references: [id])
+  toPlan     LoadingPlan @relation("ChangeTo", fields: [toPlanId], references: [id])
+
+  @@unique([fromPlanId, toPlanId])
+}
+
+model LoadingPlanItem {
+  id              String        @id @default(cuid())
+  loadingPlanId   String
+  containerUnitId String
+  active          Boolean       @default(true)
+  containerUnit   ContainerUnit @relation(fields: [containerUnitId], references: [id])
+  loadingPlan     LoadingPlan   @relation(fields: [loadingPlanId], references: [id])
+
+  @@unique([loadingPlanId, containerUnitId])
+}
+
+model OperationLog {
+  id         String   @id @default(cuid())
+  action     String
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+}
+
 enum ParseStatus {
   PENDING
   PARSED
   FAILED
   VERIFIED
 }
+
 enum PlanStatus {
   DRAFT
   CONFIRMED
@@ -20,190 +209,11 @@ enum PlanStatus {
   REPLACED
   COMPLETED
 }
+
 enum ConfirmationStatus {
   PENDING
   PARTIAL
   CONFIRMED
   DEFERRED
   CANCELLED
-}
-
-model Customer {
-  id String @id @default(cuid())
-  code String @unique
-  name String
-  active Boolean @default(true)
-  factories Factory[]
-  orders SoOrder[]
-  createdAt DateTime @default(now())
-}
-
-model Factory {
-  id String @id @default(cuid())
-  customerId String
-  name String
-  address String
-  contactName String?
-  contactPhone String?
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  plans LoadingPlan[]
-  @@unique([customerId, name])
-}
-
-model Sailing {
-  id String @id @default(cuid())
-  terminal String
-  carrier String
-  vesselName String
-  voyage String
-  orders SoOrder[]
-  @@unique([terminal, carrier, vesselName, voyage])
-}
-
-model SoOrder {
-  id String @id @default(cuid())
-  customerId String?
-  sailingId String?
-  soNumber String
-  carrier String
-  customerReference String?
-  vesselName String?
-  voyage String?
-  loadPort String?
-  dischargePort String?
-  etdText String?
-  etaText String?
-  cutoffText String?
-  emptyPickupLocation String?
-  fullReturnLocation String?
-  transportMode String?
-  siCutoffText String?
-  etbText String?
-  etbObservedAt DateTime?
-  etbSource String?
-  etbNeedsReview Boolean @default(false)
-  parseStatus ParseStatus @default(PENDING)
-  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  sailing Sailing? @relation(fields: [sailingId], references: [id])
-  files SoFileVersion[]
-  containers ContainerUnit[]
-  confirmations CustomerConfirmation[]
-  plans LoadingPlan[]
-  cargoItems CargoItem[]
-  versionChanges SoVersionChange[]
-  createdAt DateTime @default(now())
-  @@index([customerId, carrier, soNumber])
-}
-
-model SoFileVersion {
-  id String @id @default(cuid())
-  soOrderId String?
-  storageKey String @unique
-  originalName String
-  sha256 String @unique
-  version Int
-  parseStatus ParseStatus @default(PENDING)
-  rawExtraction Json?
-  correctedFields Json?
-  versionChange SoVersionChange?
-  createdAt DateTime @default(now())
-  soOrder SoOrder? @relation(fields: [soOrderId], references: [id], onDelete: Restrict)
-  @@unique([soOrderId, version])
-}
-
-model CargoItem {
-  id String @id @default(cuid())
-  soOrderId String
-  description String
-  packagesText String?
-  weightText String?
-  volumeText String?
-  sortOrder Int @default(0)
-  createdAt DateTime @default(now())
-  soOrder SoOrder @relation(fields: [soOrderId], references: [id], onDelete: Restrict)
-  @@index([soOrderId, sortOrder])
-}
-
-model SoVersionChange {
-  id String @id @default(cuid())
-  soOrderId String
-  soFileVersionId String
-  changes Json
-  status String @default("PENDING")
-  createdAt DateTime @default(now())
-  confirmedAt DateTime?
-  soOrder SoOrder @relation(fields:[soOrderId],references:[id],onDelete:Restrict)
-  soFileVersion SoFileVersion @relation(fields:[soFileVersionId],references:[id],onDelete:Restrict)
-  @@unique([soFileVersionId])
-}
-
-model ContainerUnit {
-  id String @id @default(cuid())
-  internalCode String @unique
-  soOrderId String
-  containerNo String?
-  containerType String
-  active Boolean @default(true)
-  soOrder SoOrder @relation(fields: [soOrderId], references: [id], onDelete: Restrict)
-  planItems LoadingPlanItem[]
-  @@index([containerNo])
-}
-
-model CustomerConfirmation {
-  id String @id @default(cuid())
-  soOrderId String
-  quantity Int
-  status ConfirmationStatus @default(PENDING)
-  confirmedDate DateTime?
-  note String?
-  createdAt DateTime @default(now())
-  soOrder SoOrder @relation(fields: [soOrderId], references: [id], onDelete: Restrict)
-}
-
-model LoadingPlan {
-  id String @id @default(cuid())
-  soOrderId String
-  factoryId String
-  scheduledAt DateTime
-  status PlanStatus @default(DRAFT)
-  replacesPlanId String?
-  reason String?
-  createdAt DateTime @default(now())
-  soOrder SoOrder @relation(fields: [soOrderId], references: [id], onDelete: Restrict)
-  factory Factory @relation(fields: [factoryId], references: [id], onDelete: Restrict)
-  items LoadingPlanItem[]
-  changesFrom LoadingPlanChange[] @relation("ChangeFrom")
-  changesTo LoadingPlanChange[] @relation("ChangeTo")
-  @@index([soOrderId, status])
-}
-
-model LoadingPlanChange {
-  id String @id @default(cuid())
-  fromPlanId String
-  toPlanId String
-  reason String
-  createdAt DateTime @default(now())
-  fromPlan LoadingPlan @relation("ChangeFrom", fields: [fromPlanId], references: [id], onDelete: Restrict)
-  toPlan LoadingPlan @relation("ChangeTo", fields: [toPlanId], references: [id], onDelete: Restrict)
-  @@unique([fromPlanId, toPlanId])
-}
-
-model LoadingPlanItem {
-  id String @id @default(cuid())
-  loadingPlanId String
-  containerUnitId String
-  active Boolean @default(true)
-  loadingPlan LoadingPlan @relation(fields: [loadingPlanId], references: [id], onDelete: Restrict)
-  containerUnit ContainerUnit @relation(fields: [containerUnitId], references: [id], onDelete: Restrict)
-  @@unique([loadingPlanId, containerUnitId])
-}
-
-model OperationLog {
-  id String @id @default(cuid())
-  action String
-  entityType String
-  entityId String
-  before Json?
-  after Json?
-  createdAt DateTime @default(now())
 }
