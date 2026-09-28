@@ -1,21 +1,22 @@
 import { expect, test } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
+import { testDatabaseUrl } from "./test-db";
 
-const db = new PrismaClient();
+const db = new PrismaClient({ datasources: { db: { url: testDatabaseUrl } } });
 const prefix = `e2e_plan_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
 test.afterAll(async () => {
-  const order = await db.soOrder.findFirst({ where: { soNumber: prefix } });
-  if (order) {
-    await db.operationLog.deleteMany({ where: { entityId: order.id } });
-    await db.operationLog.deleteMany({ where: { entityId: order.id } });
-    await db.loadingPlanItem.deleteMany({ where: { loadingPlan: { soOrderId: order.id } } });
-    await db.loadingPlan.deleteMany({ where: { soOrderId: order.id } });
-    await db.containerUnit.deleteMany({ where: { soOrderId: order.id } });
-    await db.soOrder.delete({ where: { id: order.id } });
-  }
-  await db.factory.deleteMany({ where: { name: prefix } });
-  await db.customer.deleteMany({ where: { code: prefix } });
+  const orders = await db.soOrder.findMany({ where: { soNumber: { startsWith: prefix } }, select: { id: true } });
+  const orderIds = orders.map(order => order.id);
+  const planIds = (await db.loadingPlan.findMany({ where: { soOrderId: { in: orderIds } }, select: { id: true } })).map(plan => plan.id);
+  await db.operationLog.deleteMany({ where: { entityId: { in: [...orderIds, ...planIds] } } });
+  await db.loadingPlanItem.deleteMany({ where: { loadingPlan: { soOrderId: { in: orderIds } } } });
+  await db.loadingPlanChange.deleteMany({ where: { OR: [{ fromPlanId: { in: planIds } }, { toPlanId: { in: planIds } }] } });
+  await db.loadingPlan.deleteMany({ where: { id: { in: planIds } } });
+  await db.containerUnit.deleteMany({ where: { soOrderId: { in: orderIds } } });
+  await db.soOrder.deleteMany({ where: { id: { in: orderIds } } });
+  await db.factory.deleteMany({ where: { name: { startsWith: prefix } } });
+  await db.customer.deleteMany({ where: { code: { startsWith: prefix } } });
   await db.$disconnect();
 });
 

@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
+import { testDatabaseUrl } from "./test-db";
 
-const db = new PrismaClient();
+const db = new PrismaClient({ datasources: { db: { url: testDatabaseUrl } } });
 
 function id(label: string) {
   return `e2e_${label}_${Date.now()}_${Math.random().toString(36).slice(2)}`;

@@ -91,6 +91,7 @@ model SoFileVersion {
   sha256          String           @unique
   version         Int
   parseStatus     ParseStatus      @default(PENDING)
+  processingStartedAt DateTime?
   rawExtraction   Json?
   correctedFields Json?
   createdAt       DateTime         @default(now())

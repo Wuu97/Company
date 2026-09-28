@@ -20,22 +20,27 @@ async function parseFile(file: { storageKey: string; originalName: string }) {
 }
 
 async function main() {
-  const files = await db.soFileVersion.findMany({ where: { parseStatus: process.env.RETRY_FAILED === "1" ? "FAILED" : "PENDING", ...(process.env.SO_FILE_VERSION_ID ? { id: process.env.SO_FILE_VERSION_ID } : {}) }, include: { soOrder: { include: { containers: true } } } });
+  const staleBefore = new Date(Date.now() - 15 * 60_000);
+  const eligible = process.env.RETRY_FAILED === "1" ? { parseStatus: "FAILED" } : { OR: [{ parseStatus: "PENDING" }, { parseStatus: "PROCESSING", processingStartedAt: { lt: staleBefore } }] };
+  const files = await db.soFileVersion.findMany({ where: { ...eligible, ...(process.env.SO_FILE_VERSION_ID ? { id: process.env.SO_FILE_VERSION_ID } : {}) }, include: { soOrder: true } });
   let processedCount = 0; let failedCount = 0;
   for (const file of files) {
     try {
-      const claimed = await db.soFileVersion.updateMany({ where: { id: file.id, parseStatus: file.parseStatus }, data: { parseStatus: "PROCESSING" } });
+      const claimable = file.parseStatus === "PROCESSING" ? { processingStartedAt: { lt: staleBefore } } : { parseStatus: file.parseStatus };
+      const claimed = await db.soFileVersion.updateMany({ where: { id: file.id, ...claimable }, data: { parseStatus: "PROCESSING", processingStartedAt: new Date() } });
       if (claimed.count !== 1) continue;
       const order = file.soOrder;
       if (!order) throw new Error("文件未关联 SO");
       const { parsed, siCutoff, values, extraction } = await parseFile(file);
-      const changes: Record<string, unknown> = Object.fromEntries(fields.filter(key => values[key] !== undefined && values[key] !== order[key]).map(key => [key, { from: order[key], to: values[key] }]));
-      const oldTypes = order.containers.filter(container => container.active).reduce<Record<string, number>>((all, container) => ({ ...all, [container.containerType]: (all[container.containerType] || 0) + 1 }), {});
-      const newTypes = parsed.containers.reduce<Record<string, number>>((all, container) => ({ ...all, [container.containerType]: (all[container.containerType] || 0) + container.quantity }), {});
-      if (JSON.stringify(oldTypes) !== JSON.stringify(newTypes)) changes.containers = { from: oldTypes, to: newTypes };
       await db.$transaction(async tx => {
-        await tx.soFileVersion.update({ where: { id: file.id }, data: { parseStatus: "PARSED", rawExtraction: extraction as object } });
-        if (order.parseStatus === "VERIFIED") {
+        await tx.$queryRaw`SELECT id FROM "SoOrder" WHERE id=${order.id} FOR UPDATE`;
+        const currentOrder = await tx.soOrder.findUniqueOrThrow({ where: { id: order.id }, include: { containers: { where: { active: true } } } });
+        const changes: Record<string, unknown> = Object.fromEntries(fields.filter(key => values[key] !== undefined && values[key] !== currentOrder[key]).map(key => [key, { from: currentOrder[key], to: values[key] }]));
+        const oldTypes = currentOrder.containers.reduce<Record<string, number>>((all, container) => ({ ...all, [container.containerType]: (all[container.containerType] || 0) + 1 }), {});
+        const newTypes = parsed.containers.reduce<Record<string, number>>((all, container) => ({ ...all, [container.containerType]: (all[container.containerType] || 0) + container.quantity }), {});
+        if (JSON.stringify(oldTypes) !== JSON.stringify(newTypes)) changes.containers = { from: oldTypes, to: newTypes };
+        await tx.soFileVersion.update({ where: { id: file.id }, data: { parseStatus: "PARSED", processingStartedAt: null, rawExtraction: extraction as object } });
+        if (currentOrder.parseStatus === "VERIFIED") {
           if (Object.keys(changes).length) await tx.soVersionChange.create({ data: { soOrderId: order.id, soFileVersionId: file.id, changes } });
         } else {
           const data = Object.fromEntries(fields.filter(key => values[key] !== undefined && values[key] !== null && values[key] !== "").map(key => [key, values[key]]));
@@ -46,7 +51,7 @@ async function main() {
       processedCount += 1;
     } catch (error) {
       failedCount += 1;
-      await db.soFileVersion.update({ where: { id: file.id }, data: { parseStatus: "FAILED" } });
+      await db.soFileVersion.update({ where: { id: file.id }, data: { parseStatus: "FAILED", processingStartedAt: null } });
       console.error(`failed ${file.originalName}`, error);
     }
   }
