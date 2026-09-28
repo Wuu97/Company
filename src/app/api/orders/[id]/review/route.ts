@@ -35,7 +35,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       }
 
       const current = await tx.containerUnit.findMany({
-        where: { soOrderId: id },
+        where: { soOrderId: id, active: true },
         select: { containerType: true },
       });
       const requested = summarizeContainers(input.data.containers);

@@ -49,7 +49,7 @@ export async function createLoadingPlan(input: CreateLoadingPlanInput) {
     }
 
     const containers = await tx.containerUnit.findMany({
-      where: { id: { in: input.containerUnitIds }, soOrderId: input.soOrderId },
+      where: { id: { in: input.containerUnitIds }, soOrderId: input.soOrderId, active: true },
       select: { id: true },
     });
     if (containers.length !== input.containerUnitIds.length) {
