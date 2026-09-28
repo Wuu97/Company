@@ -21,7 +21,7 @@ export async function POST(request:Request) {
     const latest=await tx.soFileVersion.aggregate({where:{soOrderId:so.id},_max:{version:true}});
     const version=(latest._max.version||0)+1;
     await tx.soFileVersion.create({data:{soOrderId:so.id,storageKey:saved.key,originalName:file.name,sha256:saved.sha256,version,parseStatus,rawExtraction:parsed as object|undefined}});
-    await tx.soOrder.update({where:{id:so.id},data:{parseStatus:"PENDING"}});
+    if(!soOrderId||so.parseStatus!=="VERIFIED")await tx.soOrder.update({where:{id:so.id},data:{parseStatus:"PENDING"}});
     await tx.operationLog.create({data:{action:soOrderId?"SO_FILE_VERSION_UPLOADED":"SO_FILE_UPLOADED",entityType:"SoOrder",entityId:so.id,after:{file:saved.key,version,parseStatus}}});
     return so;
   });

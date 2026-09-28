@@ -13,7 +13,7 @@ export default async function OrderDetail({params}:{params:Promise<{id:string}>}
   if(!order)notFound();
   const raw=order.files.at(-1)?.rawExtraction as {soNumber?:string;carrier?:string;vesselName?:string;voyage?:string;raw?:Record<string,string>;containers?:{containerType:string;quantity:number}[]}|null;
   const times=raw?.raw||{}; const timeLabels:Record<string,string>={opening:"开仓/收货时间",etd:"装货港 ETD",eta:"卸货港 ETA",cutoff:"截关/补料截止时间",portCutoff:"截关时间",vgmCutoff:"VGM 截止时间",siCutoff:"补料（SI）截止时间"};
-  const planByContainer=new Map(order.plans.flatMap(plan=>plan.items.map(item=>[item.containerUnitId,plan] as const)));
+  const planByContainer=new Map(order.plans.filter(plan=>["DRAFT","CONFIRMED"].includes(plan.status)).flatMap(plan=>plan.items.filter(item=>item.active).map(item=>[item.containerUnitId,plan] as const)));
   return <>
     <h2>SO 详情：{order.soNumber}</h2>
     <section><b>客户：</b>{order.customer?.name||"待匹配"}　<b>船公司：</b>{order.carrier}　<b>船名：</b>{raw?.vesselName||"未识别"}　<b>航次：</b>{raw?.voyage||"未识别"}　<span className="tag">{order.parseStatus}</span></section>
