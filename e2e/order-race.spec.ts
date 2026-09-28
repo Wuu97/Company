@@ -8,6 +8,7 @@ function id(label: string) {
 }
 
 async function removeOrder(orderId: string) {
+  await db.operationLog.deleteMany({ where: { entityId: orderId } });
   await db.soVersionChange.deleteMany({ where: { soOrderId: orderId } });
   await db.soFileVersion.deleteMany({ where: { soOrderId: orderId } });
   await db.customerConfirmation.deleteMany({ where: { soOrderId: orderId } });

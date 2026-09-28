@@ -19,3 +19,9 @@ for (const fixture of fixtures) {
   }
   console.log(`PDF_REGRESSION_PASS ${fixture.file}`);
 }
+
+for (const file of fixtures.filter(fixture => fixture.expected.carrier === "CMA CGM")) {
+  const pdf = new PDFParse({ data: await readFile(file.file) });
+  const text = await pdf.getText(); await pdf.destroy();
+  if (new ParserRegistry().parse({ fileName: file.file, text: text.text }).siCutoffText) throw new Error(`${file.file}: ambiguous SI must remain unparsed`);
+}

@@ -17,6 +17,7 @@ export type AdjustContainersInput = {
 
 export async function createContainer(orderId:string, containerType:string, containerNo?:string) {
   return prisma.$transaction(async tx => {
+    await tx.$queryRaw`SELECT id FROM "SoOrder" WHERE id=${orderId} FOR UPDATE`;
     const count=await tx.containerUnit.count({where:{soOrderId:orderId}});
     return tx.containerUnit.create({data:{soOrderId:orderId,containerType,containerNo:containerNo||null,internalCode:nextInternalContainerCode(orderId,count+1)}});
   });

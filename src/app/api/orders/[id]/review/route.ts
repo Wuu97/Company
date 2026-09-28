@@ -28,6 +28,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   try {
     const order = await prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT id FROM "SoOrder" WHERE id=${id} FOR UPDATE`;
       const before = await tx.soOrder.findUniqueOrThrow({ where: { id } });
       if (input.data.customerId) {
         const customer = await tx.customer.findUnique({ where: { id: input.data.customerId }, select: { id: true } });
@@ -59,6 +60,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       });
 
       if (!current.length) {
+        const historicalCount = await tx.containerUnit.count({ where: { soOrderId: id } });
         const rows = input.data.containers.flatMap(item => Array.from(
           { length: item.quantity },
           () => ({ soOrderId: id, containerType: item.containerType, containerNo: item.containerNo || null }),
@@ -66,7 +68,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         await tx.containerUnit.createMany({
           data: rows.map((row, index) => ({
             ...row,
-            internalCode: `IC-${id.slice(-6).toUpperCase()}-${String(index + 1).padStart(3, "0")}`,
+            internalCode: `IC-${id.slice(-6).toUpperCase()}-${String(historicalCount + index + 1).padStart(3, "0")}`,
           })),
         });
       }

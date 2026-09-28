@@ -1,0 +1,8 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { PrismaClient } from "@prisma/client";
+import { symlink, unlink } from "node:fs/promises";
+const db = new PrismaClient(); const execFileAsync = promisify(execFile);
+const token = `parse_integration_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+const fixtureKey = "362c60e0046e917348645b4d387e878a86fe4e9732c247efc2d2a5d8b801d645-SO_TSHGSZX26016499.pdf"; const storageKey = `${token}.pdf`; let order;
+try { await symlink(fixtureKey, `uploads/${storageKey}`); order = await db.soOrder.create({ data: { soNumber: token, carrier: "PENDING", parseStatus: "PENDING" } }); const file = await db.soFileVersion.create({ data: { soOrderId: order.id, storageKey, originalName: "SO_TSHGSZX26016499.pdf", sha256: token, version: 1 } }); await execFileAsync("./node_modules/.bin/tsx", ["scripts/parse-so-files.ts"], { cwd: process.cwd(), env: { ...process.env, SO_FILE_VERSION_ID: file.id } }); const parsed = await db.soOrder.findUniqueOrThrow({ where: { id: order.id } }); if (parsed.parseStatus !== "PARSED" || parsed.soNumber !== "TSHGSZX26016499" || parsed.carrier !== "TAILWIND" || parsed.siCutoffSource !== "SYSTEM_ESTIMATED") throw new Error(`unexpected persisted result: ${JSON.stringify(parsed)}`); console.log("PARSE_PERSISTENCE_PASS"); } finally { await unlink(`uploads/${storageKey}`).catch(()=>{}); if (order) { await db.operationLog.deleteMany({ where: { entityId: order.id } }); await db.soFileVersion.deleteMany({ where: { soOrderId: order.id } }); await db.soOrder.deleteMany({ where: { id: order.id } }); } await db.$disconnect(); }

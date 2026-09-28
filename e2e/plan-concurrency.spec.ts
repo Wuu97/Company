@@ -7,6 +7,8 @@ const prefix = `e2e_plan_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 test.afterAll(async () => {
   const order = await db.soOrder.findFirst({ where: { soNumber: prefix } });
   if (order) {
+    await db.operationLog.deleteMany({ where: { entityId: order.id } });
+    await db.operationLog.deleteMany({ where: { entityId: order.id } });
     await db.loadingPlanItem.deleteMany({ where: { loadingPlan: { soOrderId: order.id } } });
     await db.loadingPlan.deleteMany({ where: { soOrderId: order.id } });
     await db.containerUnit.deleteMany({ where: { soOrderId: order.id } });
@@ -46,6 +48,31 @@ test("柜量调整与创建计划并发时不会为停用柜创建计划", async
     expect([plan.status(), adjust.status()].sort()).toEqual([201, 409]);
   } finally {
     await db.loadingPlanItem.deleteMany({ where: { loadingPlan: { soOrderId: order.id } } });
+    await db.loadingPlan.deleteMany({ where: { soOrderId: order.id } });
+    await db.containerUnit.deleteMany({ where: { soOrderId: order.id } });
+    await db.soOrder.delete({ where: { id: order.id } });
+    await db.factory.delete({ where: { id: factory.id } });
+    await db.customer.delete({ where: { id: customer.id } });
+  }
+});
+
+test("计划调整与取消同一计划并发时只保留一种最终状态", async ({ request }) => {
+  const token = `${prefix}_state`;
+  const customer = await db.customer.create({ data: { code: token, name: token } });
+  const factory = await db.factory.create({ data: { customerId: customer.id, name: token, address: "test" } });
+  const order = await db.soOrder.create({ data: { customerId: customer.id, soNumber: token, carrier: "TEST" } });
+  const container = await db.containerUnit.create({ data: { soOrderId: order.id, containerType: "40HC", internalCode: `${token}_container` } });
+  const plan = await db.loadingPlan.create({ data: { soOrderId: order.id, factoryId: factory.id, scheduledAt: new Date(), status: "CONFIRMED", items: { create: { containerUnitId: container.id } } } });
+  try {
+    const [adjust, cancel] = await Promise.all([
+      request.post(`/api/plans/${plan.id}/adjust`, { data: { scheduledAt: "2026-10-02T08:00:00.000Z", reason: "test" } }),
+      request.post(`/api/plans/${plan.id}/cancel`),
+    ]);
+    expect([adjust.status(), cancel.status()].sort()).toEqual([200, 409]);
+  } finally {
+    await db.operationLog.deleteMany({ where: { entityId: { in: [order.id, plan.id] } } });
+    await db.loadingPlanItem.deleteMany({ where: { loadingPlan: { soOrderId: order.id } } });
+    await db.loadingPlanChange.deleteMany({ where: { fromPlanId: plan.id } });
     await db.loadingPlan.deleteMany({ where: { soOrderId: order.id } });
     await db.containerUnit.deleteMany({ where: { soOrderId: order.id } });
     await db.soOrder.delete({ where: { id: order.id } });

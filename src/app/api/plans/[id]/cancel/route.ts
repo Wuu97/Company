@@ -5,9 +5,10 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   const { id } = await params;
   try {
     const plan = await prisma.$transaction(async tx => {
-      const found = await tx.loadingPlan.findUnique({ where: { id }, include: { items: true } });
-      if (!found) throw new Error("装柜计划不存在");
-      await tx.$queryRaw`SELECT id FROM "SoOrder" WHERE id=${found.soOrderId} FOR UPDATE`;
+      const target = await tx.loadingPlan.findUnique({ where: { id }, select: { soOrderId: true } });
+      if (!target) throw new Error("装柜计划不存在");
+      await tx.$queryRaw`SELECT id FROM "SoOrder" WHERE id=${target.soOrderId} FOR UPDATE`;
+      const found = await tx.loadingPlan.findUniqueOrThrow({ where: { id }, include: { items: { where: { active: true } } } });
       if (!["DRAFT", "CONFIRMED"].includes(found.status)) throw new Error("当前计划不能取消");
       await tx.loadingPlanItem.updateMany({ where: { loadingPlanId: id, active: true }, data: { active: false } });
       const updated = await tx.loadingPlan.update({ where: { id }, data: { status: "CANCELLED" } });
