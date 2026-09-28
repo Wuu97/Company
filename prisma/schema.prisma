@@ -65,6 +65,22 @@ model SoOrder {
   sailingId String?
   soNumber String
   carrier String
+  customerReference String?
+  vesselName String?
+  voyage String?
+  loadPort String?
+  dischargePort String?
+  etdText String?
+  etaText String?
+  cutoffText String?
+  emptyPickupLocation String?
+  fullReturnLocation String?
+  transportMode String?
+  siCutoffText String?
+  etbText String?
+  etbObservedAt DateTime?
+  etbSource String?
+  etbNeedsReview Boolean @default(false)
   parseStatus ParseStatus @default(PENDING)
   customer Customer? @relation(fields: [customerId], references: [id], onDelete: Restrict)
   sailing Sailing? @relation(fields: [sailingId], references: [id])

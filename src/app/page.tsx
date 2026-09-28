@@ -1,2 +1,18 @@
 import { prisma } from "@/lib/prisma";
-export default async function Dashboard(){const [pendingParse,pendingConfirm,activePlans,replacedPlans]=await Promise.all([prisma.soOrder.count({where:{parseStatus:{in:["PENDING","FAILED"]}}}),prisma.soOrder.count({where:{containers:{some:{}},confirmations:{none:{status:"CONFIRMED"}}}}),prisma.loadingPlan.count({where:{status:"CONFIRMED"}}),prisma.loadingPlan.count({where:{status:"REPLACED"}})]);const cards=[["待解析/核对 SO",pendingParse],["待客户确认",pendingConfirm],["有效装柜计划",activePlans],["计划调整历史",replacedPlans]];return <><h2>业务工作台</h2><div className="cards">{cards.map(([t,n])=><div className="card" key={String(t)}><div>{t}</div><div className="number">{n}</div></div>)}</div><section><h3>第一阶段</h3><p>从 SO 上传、人工核对、内部柜子、客户确认到分批装柜计划的统一入口。</p></section></>}
+
+export default async function Dashboard(){
+  const [pendingReview,unmatchedCustomer,unplannedContainers,etbReview,pendingConfirm,pendingOrders,unmatchedOrders,unplanned,etbOrders,confirmOrders]=await Promise.all([
+    prisma.soOrder.count({where:{parseStatus:{in:["PENDING","PARSED","FAILED"]}}}),
+    prisma.soOrder.count({where:{customerId:null}}),
+    prisma.containerUnit.count({where:{planItems:{none:{active:true}}}}),
+    prisma.soOrder.count({where:{etbNeedsReview:true}}),
+    prisma.soOrder.count({where:{containers:{some:{}},confirmations:{none:{status:"CONFIRMED"}}}}),
+    prisma.soOrder.findMany({where:{parseStatus:{in:["PENDING","PARSED","FAILED"]}},select:{id:true,soNumber:true,carrier:true,parseStatus:true},take:8,orderBy:{createdAt:"desc"}}),
+    prisma.soOrder.findMany({where:{customerId:null},select:{id:true,soNumber:true,carrier:true},take:8,orderBy:{createdAt:"desc"}}),
+    prisma.containerUnit.findMany({where:{planItems:{none:{active:true}}},select:{id:true,internalCode:true,containerType:true,soOrder:{select:{id:true,soNumber:true}}},take:8,orderBy:{internalCode:"asc"}}),
+    prisma.soOrder.findMany({where:{etbNeedsReview:true},select:{id:true,soNumber:true,etbText:true},take:8,orderBy:{createdAt:"desc"}}),
+    prisma.soOrder.findMany({where:{containers:{some:{}},confirmations:{none:{status:"CONFIRMED"}}},select:{id:true,soNumber:true},take:8,orderBy:{createdAt:"desc"}})
+  ]);
+  const cards=[["待解析/人工核对 SO",pendingReview,"/orders"],["待匹配客户",unmatchedCustomer,"/orders"],["待客户确认",pendingConfirm,"/orders"],["待安排装柜",unplannedContainers,"/plans"],["ETB 变化待核对",etbReview,"/orders"]];
+  return <><h2>业务工作台</h2><div className="cards five-cards">{cards.map(([title,count,href])=><a className="card dashboard-card" href={href as string} key={title as string}><div>{title}</div><div className="number">{count}</div><small>点击查看</small></a>)}</div><div className="task-grid"><section><h3>待解析/核对</h3>{pendingOrders.length?<ul>{pendingOrders.map(o=><li key={o.id}><a href={`/orders/${o.id}`}>{o.soNumber}</a> · {o.carrier} · {o.parseStatus}</li>)}</ul>:<p>暂无待处理 SO。</p>}</section><section><h3>待匹配客户</h3>{unmatchedOrders.length?<ul>{unmatchedOrders.map(o=><li key={o.id}><a href={`/orders/${o.id}`}>{o.soNumber}</a> · {o.carrier}</li>)}</ul>:<p>暂无待匹配客户的 SO。</p>}</section><section><h3>待客户确认</h3>{confirmOrders.length?<ul>{confirmOrders.map(o=><li key={o.id}><a href={`/orders/${o.id}`}>{o.soNumber}</a></li>)}</ul>:<p>暂无待客户确认的 SO。</p>}</section><section><h3>待安排柜子</h3>{unplanned.length?<ul>{unplanned.map(c=><li key={c.id}><a href={`/orders/${c.soOrder.id}`}>{c.soOrder.soNumber}</a> · {c.internalCode} · {c.containerType}</li>)}</ul>:<p>暂无待安排柜子。</p>}</section><section><h3>ETB 待核对</h3>{etbOrders.length?<ul>{etbOrders.map(o=><li key={o.id}><a href={`/orders/${o.id}`}>{o.soNumber}</a> · {o.etbText||"ETB 待确认"}</li>)}</ul>:<p>暂无 ETB 待核对项。</p>}</section></div><section><h3>截止时间提醒说明</h3><p>当前展示 SO 原文件的截止字段。ETB 自动查询接入后，系统会根据已确认的业务采用时间生成临近开仓、截关和补料提醒。</p></section></>;
+}
