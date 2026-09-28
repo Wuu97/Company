@@ -1,0 +1,3 @@
+"use client";
+import {useState} from "react";
+export function SoVersionUpload({orderId}:{orderId:string}){const [message,setMessage]=useState("");async function submit(event:React.FormEvent<HTMLFormElement>){event.preventDefault();const response=await fetch("/api/orders/upload",{method:"POST",body:new FormData(event.currentTarget)});const data=await response.json();setMessage(response.ok?"新版本已上传，运行待解析 SO 后会更新解析结果。":data.error)}return <section><h3>更新 SO 文件</h3><form onSubmit={submit}><input type="hidden" name="soOrderId" value={orderId}/><input name="file" type="file" accept="application/pdf" required/> <button>上传新版本</button></form><p>{message}</p></section>}
