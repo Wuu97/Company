@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { PDFParse } from "pdf-parse";
 import { ParserRegistry } from "../src/lib/so-parser";
@@ -25,9 +26,11 @@ async function main() {
   const files = await db.soFileVersion.findMany({ where: { ...eligible, ...(process.env.SO_FILE_VERSION_ID ? { id: process.env.SO_FILE_VERSION_ID } : {}) }, include: { soOrder: true } });
   let processedCount = 0; let failedCount = 0;
   for (const file of files) {
+    let processingToken: string | undefined;
     try {
+      processingToken = randomUUID();
       const claimable = file.parseStatus === "PROCESSING" ? { processingStartedAt: { lt: staleBefore } } : { parseStatus: file.parseStatus };
-      const claimed = await db.soFileVersion.updateMany({ where: { id: file.id, ...claimable }, data: { parseStatus: "PROCESSING", processingStartedAt: new Date() } });
+      const claimed = await db.soFileVersion.updateMany({ where: { id: file.id, ...claimable }, data: { parseStatus: "PROCESSING", processingStartedAt: new Date(), processingToken } });
       if (claimed.count !== 1) continue;
       const order = file.soOrder;
       if (!order) throw new Error("文件未关联 SO");
@@ -39,7 +42,8 @@ async function main() {
         const oldTypes = currentOrder.containers.reduce<Record<string, number>>((all, container) => ({ ...all, [container.containerType]: (all[container.containerType] || 0) + 1 }), {});
         const newTypes = parsed.containers.reduce<Record<string, number>>((all, container) => ({ ...all, [container.containerType]: (all[container.containerType] || 0) + container.quantity }), {});
         if (JSON.stringify(oldTypes) !== JSON.stringify(newTypes)) changes.containers = { from: oldTypes, to: newTypes };
-        await tx.soFileVersion.update({ where: { id: file.id }, data: { parseStatus: "PARSED", processingStartedAt: null, rawExtraction: extraction as object } });
+        const completed = await tx.soFileVersion.updateMany({ where: { id: file.id, parseStatus: "PROCESSING", processingToken }, data: { parseStatus: "PARSED", processingStartedAt: null, processingToken: null, rawExtraction: extraction as object } });
+        if (completed.count !== 1) throw new Error("解析任务租约已失效");
         if (currentOrder.parseStatus === "VERIFIED") {
           if (Object.keys(changes).length) await tx.soVersionChange.create({ data: { soOrderId: order.id, soFileVersionId: file.id, changes } });
         } else {
@@ -51,7 +55,7 @@ async function main() {
       processedCount += 1;
     } catch (error) {
       failedCount += 1;
-      await db.soFileVersion.update({ where: { id: file.id }, data: { parseStatus: "FAILED", processingStartedAt: null } });
+      if (processingToken) await db.soFileVersion.updateMany({ where: { id: file.id, processingToken }, data: { parseStatus: "FAILED", processingStartedAt: null, processingToken: null } });
       console.error(`failed ${file.originalName}`, error);
     }
   }

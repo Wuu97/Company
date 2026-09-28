@@ -92,6 +92,7 @@ model SoFileVersion {
   version         Int
   parseStatus     ParseStatus      @default(PENDING)
   processingStartedAt DateTime?
+  processingToken String?
   rawExtraction   Json?
   correctedFields Json?
   createdAt       DateTime         @default(now())
@@ -99,6 +100,7 @@ model SoFileVersion {
   versionChange   SoVersionChange?
 
   @@unique([soOrderId, version])
+  @@index([parseStatus, processingStartedAt])
 }
 
 model CargoItem {
