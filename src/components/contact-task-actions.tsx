@@ -1,0 +1,3 @@
+"use client";
+import { useState } from "react";
+export function ContactTaskActions({taskId}:{taskId:string}){const [msg,setMsg]=useState("");async function resolve(status:"COMPLETED"|"CANCELLED"){const note=window.prompt(status==="COMPLETED"?"请记录微信联系/客户确认情况":"请说明取消原因");if(!note)return;const r=await fetch(`/api/contact-tasks/${taskId}`,{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({status,note})});if(r.ok)location.reload();else setMsg((await r.json()).error||"更新失败");}return <><button type="button" className="small-button" onClick={()=>resolve("COMPLETED")}>已联系</button> <button type="button" className="small-button" onClick={()=>resolve("CANCELLED")}>取消</button>{msg&&<small className="error">{msg}</small>}</>}

@@ -1,3 +1,4 @@
+import { formatChinaDateTime } from "./time";
 export const siCutoffSources = ["SO_ORIGINAL", "SYSTEM_ESTIMATED", "NEEDS_REVIEW", "MANUAL"] as const;
 export type SiCutoffSource = (typeof siCutoffSources)[number];
 
@@ -14,17 +15,16 @@ function subtractThreeDays(text: string) {
   let date: Date | undefined;
 
   if (numeric) {
-    date = new Date(Number(numeric[3]), Number(numeric[2]) - 1, Number(numeric[1]), Number(numeric[4]), Number(numeric[5]));
+    date = new Date(Date.UTC(Number(numeric[3]), Number(numeric[2]) - 1, Number(numeric[1]), Number(numeric[4]), Number(numeric[5])) - 8 * 60 * 60 * 1000);
   } else if (named) {
     const months: Record<string, number> = { JAN: 0, FEB: 1, MAR: 2, APR: 3, MAY: 4, JUN: 5, JUL: 6, AUG: 7, SEP: 8, SEPT: 8, OCT: 9, NOV: 10, DEC: 11 };
     const month = months[named[2].toUpperCase()];
     const year = Number(named[3].length === 2 ? `20${named[3]}` : named[3]);
-    if (month !== undefined) date = new Date(year, month, Number(named[1]), Number(named[4]), Number(named[5]));
+    if (month !== undefined) date = new Date(Date.UTC(year, month, Number(named[1]), Number(named[4]), Number(named[5])) - 8 * 60 * 60 * 1000);
   }
   if (!date || Number.isNaN(date.valueOf())) return undefined;
-  date.setDate(date.getDate() - 3);
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  date = new Date(date.valueOf() - 3 * 24 * 60 * 60 * 1000);
+  return formatChinaDateTime(date);
 }
 
 export function resolveSiCutoff(input: {

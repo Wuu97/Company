@@ -17,6 +17,77 @@ model Customer {
   orders    SoOrder[]
 }
 
+model AppUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  role         AppRole  @default(OPERATOR)
+  passwordHash String
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  sessions     AppSession[]
+  credentialChanges DataSourceCredential[] @relation("CredentialChangedBy")
+  notifications AppNotification[]
+}
+
+model AppNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  href      String?
+  kind      String
+  dedupeKey String?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@unique([userId, dedupeKey])
+}
+
+model AppSession {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model DataSourceCredential {
+  id             String   @id @default(cuid())
+  terminal       String   @unique
+  username       String
+  ciphertext     String
+  iv             String
+  authTag        String
+  changedById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  changedBy      AppUser  @relation("CredentialChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
+  testRuns       EtbCredentialTestRun[]
+}
+
+model EtbCredentialTestRun {
+  id                   String                  @id @default(cuid())
+  terminal             String
+  credentialId         String
+  status               EtbCredentialTestStatus @default(PENDING)
+  errorMessage         String?
+  screenshotStorageKey String?
+  startedAt            DateTime?
+  finishedAt           DateTime?
+  createdAt            DateTime                @default(now())
+  credential           DataSourceCredential    @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([terminal, createdAt])
+}
+
 model Factory {
   id           String        @id @default(cuid())
   customerId   String
@@ -36,9 +107,56 @@ model Sailing {
   carrier    String
   vesselName String
   voyage     String
+  loadPort   String?
+  adoptedEtbAt DateTime?
+  adoptedEtbSource String?
+  adoptedEtbAtConfirmedAt DateTime?
+  pendingEtbAt DateTime?
+  pendingEtbSource String?
+  pendingEtbObservedAt DateTime?
+  etbNeedsReview Boolean @default(false)
   orders     SoOrder[]
+  observations SailingObservation[]
 
   @@unique([terminal, carrier, vesselName, voyage])
+}
+
+model SailingObservation {
+  id                 String               @id @default(cuid())
+  sailingId          String
+  etbAt              DateTime
+  source             String
+  sourceUrl          String?
+  screenshotStorageKey String?
+  observedAt         DateTime             @default(now())
+  status             EtbObservationStatus @default(PENDING)
+  reviewedAt         DateTime?
+  reviewNote         String?
+  sailing            Sailing              @relation(fields: [sailingId], references: [id], onDelete: Cascade)
+
+  @@index([sailingId, observedAt])
+  @@index([status, observedAt])
+}
+
+model EtbQueryRun {
+  id           String            @id @default(cuid())
+  terminal     String
+  source       String
+  scheduledFor DateTime
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  status       EtbQueryRunStatus @default(PENDING)
+  sessionState EtbSessionState @default(NOT_REQUIRED)
+  resultCount  Int               @default(0)
+  errorMessage String?
+  handoffReason String?
+  screenshotStorageKey String?
+  retryAfter   DateTime?
+  manualHandledAt DateTime?
+  createdAt    DateTime          @default(now())
+
+  @@index([terminal, scheduledFor])
+  @@index([status, createdAt])
 }
 
 model SoOrder {
@@ -80,6 +198,7 @@ model SoOrder {
   customer            Customer?              @relation(fields: [customerId], references: [id], onDelete: Restrict)
   sailing             Sailing?               @relation(fields: [sailingId], references: [id])
   versionChanges      SoVersionChange[]
+  contactTasks        CustomerContactTask[]
 
   @@index([customerId, carrier, soNumber])
 }
@@ -149,9 +268,11 @@ model CustomerConfirmation {
   quantity      Int
   status        ConfirmationStatus @default(PENDING)
   confirmedDate DateTime?
+  expectedLoadingAt DateTime?
   note          String?
   createdAt     DateTime           @default(now())
   soOrder       SoOrder            @relation(fields: [soOrderId], references: [id])
+  loadingPlans  LoadingPlan[]
 }
 
 model LoadingPlan {
@@ -162,14 +283,50 @@ model LoadingPlan {
   status         PlanStatus          @default(DRAFT)
   replacesPlanId String?
   reason         String?
+  customerConfirmationId String?
   createdAt      DateTime            @default(now())
   factory        Factory             @relation(fields: [factoryId], references: [id])
   soOrder        SoOrder             @relation(fields: [soOrderId], references: [id])
   changesFrom    LoadingPlanChange[] @relation("ChangeFrom")
   changesTo      LoadingPlanChange[] @relation("ChangeTo")
   items          LoadingPlanItem[]
+  customerConfirmation CustomerConfirmation? @relation(fields: [customerConfirmationId], references: [id])
+  transportTask  TransportTask?
 
   @@index([soOrderId, status])
+}
+
+model TransportTask {
+  id             String          @id @default(cuid())
+  loadingPlanId  String          @unique
+  status         TransportStatus @default(PLANNED)
+  scheduledAt    DateTime
+  dispatchedAt   DateTime?
+  completedAt    DateTime?
+  primaryCostText String?
+  note           String?
+  etbImpactNeedsReview Boolean @default(false)
+  etbImpactResolvedAt DateTime?
+  etbImpactResolutionNote String?
+  createdAt      DateTime        @default(now())
+  loadingPlan    LoadingPlan     @relation(fields: [loadingPlanId], references: [id])
+  legs           TransportLeg[]
+
+  @@index([status, scheduledAt])
+}
+
+model TransportLeg {
+  id              String          @id @default(cuid())
+  transportTaskId String
+  sequence        Int
+  vehicleNo       String?
+  driverName      String?
+  driverPhone     String?
+  status          TransportStatus @default(PLANNED)
+  note            String?
+  transportTask   TransportTask  @relation(fields: [transportTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([transportTaskId, sequence])
 }
 
 model LoadingPlanChange {
@@ -203,6 +360,23 @@ model OperationLog {
   before     Json?
   after      Json?
   createdAt  DateTime @default(now())
+  actorUserId String?
+  actorName   String?
+  actorRole   AppRole?
+}
+
+model CustomerContactTask {
+  id          String            @id @default(cuid())
+  soOrderId   String
+  dueAt       DateTime
+  status      ContactTaskStatus @default(OPEN)
+  note        String?
+  completedAt DateTime?
+  createdAt   DateTime          @default(now())
+  soOrder     SoOrder           @relation(fields: [soOrderId], references: [id], onDelete: Cascade)
+
+  @@unique([soOrderId, dueAt])
+  @@index([status, dueAt])
 }
 
 enum ParseStatus {
@@ -213,10 +387,60 @@ enum ParseStatus {
   VERIFIED
 }
 
+enum AppRole {
+  ADMIN
+  OPERATOR
+}
+
+enum EtbCredentialTestStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  AWAITING_MANUAL
+  FAILED
+}
+
 enum OrderStatus {
   PENDING_REVIEW
   CONFIRMED
   IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum EtbObservationStatus {
+  PENDING
+  ADOPTED
+  IGNORED
+  SUPERSEDED
+}
+
+enum EtbQueryRunStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  AWAITING_MANUAL
+}
+
+enum EtbSessionState {
+  NOT_REQUIRED
+  ACTIVE
+  EXPIRED
+  ROBOT_VERIFICATION_REQUIRED
+  MANUAL_HANDOFF_REQUIRED
+}
+
+enum TransportStatus {
+  PLANNED
+  DISPATCHED
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+enum ContactTaskStatus {
+  OPEN
   COMPLETED
   CANCELLED
 }

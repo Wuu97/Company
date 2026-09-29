@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { currentUser } from "@/lib/auth";
+import { actorFields } from "@/lib/audit";
 
 const schema = z.object({ scheduledAt: z.string().datetime(), reason: z.string().min(1) });
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const input = schema.safeParse(await request.json());
   if (!input.success) return NextResponse.json({ error: "调整资料无效" }, { status: 400 });
+  const actor = await currentUser();
+  if (!actor) return NextResponse.json({ error: "请先登录" }, { status: 401 });
   try {
     const id = (await params).id;
     const next = await prisma.$transaction(async tx => {
@@ -19,7 +23,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       await tx.loadingPlan.update({ where: { id }, data: { status: "REPLACED" } });
       const replacement = await tx.loadingPlan.create({ data: { soOrderId: old.soOrderId, factoryId: old.factoryId, scheduledAt: new Date(input.data.scheduledAt), status: "CONFIRMED", reason: input.data.reason, replacesPlanId: id, items: { create: items.map(item => ({ containerUnitId: item.containerUnitId })) } } });
       await tx.loadingPlanChange.create({ data: { fromPlanId: id, toPlanId: replacement.id, reason: input.data.reason } });
-      await tx.operationLog.create({ data: { action: "LOADING_PLAN_ADJUSTED", entityType: "LoadingPlan", entityId: replacement.id, before: { planId: id }, after: input.data } });
+      await tx.operationLog.create({ data: { action: "LOADING_PLAN_ADJUSTED", entityType: "LoadingPlan", entityId: replacement.id, ...actorFields(actor), before: { planId: id }, after: input.data } });
       return replacement;
     });
     return NextResponse.json(next);

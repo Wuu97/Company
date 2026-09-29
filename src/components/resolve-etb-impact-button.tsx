@@ -1,0 +1,3 @@
+"use client";
+import { useState } from "react";
+export function ResolveEtbImpactButton({taskId}:{taskId:string}){const [msg,setMsg]=useState("");async function resolve(){const note=window.prompt("请说明是否维持或调整原运输计划；费用关联将保持不变。");if(!note)return;const r=await fetch(`/api/transport-tasks/${taskId}/etb-impact`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({note})});if(r.ok)location.reload();else setMsg((await r.json()).error||"处理失败");}return <><button type="button" className="small-button" onClick={resolve}>核对船期影响</button>{msg&&<small className="error">{msg}</small>}</>}

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { currentUser } from "@/lib/auth";
+import { actorFields } from "@/lib/audit";
 
 const schema = z.object({
   customerId: z.string().min(1).optional(),
@@ -24,6 +26,8 @@ function summarizeContainers(items: Array<{ containerType: string; quantity: num
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const input = schema.safeParse(await request.json());
   if (!input.success) return NextResponse.json({ error: "核对资料无效" }, { status: 400 });
+  const actor = await currentUser();
+  if (!actor) return NextResponse.json({ error: "请先登录" }, { status: 401 });
 
   const { id } = await params;
   try {
@@ -78,6 +82,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           action: "SO_REVIEWED",
           entityType: "SoOrder",
           entityId: id,
+          ...actorFields(actor),
           before: { soNumber: before.soNumber, carrier: before.carrier, siCutoffText: before.siCutoffText },
           after: input.data,
         },

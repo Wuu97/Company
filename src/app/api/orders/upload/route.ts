@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { LocalFileStorage } from "@/lib/storage";
+import { currentUser } from "@/lib/auth";
+import { actorFields } from "@/lib/audit";
 
 export async function POST(request:Request) {
+  const actor=await currentUser();
+  if(!actor)return NextResponse.json({error:"请先登录"},{status:401});
   const form=await request.formData();
   const file=form.get("file");
   const soOrderId=typeof form.get("soOrderId")==="string"?String(form.get("soOrderId")):undefined;
@@ -24,7 +28,7 @@ export async function POST(request:Request) {
     const version=(latest._max.version||0)+1;
     await tx.soFileVersion.create({data:{soOrderId:so.id,storageKey:saved.key,originalName:file.name,sha256:saved.sha256,version,parseStatus,rawExtraction:parsed as object|undefined}});
     if(!soOrderId||so.parseStatus!=="VERIFIED")await tx.soOrder.update({where:{id:so.id},data:{parseStatus:"PENDING"}});
-    await tx.operationLog.create({data:{action:soOrderId?"SO_FILE_VERSION_UPLOADED":"SO_FILE_UPLOADED",entityType:"SoOrder",entityId:so.id,after:{file:saved.key,version,parseStatus}}});
+    await tx.operationLog.create({data:{action:soOrderId?"SO_FILE_VERSION_UPLOADED":"SO_FILE_UPLOADED",entityType:"SoOrder",entityId:so.id,...actorFields(actor),after:{file:saved.key,version,parseStatus}}});
     return so;
   });
   return NextResponse.json({id:order.id,parseStatus:order.parseStatus,parsed},{status:201});

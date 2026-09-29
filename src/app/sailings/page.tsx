@@ -1,0 +1,4 @@
+import { prisma } from "@/lib/prisma";
+import { SailingForm } from "@/components/sailing-forms";
+import { formatChinaDateTime } from "@/lib/time";
+export default async function Sailings(){const sailings=await prisma.sailing.findMany({include:{_count:{select:{orders:true,observations:true}}},orderBy:{carrier:"asc"}});return <><h2>船期管理</h2><SailingForm/><table><thead><tr><th>码头 / 装货港</th><th>船公司</th><th>船名 / 航次</th><th>业务采用 ETB</th><th>待核实 ETB</th><th>关联 SO</th><th>操作</th></tr></thead><tbody>{sailings.length?sailings.map(s=><tr key={s.id}><td>{s.terminal} / {s.loadPort||"—"}</td><td>{s.carrier}</td><td>{s.vesselName} / {s.voyage}</td><td>{s.adoptedEtbAt?formatChinaDateTime(s.adoptedEtbAt):"未采用"}</td><td>{s.pendingEtbAt?formatChinaDateTime(s.pendingEtbAt):"—"}</td><td>{s._count.orders}</td><td><a href={`/sailings/${s.id}`}>{s.etbNeedsReview?"核实 ETB":"查看"}</a></td></tr>):<tr><td colSpan={7}>暂无船期。请先创建船期档案。</td></tr>}</tbody></table></>}

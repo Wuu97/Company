@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { nextInternalContainerCode, validatePlanAssignment } from "@/lib/business";
+import { actorFields, type AuditActor } from "@/lib/audit";
 
 export type CreateLoadingPlanInput = {
   soOrderId: string;
@@ -7,19 +8,24 @@ export type CreateLoadingPlanInput = {
   scheduledAt: string;
   containerUnitIds: string[];
   reason?: string;
+  customerConfirmationId?: string;
+  actor?: AuditActor;
 };
 
 export type AdjustContainersInput = {
   orderId: string;
   containers: Array<{ containerType: string; quantity: number }>;
   reason: string;
+  actor?: AuditActor;
 };
 
-export async function createContainer(orderId:string, containerType:string, containerNo?:string) {
+export async function createContainer(orderId:string, containerType:string, containerNo?:string, actor?:AuditActor) {
   return prisma.$transaction(async tx => {
     await tx.$queryRaw`SELECT id FROM "SoOrder" WHERE id=${orderId} FOR UPDATE`;
     const count=await tx.containerUnit.count({where:{soOrderId:orderId}});
-    return tx.containerUnit.create({data:{soOrderId:orderId,containerType,containerNo:containerNo||null,internalCode:nextInternalContainerCode(orderId,count+1)}});
+    const container=await tx.containerUnit.create({data:{soOrderId:orderId,containerType,containerNo:containerNo||null,internalCode:nextInternalContainerCode(orderId,count+1)}});
+    await tx.operationLog.create({data:{action:"CONTAINER_CREATED",entityType:"ContainerUnit",entityId:container.id,...actorFields(actor),after:{soOrderId:orderId,containerType,containerNo:containerNo||null,internalCode:container.internalCode}}});
+    return container;
   });
 }
 
@@ -49,12 +55,23 @@ export async function createLoadingPlan(input: CreateLoadingPlanInput) {
       throw new Error("工厂不属于当前 SO 客户");
     }
 
+    const scheduledAt = new Date(input.scheduledAt);
+    const nearbyPlans = await tx.loadingPlan.findMany({ where: { factoryId: input.factoryId, status: { in: ["DRAFT", "CONFIRMED"] }, scheduledAt: { gte: new Date(scheduledAt.valueOf() - 2 * 60 * 60 * 1000), lte: new Date(scheduledAt.valueOf() + 2 * 60 * 60 * 1000) } }, select: { id: true, scheduledAt: true } });
+    if (nearbyPlans.length && !input.reason?.trim()) throw new Error("该工厂前后两小时内已有有效装柜计划；如确认可并行安排，请填写调整原因。");
+
     const containers = await tx.containerUnit.findMany({
       where: { id: { in: input.containerUnitIds }, soOrderId: input.soOrderId, active: true },
       select: { id: true },
     });
     if (containers.length !== input.containerUnitIds.length) {
       throw new Error("存在不属于当前 SO 的内部柜子");
+    }
+
+    if (input.customerConfirmationId) {
+      const confirmation = await tx.customerConfirmation.findUnique({ where: { id: input.customerConfirmationId }, select: { soOrderId: true, quantity: true, status: true } });
+      if (!confirmation || confirmation.soOrderId !== input.soOrderId || !["PARTIAL", "CONFIRMED"].includes(confirmation.status)) throw new Error("客户确认批次不属于当前 SO 或尚未有效确认");
+      const allocated = await tx.loadingPlanItem.count({ where: { active: true, loadingPlan: { customerConfirmationId: input.customerConfirmationId, status: { in: ["DRAFT", "CONFIRMED"] } } } });
+      if (allocated + input.containerUnitIds.length > confirmation.quantity) throw new Error("计划柜量超过该客户确认批次的可用柜量");
     }
 
     const assignments = await tx.loadingPlanItem.findMany({
@@ -67,9 +84,10 @@ export async function createLoadingPlan(input: CreateLoadingPlanInput) {
       data: {
         soOrderId: input.soOrderId,
         factoryId: input.factoryId,
-        scheduledAt: new Date(input.scheduledAt),
+        scheduledAt,
         status: "CONFIRMED",
         reason: input.reason,
+        customerConfirmationId: input.customerConfirmationId,
       },
     });
     await tx.loadingPlanItem.createMany({
@@ -83,7 +101,8 @@ export async function createLoadingPlan(input: CreateLoadingPlanInput) {
         action: "LOADING_PLAN_CREATED",
         entityType: "LoadingPlan",
         entityId: plan.id,
-        after: input,
+        ...actorFields(input.actor),
+        after: { ...input, schedulingConflicts: nearbyPlans.map(plan => ({ id: plan.id, scheduledAt: plan.scheduledAt.toISOString() })) },
       },
     });
     return plan;
@@ -127,7 +146,7 @@ export async function adjustContainers(input: AdjustContainersInput) {
         internalCode: nextInternalContainerCode(input.orderId, total + index + 1),
       })) });
     }
-    await tx.operationLog.create({ data: { action: "SO_CONTAINERS_ADJUSTED", entityType: "SoOrder", entityId: order.id, after: input } });
+    await tx.operationLog.create({ data: { action: "SO_CONTAINERS_ADJUSTED", entityType: "SoOrder", entityId: order.id, ...actorFields(input.actor), after: input } });
     return { added: additions.length, removed: toDeactivate.length };
   });
 }
