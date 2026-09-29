@@ -2,14 +2,15 @@ import { execFile } from "node:child_process";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { NextResponse } from "next/server";
-import { authErrorResponse, requireAdmin } from "@/lib/auth";
+import { currentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { actorFields } from "@/lib/audit";
 
 const execFileAsync = promisify(execFile);
 
 export async function POST() {
-  let actor; try { actor = await requireAdmin(); } catch (error) { return authErrorResponse(error); }
+  const actor = await currentUser();
+  if (!actor) return NextResponse.json({ error: "请先登录" }, { status: 401 });
   try {
     const { stdout, stderr } = await execFileAsync(
       join(process.cwd(), "node_modules/.bin/tsx"),

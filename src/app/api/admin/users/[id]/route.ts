@@ -18,6 +18,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (input.data.action === "set-active") {
     const active = input.data.active;
     try { const updated = await prisma.$transaction(async tx => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(2026092902)`;
       const user = await tx.appUser.findUnique({ where: { id } }); if (!user) throw new Error("USER_NOT_FOUND");
       if (id === admin.id && !active) throw new Error("SELF_DEACTIVATION");
       if (!active && user.role === "ADMIN" && !mayDeactivateAdmin(await tx.appUser.count({ where: { role: "ADMIN", active: true } }))) throw new Error("LAST_ADMIN");

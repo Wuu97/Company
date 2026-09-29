@@ -1,14 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
-import { testDatabaseUrl } from "./test-db";
+import { resetAuthState, testDatabaseUrl } from "./test-db";
 
 const db = new PrismaClient({ datasources: { db: { url: testDatabaseUrl } } });
 const email = "setup-e2e@example.test";
 
-async function resetSetupState() {
-  await db.appSession.deleteMany({ where: { user: { email } } });
-  await db.appUser.deleteMany({ where: { email } });
-}
+async function resetSetupState() { await resetAuthState(db); }
 
 test.beforeEach(resetSetupState);
 test.afterAll(async () => { await resetSetupState(); await db.$disconnect(); });

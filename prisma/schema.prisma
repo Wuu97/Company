@@ -61,9 +61,11 @@ model AppSession {
 model LoginAttempt {
   id        String   @id @default(cuid())
   email     String
+  sourceKey String
   failedAt  DateTime @default(now())
 
   @@index([email, failedAt])
+  @@index([sourceKey, failedAt])
 }
 
 model DataSourceCredential {
