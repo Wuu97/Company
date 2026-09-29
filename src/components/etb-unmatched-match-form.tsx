@@ -1,0 +1,4 @@
+"use client";
+import { useState } from "react";
+type Sailing = { id: string; label: string };
+export function EtbUnmatchedMatchForm({ runId, resultId, sailings }: { runId: string; resultId: string; sailings: Sailing[] }) { const [message, setMessage] = useState(""); async function submit(e: React.FormEvent<HTMLFormElement>) { e.preventDefault(); const sailingId = String(new FormData(e.currentTarget).get("sailingId")); const response = await fetch(`/api/etb-runs/${runId}/unmatched/${resultId}/match`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sailingId }) }); setMessage(response.ok ? "已建立 ETB 观测，请刷新页面。" : (await response.json()).error); } return <form onSubmit={submit}><select name="sailingId" required><option value="">确认关联到船期</option>{sailings.map(sailing => <option value={sailing.id} key={sailing.id}>{sailing.label}</option>)}</select> <button disabled={!sailings.length}>确认匹配</button><small>{message}</small></form>; }

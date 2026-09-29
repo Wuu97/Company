@@ -7,10 +7,10 @@ import { prisma } from "@/lib/prisma";
 import { actorFields } from "@/lib/audit";
 import { createHash } from "node:crypto";
 
-const schema = z.object({ currentPassword: z.string().min(1).max(200), newPassword: z.string().min(12).max(200) });
+const schema = z.object({ currentPassword: z.string().min(1).max(200), newPassword: z.string().min(8).max(200) });
 export async function POST(request: Request) {
   const user = await currentUser(); if (!user) return NextResponse.json({ error: "请先登录" }, { status: 401 });
-  const input = schema.safeParse(await request.json()); if (!input.success) return NextResponse.json({ error: "新密码至少需要 12 位" }, { status: 400 });
+  const input = schema.safeParse(await request.json()); if (!input.success) return NextResponse.json({ error: "新密码至少需要 8 位" }, { status: 400 });
   if (!await verifyPassword(input.data.currentPassword, user.passwordHash)) return NextResponse.json({ error: "当前密码不正确" }, { status: 401 });
   const session = parseSessionCookie((await cookies()).get(SESSION_COOKIE)?.value);
   await prisma.$transaction(async tx => {

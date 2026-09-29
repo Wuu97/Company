@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EtbManualHandoffRequiredError, etbQueryFailureState } from "./etb-query-state";
+import { etbCompletionState } from "./etb-query-completion";
 
 describe("ETB query handoff", () => {
   it("turns robot verification into a manual-handoff task", () => {
@@ -11,5 +12,15 @@ describe("ETB query handoff", () => {
 
   it("keeps ordinary adapter failures as failed runs", () => {
     expect(etbQueryFailureState(new Error("网站超时"))).toEqual({ status: "FAILED", sessionState: "NOT_REQUIRED", errorMessage: "网站超时" });
+  });
+});
+
+describe("ETB query completion", () => {
+  it("requires a manual handoff when the source rows cannot be attached to sailings", () => {
+    expect(etbCompletionState(0, 2)).toMatchObject({ status: "AWAITING_MANUAL", sessionState: "MANUAL_HANDOFF_REQUIRED" });
+  });
+
+  it("succeeds only when all returned rows have been attached", () => {
+    expect(etbCompletionState(2, 0)).toMatchObject({ status: "SUCCEEDED", sessionState: "ACTIVE" });
   });
 });

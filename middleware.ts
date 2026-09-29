@@ -16,4 +16,5 @@ export async function middleware(request: NextRequest) {
   if (!request.nextUrl.pathname.startsWith("/api/")) login.searchParams.set("next", request.nextUrl.pathname);
   return request.nextUrl.pathname.startsWith("/api/") ? NextResponse.json({ error: "请先登录" }, { status: 401 }) : NextResponse.redirect(login);
 }
-export const config = { matcher: ["/((?!login|setup|_next|favicon.ico).*)"] };
+// Auth endpoints must be reachable without an existing cookie (setup/login/logout).
+export const config = { matcher: ["/((?!login|setup|api/auth|_next|favicon.ico).*)"] };

@@ -2,24 +2,31 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword } from "./passwords";
+import { assertSessionConfigured } from "./session-config";
 
 export { hashPassword, verifyPassword } from "./passwords";
 
 export const SESSION_COOKIE = "tms_session";
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
 
-function sessionSecret() {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret || secret.length < 32 || secret.startsWith("replace-")) throw new Error("SESSION_SECRET 未配置为至少 32 位随机值");
-  return secret;
+export class AuthError extends Error {
+  constructor(readonly status: 401 | 403, readonly code: "UNAUTHENTICATED" | "FORBIDDEN") { super(code); }
 }
+export function authErrorResponse(error: unknown) {
+  if (error instanceof AuthError) return Response.json({ error: error.code === "UNAUTHENTICATED" ? "请先登录" : "无管理员权限", code: error.code }, { status: error.status });
+  return Response.json({ error: "身份验证失败", code: "AUTH_ERROR" }, { status: 500 });
+}
+
+export { assertSessionConfigured } from "./session-config";
+function sessionSecret() { return assertSessionConfigured(); }
 function sha256(value: string) { return createHash("sha256").update(value).digest("hex"); }
 function sign(value: string) { return createHmac("sha256", sessionSecret()).update(value).digest("base64url"); }
 
-export async function createSession(userId: string) {
+/** The transaction client is accepted so account and session creation can commit atomically. */
+export async function createSession(userId: string, db: Pick<typeof prisma, "appSession"> = prisma) {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
-  await prisma.appSession.create({ data: { userId, tokenHash: sha256(token), expiresAt } });
+  await db.appSession.create({ data: { userId, tokenHash: sha256(token), expiresAt } });
   const payload = `${token}.${expiresAt.getTime()}`;
   return { value: `${payload}.${sign(payload)}`, expiresAt };
 }
@@ -50,6 +57,10 @@ export async function currentUser() {
 
 export async function requireAdmin() {
   const user = await currentUser();
-  if (!user) throw new Error("请先登录");
+  if (!user) throw new AuthError(401, "UNAUTHENTICATED");
+  if (user.role !== "ADMIN") throw new AuthError(403, "FORBIDDEN");
   return user;
 }
+
+/** Reserved policy hook for future finance APIs; no finance API is enabled in this release. */
+export async function requireFinancialAccess() { return requireAdmin(); }

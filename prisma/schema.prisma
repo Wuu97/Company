@@ -58,6 +58,14 @@ model AppSession {
   @@index([userId, expiresAt])
 }
 
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  failedAt  DateTime @default(now())
+
+  @@index([email, failedAt])
+}
+
 model DataSourceCredential {
   id             String   @id @default(cuid())
   terminal       String   @unique
@@ -154,9 +162,32 @@ model EtbQueryRun {
   retryAfter   DateTime?
   manualHandledAt DateTime?
   createdAt    DateTime          @default(now())
+  unmatchedResults EtbUnmatchedResult[]
 
   @@index([terminal, scheduledFor])
   @@index([status, createdAt])
+}
+
+// Raw rows which the source returned but could not safely attach to a sailing.
+// They are intentionally retained for an operator to review instead of turning a
+// technically successful scrape into an apparently successful business update.
+model EtbUnmatchedResult {
+  id           String      @id @default(cuid())
+  queryRunId   String
+  carrier      String
+  vesselName   String
+  voyage       String
+  etbAt        DateTime
+  sourceUrl    String?
+  screenshotStorageKey String?
+  matchNote    String?
+  resolvedAt   DateTime?
+  resolvedSailingId String?
+  createdAt    DateTime    @default(now())
+  queryRun     EtbQueryRun @relation(fields: [queryRunId], references: [id], onDelete: Cascade)
+
+  @@index([queryRunId, createdAt])
+  @@index([resolvedAt, createdAt])
 }
 
 model SoOrder {
@@ -320,8 +351,19 @@ model TransportLeg {
   transportTaskId String
   sequence        Int
   vehicleNo       String?
+  fleetOwnerName  String?
   driverName      String?
   driverPhone     String?
+  pickupTerminal  String?
+  factoryLocation String?
+  returnTerminal  String?
+  plannedPickupAt DateTime?
+  actualPickupAt  DateTime?
+  actualFactoryArrivedAt DateTime?
+  actualReturnAt  DateTime?
+  trailerSwapNote String?
+  overnightNote   String?
+  exceptionNote   String?
   status          TransportStatus @default(PLANNED)
   note            String?
   transportTask   TransportTask  @relation(fields: [transportTaskId], references: [id], onDelete: Cascade)

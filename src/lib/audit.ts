@@ -9,6 +9,7 @@ const actionLabels: Record<string, string> = {
   TRANSPORT_TASK_CREATED: "创建运输任务", TRANSPORT_TASK_STATUS_CHANGED: "更新运输状态", TRANSPORT_ETB_IMPACT_RESOLVED: "处理运输 ETB 影响", ETB_IMPACTED_DISPATCHED_TRANSPORT: "发现已派车 ETB 影响",
   SAILING_CREATED: "创建船期", ETB_OBSERVED: "录入 ETB 观测", ETB_CHANGE_DETECTED: "发现 ETB 变化", ETB_ADOPTED: "采用 ETB 业务时间", ETB_QUERY_MANUAL_HANDOFF: "ETB 查询转人工处理", ETB_SOURCE_CREDENTIAL_UPDATED: "更新 ETB 数据源账号", ETB_CREDENTIAL_TEST_QUEUED: "发起 ETB 账号验证",
   USER_CREATED: "创建家庭成员账号", USER_ENABLED: "启用家庭成员账号", USER_DISABLED: "停用家庭成员账号", USER_PASSWORD_RESET: "重置成员密码", USER_CHANGED_OWN_PASSWORD: "修改本人密码",
+  SO_PARSE_JOB_COMPLETED: "执行 SO 解析任务",
 };
 
 const entityLabels: Record<string, string> = {

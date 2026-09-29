@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { authErrorResponse, requireAdmin } from "@/lib/auth";
 import { actorFields } from "@/lib/audit";
 
 const schema = z.object({ note: z.string().trim().min(2).max(1000) });
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  let admin; try { admin = await requireAdmin(); } catch { return NextResponse.json({ error: "请先登录" }, { status: 401 }); }
+  let admin; try { admin = await requireAdmin(); } catch (error) { return authErrorResponse(error); }
   const input = schema.safeParse(await request.json());
   if (!input.success) return NextResponse.json({ error: "请说明人工接管结果" }, { status: 400 });
   const { id } = await params;
