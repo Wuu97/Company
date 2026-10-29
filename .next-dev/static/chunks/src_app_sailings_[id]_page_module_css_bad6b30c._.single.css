@@ -1,0 +1,114 @@
+/* [project]/src/app/sailings/[id]/page.module.css [app-client] (css) */
+.page-module__ZfJN-W__summary {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+  display: grid;
+}
+
+.page-module__ZfJN-W__summary > div {
+  gap: 4px;
+  display: grid;
+}
+
+.page-module__ZfJN-W__summary span, .page-module__ZfJN-W__observationHeader span, .page-module__ZfJN-W__observationDetails span {
+  color: #64748b;
+  font-size: var(--type-field-label-size);
+  font-weight: var(--type-field-label-weight);
+  line-height: var(--type-field-label-line-height);
+}
+
+.page-module__ZfJN-W__summary b, .page-module__ZfJN-W__observationDetails b, .page-module__ZfJN-W__observationDetails a {
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-line-height);
+  overflow-wrap: anywhere;
+}
+
+.page-module__ZfJN-W__summary small {
+  color: #64748b;
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-line-height);
+}
+
+@media (max-width: 760px) {
+  .page-module__ZfJN-W__summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+.page-module__ZfJN-W__observationList {
+  gap: 11px;
+  display: grid;
+}
+
+.page-module__ZfJN-W__observationCard {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  gap: 12px;
+  padding: 14px;
+  display: grid;
+}
+
+.page-module__ZfJN-W__pending {
+  background: #fffdf7;
+  border-color: #fcd34d;
+}
+
+.page-module__ZfJN-W__observationHeader, .page-module__ZfJN-W__observationFooter {
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  display: flex;
+}
+
+.page-module__ZfJN-W__observationHeader > div {
+  gap: 4px;
+  display: grid;
+}
+
+.page-module__ZfJN-W__observationHeader b {
+  color: #1e3a8a;
+  font-size: var(--type-card-title-size);
+  font-weight: var(--type-card-title-weight);
+  line-height: var(--type-card-title-line-height);
+}
+
+.page-module__ZfJN-W__observationDetails {
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 10px 0;
+  display: grid;
+}
+
+.page-module__ZfJN-W__observationDetails > div {
+  gap: 5px;
+  display: grid;
+}
+
+.page-module__ZfJN-W__observationFooter {
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-line-height);
+}
+
+.page-module__ZfJN-W__observationFooter > span {
+  color: #64748b;
+}
+
+@media (max-width: 760px) {
+  .page-module__ZfJN-W__observationHeader, .page-module__ZfJN-W__observationFooter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-module__ZfJN-W__observationDetails {
+    grid-template-columns: 1fr;
+  }
+}
+
+/*# sourceMappingURL=src_app_sailings_%5Bid%5D_page_module_css_bad6b30c._.single.css.map*/

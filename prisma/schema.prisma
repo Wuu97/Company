@@ -8,30 +8,32 @@ datasource db {
 }
 
 model Customer {
-  id        String    @id @default(cuid())
-  code      String    @unique
-  name      String
-  active    Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  factories Factory[]
-  orders    SoOrder[]
+  id              String           @id @default(cuid())
+  code            String           @unique
+  name            String
+  active          Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  factories       Factory[]
+  orders          SoOrder[]
+  routePrices     RoutePrice[]
+  settlementBills SettlementBill[]
 }
 
 model AppUser {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  role         AppRole  @default(OPERATOR)
-  passwordHash String
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  sessions     AppSession[]
+  id                String                 @id @default(cuid())
+  email             String                 @unique
+  name              String
+  role              AppRole                @default(OPERATOR)
+  passwordHash      String
+  active            Boolean                @default(true)
+  createdAt         DateTime               @default(now())
+  sessions          AppSession[]
   credentialChanges DataSourceCredential[] @relation("CredentialChangedBy")
-  notifications AppNotification[]
+  notifications     AppNotification[]
 }
 
 model AppNotification {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
   title     String
   body      String
@@ -39,21 +41,21 @@ model AppNotification {
   kind      String
   dedupeKey String?
   readAt    DateTime?
-  createdAt DateTime @default(now())
-  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  user      AppUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, readAt, createdAt])
   @@unique([userId, dedupeKey])
+  @@index([userId, readAt, createdAt])
 }
 
 model AppSession {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  tokenHash String   @unique
+  tokenHash String    @unique
   expiresAt DateTime
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   revokedAt DateTime?
-  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      AppUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
 }
@@ -61,7 +63,7 @@ model AppSession {
 model LoginAttempt {
   id        String   @id @default(cuid())
   email     String
-  sourceKey String
+  sourceKey String?
   failedAt  DateTime @default(now())
 
   @@index([email, failedAt])
@@ -69,17 +71,17 @@ model LoginAttempt {
 }
 
 model DataSourceCredential {
-  id             String   @id @default(cuid())
-  terminal       String   @unique
-  username       String
-  ciphertext     String
-  iv             String
-  authTag        String
-  changedById    String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  changedBy      AppUser  @relation("CredentialChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
-  testRuns       EtbCredentialTestRun[]
+  id          String                 @id @default(cuid())
+  terminal    String                 @unique
+  username    String
+  ciphertext  String
+  iv          String
+  authTag     String
+  changedById String
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  changedBy   AppUser                @relation("CredentialChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
+  testRuns    EtbCredentialTestRun[]
 }
 
 model EtbCredentialTestRun {
@@ -107,150 +109,162 @@ model Factory {
   contactPhone String?
   customer     Customer      @relation(fields: [customerId], references: [id])
   plans        LoadingPlan[]
+  routePrices  RoutePrice[]
 
   @@unique([customerId, name])
 }
 
 model Sailing {
-  id         String    @id @default(cuid())
-  terminal   String
-  carrier    String
-  vesselName String
-  voyage     String
-  loadPort   String?
-  adoptedEtbAt DateTime?
-  adoptedEtbSource String?
+  id                      String               @id @default(cuid())
+  terminal                String
+  carrier                 String
+  vesselName              String
+  voyage                  String
+  loadPort                String?
+  adoptedEtbAt            DateTime?
+  adoptedEtbSource        String?
   adoptedEtbAtConfirmedAt DateTime?
-  pendingEtbAt DateTime?
-  pendingEtbSource String?
-  pendingEtbObservedAt DateTime?
-  etbNeedsReview Boolean @default(false)
-  orders     SoOrder[]
-  observations SailingObservation[]
+  pendingEtbAt            DateTime?
+  pendingEtbSource        String?
+  pendingEtbObservedAt    DateTime?
+  etbNeedsReview          Boolean              @default(false)
+  orders                  SoOrder[]
+  observations            SailingObservation[]
+  queryRuns               EtbQueryRun[]
 
   @@unique([terminal, carrier, vesselName, voyage])
 }
 
 model SailingObservation {
-  id                 String               @id @default(cuid())
-  sailingId          String
-  etbAt              DateTime
-  source             String
-  sourceUrl          String?
+  id                   String               @id @default(cuid())
+  sailingId            String
+  etbAt                DateTime
+  source               String
+  sourceUrl            String?
   screenshotStorageKey String?
-  observedAt         DateTime             @default(now())
-  status             EtbObservationStatus @default(PENDING)
-  reviewedAt         DateTime?
-  reviewNote         String?
-  sailing            Sailing              @relation(fields: [sailingId], references: [id], onDelete: Cascade)
+  observedAt           DateTime             @default(now())
+  status               EtbObservationStatus @default(PENDING)
+  reviewedAt           DateTime?
+  reviewNote           String?
+  sailing              Sailing              @relation(fields: [sailingId], references: [id], onDelete: Cascade)
 
   @@index([sailingId, observedAt])
   @@index([status, observedAt])
 }
 
 model EtbQueryRun {
-  id           String            @id @default(cuid())
-  terminal     String
-  source       String
-  scheduledFor DateTime
-  startedAt    DateTime?
-  finishedAt   DateTime?
-  status       EtbQueryRunStatus @default(PENDING)
-  sessionState EtbSessionState @default(NOT_REQUIRED)
-  resultCount  Int               @default(0)
-  errorMessage String?
-  handoffReason String?
+  id                   String               @id @default(cuid())
+  terminal             String
+  source               String
+  scheduledFor         DateTime
+  startedAt            DateTime?
+  finishedAt           DateTime?
+  status               EtbQueryRunStatus    @default(PENDING)
+  sessionState         EtbSessionState      @default(NOT_REQUIRED)
+  resultCount          Int                  @default(0)
+  errorMessage         String?
+  handoffReason        String?
   screenshotStorageKey String?
-  retryAfter   DateTime?
-  manualHandledAt DateTime?
-  createdAt    DateTime          @default(now())
-  unmatchedResults EtbUnmatchedResult[]
+  retryAfter           DateTime?
+  manualHandledAt      DateTime?
+  targetSailingId      String?
+  batchOffset          Int                  @default(0)
+  createdAt            DateTime             @default(now())
+  targetSailing        Sailing?             @relation(fields: [targetSailingId], references: [id], onDelete: SetNull)
+  unmatchedResults     EtbUnmatchedResult[]
 
   @@index([terminal, scheduledFor])
   @@index([status, createdAt])
+  @@index([status, sessionState, createdAt])
+  @@index([targetSailingId, createdAt])
 }
 
 // Raw rows which the source returned but could not safely attach to a sailing.
 // They are intentionally retained for an operator to review instead of turning a
 // technically successful scrape into an apparently successful business update.
 model EtbUnmatchedResult {
-  id           String      @id @default(cuid())
-  queryRunId   String
-  carrier      String
-  vesselName   String
-  voyage       String
-  etbAt        DateTime
-  sourceUrl    String?
+  id                   String      @id @default(cuid())
+  queryRunId           String
+  carrier              String
+  vesselName           String
+  voyage               String
+  etbAt                DateTime
+  sourceUrl            String?
   screenshotStorageKey String?
-  matchNote    String?
-  resolvedAt   DateTime?
-  resolvedSailingId String?
-  createdAt    DateTime    @default(now())
-  queryRun     EtbQueryRun @relation(fields: [queryRunId], references: [id], onDelete: Cascade)
+  matchNote            String?
+  resolvedAt           DateTime?
+  resolvedSailingId    String?
+  createdAt            DateTime    @default(now())
+  queryRun             EtbQueryRun @relation(fields: [queryRunId], references: [id], onDelete: Cascade)
 
   @@index([queryRunId, createdAt])
   @@index([resolvedAt, createdAt])
 }
 
 model SoOrder {
-  id                  String                 @id @default(cuid())
-  customerId          String?
-  sailingId           String?
-  soNumber            String
-  carrier             String
-  parseStatus         ParseStatus            @default(PENDING)
-  status              OrderStatus            @default(PENDING_REVIEW)
-  createdAt           DateTime               @default(now())
-  siCutoffText        String?
-  siCutoffSource      String?
-  siCutoffOriginalText String?
-  siCutoffEstimatedFromText String?
-  openingText         String?
-  vgmCutoffText       String?
-  portCutoffText      String?
-  etbNeedsReview      Boolean                @default(false)
-  etbObservedAt       DateTime?
-  etbSource           String?
-  etbText             String?
-  customerReference   String?
-  cutoffText          String?
-  dischargePort       String?
-  emptyPickupLocation String?
-  etaText             String?
-  etdText             String?
-  fullReturnLocation  String?
-  loadPort            String?
-  transportMode       String?
-  vesselName          String?
-  voyage              String?
-  cargoItems          CargoItem[]
-  containers          ContainerUnit[]
-  confirmations       CustomerConfirmation[]
-  plans               LoadingPlan[]
-  files               SoFileVersion[]
-  customer            Customer?              @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  sailing             Sailing?               @relation(fields: [sailingId], references: [id])
-  versionChanges      SoVersionChange[]
-  contactTasks        CustomerContactTask[]
+  id                                 String                 @id @default(cuid())
+  customerId                         String?
+  sailingId                          String?
+  soNumber                           String
+  carrier                            String
+  parseStatus                        ParseStatus            @default(PENDING)
+  status                             OrderStatus            @default(PENDING_REVIEW)
+  createdAt                          DateTime               @default(now())
+  siCutoffText                       String?
+  siCutoffSource                     String?
+  siCutoffOriginalText               String?
+  siCutoffEstimatedFromText          String?
+  forwarderSiCutoffText              String?
+  forwarderSiCutoffSource            String?
+  forwarderSiCutoffEstimatedFromText String?
+  openingText                        String?
+  vgmCutoffText                      String?
+  portCutoffText                     String?
+  etbNeedsReview                     Boolean                @default(false)
+  etbObservedAt                      DateTime?
+  etbSource                          String?
+  etbText                            String?
+  customerReference                  String?
+  cutoffText                         String?
+  dischargePort                      String?
+  emptyPickupLocation                String?
+  etaText                            String?
+  etdText                            String?
+  fullReturnLocation                 String?
+  loadPort                           String?
+  transportMode                      String?
+  vesselName                         String?
+  voyage                             String?
+  cargoItems                         CargoItem[]
+  containers                         ContainerUnit[]
+  confirmations                      CustomerConfirmation[]
+  plans                              LoadingPlan[]
+  files                              SoFileVersion[]
+  customer                           Customer?              @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  sailing                            Sailing?               @relation(fields: [sailingId], references: [id])
+  versionChanges                     SoVersionChange[]
+  contactTasks                       CustomerContactTask[]
+  milestones                         OrderMilestone[]
 
   @@index([customerId, carrier, soNumber])
+  @@index([status])
 }
 
 model SoFileVersion {
-  id              String           @id @default(cuid())
-  soOrderId       String?
-  storageKey      String           @unique
-  originalName    String
-  sha256          String           @unique
-  version         Int
-  parseStatus     ParseStatus      @default(PENDING)
+  id                  String           @id @default(cuid())
+  soOrderId           String?
+  storageKey          String           @unique
+  originalName        String
+  sha256              String           @unique
+  version             Int
+  parseStatus         ParseStatus      @default(PENDING)
   processingStartedAt DateTime?
-  processingToken String?
-  rawExtraction   Json?
-  correctedFields Json?
-  createdAt       DateTime         @default(now())
-  soOrder         SoOrder?         @relation(fields: [soOrderId], references: [id], onDelete: Restrict)
-  versionChange   SoVersionChange?
+  processingToken     String?
+  rawExtraction       Json?
+  correctedFields     Json?
+  createdAt           DateTime         @default(now())
+  soOrder             SoOrder?         @relation(fields: [soOrderId], references: [id], onDelete: Restrict)
+  versionChange       SoVersionChange?
 
   @@unique([soOrderId, version])
   @@index([parseStatus, processingStartedAt])
@@ -283,94 +297,429 @@ model SoVersionChange {
 }
 
 model ContainerUnit {
-  id            String            @id @default(cuid())
-  internalCode  String            @unique
-  soOrderId     String
-  containerNo   String?
-  containerType String
-  active        Boolean           @default(true)
-  soOrder       SoOrder           @relation(fields: [soOrderId], references: [id])
-  planItems     LoadingPlanItem[]
+  id              String            @id @default(cuid())
+  internalCode    String            @unique
+  soOrderId       String
+  containerNo     String?
+  containerType   String
+  note            String?
+  loadedAt        DateTime?
+  active          Boolean           @default(true)
+  soOrder         SoOrder           @relation(fields: [soOrderId], references: [id])
+  planItems       LoadingPlanItem[]
+  settlementLines SettlementLine[]
+  settlementLineSources SettlementLineContainer[]
+  billingGroupLinks     TransportBillingGroupContainer[]
 
   @@index([containerNo])
 }
 
 model CustomerConfirmation {
-  id            String             @id @default(cuid())
-  soOrderId     String
-  quantity      Int
-  status        ConfirmationStatus @default(PENDING)
-  confirmedDate DateTime?
+  id                String             @id @default(cuid())
+  soOrderId         String
+  quantity          Int
+  status            ConfirmationStatus @default(PENDING)
+  confirmedDate     DateTime?
   expectedLoadingAt DateTime?
-  note          String?
-  createdAt     DateTime           @default(now())
-  soOrder       SoOrder            @relation(fields: [soOrderId], references: [id])
-  loadingPlans  LoadingPlan[]
+  note              String?
+  createdAt         DateTime           @default(now())
+  soOrder           SoOrder            @relation(fields: [soOrderId], references: [id])
+  loadingPlans      LoadingPlan[]
 }
 
 model LoadingPlan {
-  id             String              @id @default(cuid())
-  soOrderId      String
-  factoryId      String
-  scheduledAt    DateTime
-  status         PlanStatus          @default(DRAFT)
-  replacesPlanId String?
-  reason         String?
+  id                     String                @id @default(cuid())
+  soOrderId              String
+  factoryId              String
+  scheduledAt            DateTime
+  status                 PlanStatus            @default(DRAFT)
+  replacesPlanId         String?
+  reason                 String?
   customerConfirmationId String?
-  createdAt      DateTime            @default(now())
-  factory        Factory             @relation(fields: [factoryId], references: [id])
-  soOrder        SoOrder             @relation(fields: [soOrderId], references: [id])
-  changesFrom    LoadingPlanChange[] @relation("ChangeFrom")
-  changesTo      LoadingPlanChange[] @relation("ChangeTo")
-  items          LoadingPlanItem[]
-  customerConfirmation CustomerConfirmation? @relation(fields: [customerConfirmationId], references: [id])
-  transportTask  TransportTask?
+  createdAt              DateTime              @default(now())
+  factory                Factory               @relation(fields: [factoryId], references: [id])
+  soOrder                SoOrder               @relation(fields: [soOrderId], references: [id])
+  changesFrom            LoadingPlanChange[]   @relation("ChangeFrom")
+  changesTo              LoadingPlanChange[]   @relation("ChangeTo")
+  items                  LoadingPlanItem[]
+  customerConfirmation   CustomerConfirmation? @relation(fields: [customerConfirmationId], references: [id])
+  transportTask          TransportTask?
 
   @@index([soOrderId, status])
 }
 
 model TransportTask {
-  id             String          @id @default(cuid())
-  loadingPlanId  String          @unique
-  status         TransportStatus @default(PLANNED)
-  scheduledAt    DateTime
-  dispatchedAt   DateTime?
-  completedAt    DateTime?
-  primaryCostText String?
-  note           String?
-  etbImpactNeedsReview Boolean @default(false)
-  etbImpactResolvedAt DateTime?
+  id                      String           @id @default(cuid())
+  loadingPlanId           String           @unique
+  status                  TransportStatus  @default(PLANNED)
+  scheduledAt             DateTime
+  dispatchedAt            DateTime?
+  completedAt             DateTime?
+  primaryCostText         String?
+  note                    String?
+  etbImpactNeedsReview    Boolean          @default(false)
+  etbImpactResolvedAt     DateTime?
   etbImpactResolutionNote String?
-  createdAt      DateTime        @default(now())
-  loadingPlan    LoadingPlan     @relation(fields: [loadingPlanId], references: [id])
-  legs           TransportLeg[]
+  createdAt               DateTime         @default(now())
+  loadingPlan             LoadingPlan      @relation(fields: [loadingPlanId], references: [id])
+  legs                    TransportLeg[]
+  costs                   TransportCost[]
+  settlementLines         SettlementLine[]
+  billingGroups           TransportBillingGroup[]
 
   @@index([status, scheduledAt])
+  @@index([etbImpactNeedsReview])
 }
 
 model TransportLeg {
-  id              String          @id @default(cuid())
-  transportTaskId String
-  sequence        Int
-  vehicleNo       String?
-  fleetOwnerName  String?
-  driverName      String?
-  driverPhone     String?
-  pickupTerminal  String?
-  factoryLocation String?
-  returnTerminal  String?
-  plannedPickupAt DateTime?
-  actualPickupAt  DateTime?
+  id                     String           @id @default(cuid())
+  transportTaskId        String
+  sequence               Int
+  vehicleNo              String?
+  fleetOwnerName         String?
+  driverName             String?
+  driverPhone            String?
+  pickupTerminal         String?
+  factoryLocation        String?
+  returnTerminal         String?
+  plannedPickupAt        DateTime?
+  actualPickupAt         DateTime?
   actualFactoryArrivedAt DateTime?
-  actualReturnAt  DateTime?
-  trailerSwapNote String?
-  overnightNote   String?
-  exceptionNote   String?
-  status          TransportStatus @default(PLANNED)
-  note            String?
-  transportTask   TransportTask  @relation(fields: [transportTaskId], references: [id], onDelete: Cascade)
+  actualReturnAt         DateTime?
+  trailerSwapNote        String?
+  overnightNote          String?
+  exceptionNote          String?
+  status                 TransportStatus  @default(PLANNED)
+  note                   String?
+  driverId               String?
+  fleetOwnerId           String?
+  vehicleId              String?
+  routeId                String?
+  settlementCarrierType  SettlementCarrierType @default(UNRESOLVED)
+  transportTask          TransportTask    @relation(fields: [transportTaskId], references: [id], onDelete: Cascade)
+  driver                 Driver?          @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  fleetOwner             FleetOwner?      @relation(fields: [fleetOwnerId], references: [id], onDelete: SetNull)
+  vehicle                Vehicle?         @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  route                  Route?           @relation(fields: [routeId], references: [id], onDelete: SetNull)
+  settlementLines        SettlementLine[]
+  billingGroupLinks      TransportBillingGroupLeg[]
 
   @@unique([transportTaskId, sequence])
+  @@index([driverId])
+  @@index([fleetOwnerId])
+  @@index([vehicleId])
+  @@index([routeId])
+}
+
+model TransportCost {
+  id              String        @id @default(cuid())
+  transportTaskId String
+  category        String
+  amount          Decimal       @db.Decimal(12, 2)
+  currency        String        @default("CNY")
+  vendorName      String?
+  note            String?
+  createdAt       DateTime      @default(now())
+  transportTask   TransportTask @relation(fields: [transportTaskId], references: [id], onDelete: Cascade)
+
+  @@index([transportTaskId, createdAt])
+}
+
+model Driver {
+  id              String           @id @default(cuid())
+  code            String           @unique
+  name            String
+  phone           String?
+  active          Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  legs            TransportLeg[]
+  routePrices     RoutePrice[]
+  settlementBills SettlementBill[]
+}
+
+model FleetOwner {
+  id              String           @id @default(cuid())
+  code            String           @unique
+  name            String
+  phone           String?
+  active          Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  vehicles        Vehicle[]
+  legs            TransportLeg[]
+  routePrices     RoutePrice[]
+  settlementBills SettlementBill[]
+}
+
+model Vehicle {
+  id           String         @id @default(cuid())
+  plateNumber  String         @unique
+  vehicleType  String?
+  fleetOwnerId String?
+  active       Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  fleetOwner   FleetOwner?    @relation(fields: [fleetOwnerId], references: [id], onDelete: SetNull)
+  legs         TransportLeg[]
+  settlementBills SettlementBill[]
+
+  @@index([fleetOwnerId])
+}
+
+model Route {
+  id                       String           @id @default(cuid())
+  code                     String           @unique
+  name                     String
+  origin                   String
+  destination              String
+  viaPoints                String?
+  routeType                RouteType        @default(ROUND_TRIP)
+  standardKilometers       Decimal?         @db.Decimal(12, 2)
+  standardToll             Decimal?         @db.Decimal(14, 2)
+  standardFuel             Decimal?         @db.Decimal(14, 2)
+  applicableVehicleTypes   String[]         @default([])
+  applicableContainerTypes String[]         @default([])
+  active                   Boolean          @default(true)
+  note                     String?
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+  aliases                  RouteAlias[]
+  prices                   RoutePrice[]
+  legs                     TransportLeg[]
+  settlementLines          SettlementLine[]
+
+  @@index([active, name])
+  @@index([origin, destination])
+}
+
+model RouteAlias {
+  id             String           @id @default(cuid())
+  routeId        String?
+  rawText        String
+  normalizedText String
+  status         RouteAliasStatus @default(PENDING)
+  source         String?
+  note           String?
+  createdAt      DateTime         @default(now())
+  confirmedAt    DateTime?
+  route          Route?           @relation(fields: [routeId], references: [id], onDelete: SetNull)
+
+  @@unique([rawText, routeId])
+  @@index([normalizedText, status])
+  @@index([routeId, status])
+}
+
+model RoutePrice {
+  id                       String               @id @default(cuid())
+  billType                 SettlementBillType
+  routeId                  String
+  scope                    RoutePriceScope
+  customerId               String?
+  driverId                 String?
+  fleetOwnerId             String?
+  factoryId                String?
+  billingBases             BillingBasis[]
+  combinations             BillingCombination[] @default([])
+  applicableVehicleTypes   String[]             @default([])
+  applicableContainerTypes String[]             @default([])
+  unitPrice                Decimal              @db.Decimal(14, 2)
+  effectiveFrom            DateTime
+  effectiveTo              DateTime?
+  status                   RoutePriceStatus     @default(DRAFT)
+  note                     String?
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+  confirmedAt              DateTime?
+  route                    Route                @relation(fields: [routeId], references: [id], onDelete: Restrict)
+  customer                 Customer?            @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  driver                   Driver?              @relation(fields: [driverId], references: [id], onDelete: Restrict)
+  fleetOwner               FleetOwner?          @relation(fields: [fleetOwnerId], references: [id], onDelete: Restrict)
+  factory                  Factory?             @relation(fields: [factoryId], references: [id], onDelete: Restrict)
+  fees                     RoutePriceFee[]
+
+  @@index([billType, routeId, status, effectiveFrom, effectiveTo])
+  @@index([customerId, billType, status])
+  @@index([driverId, billType, status])
+  @@index([fleetOwnerId, billType, status])
+  @@index([factoryId, billType, status])
+}
+
+model RoutePriceFee {
+  id                       String     @id @default(cuid())
+  routePriceId             String
+  code                     String
+  label                    String
+  amount                   Decimal    @db.Decimal(14, 2)
+  participatesInSettlement Boolean    @default(false)
+  bearer                   FeeBearer
+  includedInBaseRate       Boolean    @default(false)
+  sortOrder                Int        @default(0)
+  routePrice               RoutePrice @relation(fields: [routePriceId], references: [id], onDelete: Cascade)
+
+  @@unique([routePriceId, code])
+}
+
+model SettlementBill {
+  id                 String                       @id @default(cuid())
+  billNo             String                       @unique
+  billType           SettlementBillType
+  customerId         String?
+  driverId           String?
+  fleetOwnerId       String?
+  vehicleId          String?
+  settlementMonth    String
+  confirmationStatus SettlementConfirmationStatus @default(DRAFT)
+  paymentStatus      SettlementPaymentStatus      @default(UNPAID)
+  totalAmount        Decimal                      @default(0) @db.Decimal(14, 2)
+  confirmedAt        DateTime?
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  customer           Customer?                    @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  driver             Driver?                      @relation(fields: [driverId], references: [id], onDelete: Restrict)
+  fleetOwner         FleetOwner?                  @relation(fields: [fleetOwnerId], references: [id], onDelete: Restrict)
+  vehicle            Vehicle?                     @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  lines              SettlementLine[]
+  payments           SettlementPayment[]
+
+  @@index([billType, settlementMonth, confirmationStatus])
+  @@index([vehicleId, billType])
+}
+
+model SettlementLine {
+  id                       String                        @id @default(cuid())
+  billId                   String
+  billType                 SettlementBillType
+  routeId                  String?
+  transportTaskId          String?
+  transportLegId           String?
+  containerUnitId          String?
+  transportBillingGroupId  String?
+  billingBasis             BillingBasis
+  combination              BillingCombination            @default(SINGLE)
+  businessDate             DateTime
+  completionMonth          String
+  businessAttributionMonth String
+  settlementMonth          String
+  quantity                 Decimal                       @db.Decimal(12, 2)
+  unitPriceSnapshot        Decimal                       @db.Decimal(14, 2)
+  amountSnapshot           Decimal                       @db.Decimal(14, 2)
+  priceSnapshot            Json
+  settlementUnitKey        String
+  createdAt                DateTime                      @default(now())
+  bill                     SettlementBill                @relation(fields: [billId], references: [id], onDelete: Restrict)
+  route                    Route?                        @relation(fields: [routeId], references: [id], onDelete: SetNull)
+  transportTask            TransportTask?                @relation(fields: [transportTaskId], references: [id], onDelete: SetNull)
+  transportLeg             TransportLeg?                 @relation(fields: [transportLegId], references: [id], onDelete: SetNull)
+  containerUnit            ContainerUnit?                @relation(fields: [containerUnitId], references: [id], onDelete: SetNull)
+  transportBillingGroup    TransportBillingGroup?        @relation(fields: [transportBillingGroupId], references: [id], onDelete: SetNull)
+  unitClaim                SettlementUnitClaim?
+  adjustments              SettlementAdjustment[]
+  paymentAllocations       SettlementPaymentAllocation[]
+  containerSources         SettlementLineContainer[]
+
+  @@index([billId, businessAttributionMonth])
+  @@index([transportTaskId])
+  @@index([transportLegId])
+  @@index([containerUnitId])
+  @@index([transportBillingGroupId])
+}
+
+model TransportBillingGroup {
+  id String @id @default(cuid())
+  transportTaskId String
+  combinationType TransportBillingGroupType @default(UNRESOLVED)
+  confirmedAt DateTime?
+  note String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  transportTask TransportTask @relation(fields:[transportTaskId], references:[id], onDelete:Cascade)
+  settlementLines SettlementLine[]
+  legs TransportBillingGroupLeg[]
+  containers TransportBillingGroupContainer[]
+  @@index([transportTaskId, confirmedAt])
+}
+
+model TransportBillingGroupLeg {
+  id String @id @default(cuid())
+  transportBillingGroupId String
+  transportLegId String @unique
+  transportBillingGroup TransportBillingGroup @relation(fields:[transportBillingGroupId], references:[id], onDelete:Cascade)
+  transportLeg TransportLeg @relation(fields:[transportLegId], references:[id], onDelete:Restrict)
+  @@unique([transportBillingGroupId, transportLegId])
+}
+
+model TransportBillingGroupContainer {
+  id String @id @default(cuid())
+  transportBillingGroupId String
+  containerUnitId String
+  transportBillingGroup TransportBillingGroup @relation(fields:[transportBillingGroupId], references:[id], onDelete:Cascade)
+  containerUnit ContainerUnit @relation(fields:[containerUnitId], references:[id], onDelete:Restrict)
+  @@unique([transportBillingGroupId, containerUnitId])
+  @@index([containerUnitId])
+}
+
+// A line may be priced per trip/leg/combination while still retaining every
+// container that contributed to that settlement unit. The legacy nullable
+// containerUnitId remains for gradual migration of pre-existing line data.
+model SettlementLineContainer {
+  id               String         @id @default(cuid())
+  settlementLineId String
+  containerUnitId  String
+  role             String?
+  createdAt        DateTime       @default(now())
+  settlementLine   SettlementLine @relation(fields: [settlementLineId], references: [id], onDelete: Restrict)
+  containerUnit    ContainerUnit  @relation(fields: [containerUnitId], references: [id], onDelete: Restrict)
+
+  @@unique([settlementLineId, containerUnitId])
+  @@index([containerUnitId])
+}
+
+model SettlementUnitClaim {
+  id                  String             @id @default(cuid())
+  settlementUnitKey   String
+  billType            SettlementBillType
+  settlementObjectKey String
+  lineId              String             @unique
+  releasedAt          DateTime?
+  releaseReason       String?
+  createdAt           DateTime           @default(now())
+  line                SettlementLine     @relation(fields: [lineId], references: [id], onDelete: Restrict)
+
+  @@index([settlementUnitKey, releasedAt])
+}
+
+model SettlementAdjustment {
+  id               String         @id @default(cuid())
+  settlementLineId String
+  adjustmentType   String
+  beforeSnapshot   Json
+  afterSnapshot    Json
+  reason           String
+  createdAt        DateTime       @default(now())
+  settlementLine   SettlementLine @relation(fields: [settlementLineId], references: [id], onDelete: Restrict)
+}
+
+model SettlementPayment {
+  id          String                        @id @default(cuid())
+  billId      String
+  amount      Decimal                       @db.Decimal(14, 2)
+  paidAt      DateTime
+  referenceNo String?
+  note        String?
+  reversedAt  DateTime?
+  createdAt   DateTime                      @default(now())
+  bill        SettlementBill                @relation(fields: [billId], references: [id], onDelete: Restrict)
+  allocations SettlementPaymentAllocation[]
+}
+
+model SettlementPaymentAllocation {
+  id        String            @id @default(cuid())
+  paymentId String
+  lineId    String
+  amount    Decimal           @db.Decimal(14, 2)
+  createdAt DateTime          @default(now())
+  payment   SettlementPayment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  line      SettlementLine    @relation(fields: [lineId], references: [id], onDelete: Restrict)
+
+  @@unique([paymentId, lineId])
 }
 
 model LoadingPlanChange {
@@ -397,16 +746,18 @@ model LoadingPlanItem {
 }
 
 model OperationLog {
-  id         String   @id @default(cuid())
-  action     String
-  entityType String
-  entityId   String
-  before     Json?
-  after      Json?
-  createdAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  action      String
+  entityType  String
+  entityId    String
+  before      Json?
+  after       Json?
+  createdAt   DateTime @default(now())
   actorUserId String?
   actorName   String?
   actorRole   AppRole?
+
+  @@index([actorUserId, createdAt])
 }
 
 model CustomerContactTask {
@@ -421,6 +772,20 @@ model CustomerContactTask {
 
   @@unique([soOrderId, dueAt])
   @@index([status, dueAt])
+}
+
+model OrderMilestone {
+  id          String          @id @default(cuid())
+  soOrderId   String
+  type        String
+  status      MilestoneStatus @default(PENDING)
+  note        String?
+  completedAt DateTime?
+  updatedAt   DateTime        @updatedAt
+  soOrder     SoOrder         @relation(fields: [soOrderId], references: [id], onDelete: Cascade)
+
+  @@unique([soOrderId, type])
+  @@index([status, updatedAt])
 }
 
 enum ParseStatus {
@@ -483,10 +848,30 @@ enum TransportStatus {
   CANCELLED
 }
 
+enum SettlementCarrierType {
+  OWN_FLEET
+  PARTNER_MONTHLY
+  TEMP_CASH
+  UNRESOLVED
+}
+
+enum TransportBillingGroupType {
+  SINGLE
+  DOUBLE_TRAILER
+  SHARED_TRAILER
+  UNRESOLVED
+}
+
 enum ContactTaskStatus {
   OPEN
   COMPLETED
   CANCELLED
+}
+
+enum MilestoneStatus {
+  PENDING
+  COMPLETED
+  NOT_REQUIRED
 }
 
 enum PlanStatus {
@@ -503,4 +888,71 @@ enum ConfirmationStatus {
   CONFIRMED
   DEFERRED
   CANCELLED
+}
+
+enum RouteType {
+  ONE_WAY
+  ROUND_TRIP
+  MULTI_LEG
+}
+
+enum RouteAliasStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+}
+
+enum RoutePriceScope {
+  OBJECT
+  GENERAL
+}
+
+enum RoutePriceStatus {
+  DRAFT
+  CONFIRMED
+  DISABLED
+}
+
+enum SettlementBillType {
+  DRIVER
+  PARTNER
+  TEMP_VEHICLE
+  CUSTOMER
+}
+
+enum BillingBasis {
+  CONTAINER
+  TRIP
+  LEG
+  COMBINATION
+  ADHOC
+}
+
+enum BillingCombination {
+  SINGLE
+  DOUBLE_TRAILER
+  SHARED_TRAILER
+}
+
+enum FeeBearer {
+  COMPANY
+  DRIVER
+  PARTNER
+  CUSTOMER
+  THIRD_PARTY
+}
+
+enum SettlementConfirmationStatus {
+  DRAFT
+  PENDING_CONFIRMATION
+  CONFIRMED
+  ADJUSTED
+  VOIDED
+}
+
+enum SettlementPaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+  REVERSED
 }

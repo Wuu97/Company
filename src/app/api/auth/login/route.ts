@@ -17,12 +17,13 @@ export async function POST(request: Request) {
     assertSessionConfigured();
     const result = await prisma.$transaction(async tx => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${email}))`;
+      if (sourceKey) await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`login-source:${sourceKey}`}))`;
       const [failures, sourceFailures, user] = await Promise.all([
         tx.loginAttempt.count({ where: { email, failedAt: { gte: since } } }),
-        tx.loginAttempt.count({ where: { sourceKey, failedAt: { gte: since } } }),
+        sourceKey ? tx.loginAttempt.count({ where: { sourceKey, failedAt: { gte: since } } }) : Promise.resolve(0),
         tx.appUser.findUnique({ where: { email } }),
       ]);
-      if (isLoginBlocked(failures) || sourceFailures >= MAX_SOURCE_LOGIN_FAILURES) return { blocked: true as const };
+      if (isLoginBlocked(failures) || (sourceKey && sourceFailures >= MAX_SOURCE_LOGIN_FAILURES)) return { blocked: true as const };
       if (!user || !user.active || !await verifyPassword(input.data.password, user.passwordHash)) { await tx.loginAttempt.create({ data: { email, sourceKey } }); return { invalid: true as const }; }
       const session = await createSession(user.id, tx);
       await tx.loginAttempt.deleteMany({ where: { email } });

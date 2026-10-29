@@ -1,4 +1,7 @@
 "use client";
-import {useState} from "react";
-import {useRouter} from "next/navigation";
-export function DeleteOrderButton({orderId}:{orderId:string}){const [busy,setBusy]=useState(false);const [error,setError]=useState("");const router=useRouter();async function remove(){if(!window.confirm("确定删除这个 SO 吗？删除后不可恢复。"))return;setBusy(true);setError("");const r=await fetch(`/api/orders/${orderId}`,{method:"DELETE"});if(r.ok){router.refresh();return}const d=await r.json().catch(()=>({}));setError(d.error||"删除失败");setBusy(false)}return <span><button type="button" className="danger-button small-button" onClick={remove} disabled={busy}>{busy?"删除中…":"删除"}</button>{error&&<span className="delete-error">{error}</span>}</span>}
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { userFeedback } from "@/lib/user-feedback";
+import { Button } from "@/components/ui/button";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+export function DeleteOrderButton({ orderId, returnToOrders = false, size = "default", className }: { orderId: string; returnToOrders?: boolean; size?: "default" | "small"; className?: string }) { const [confirming, setConfirming] = useState(false); const [message, setMessage] = useState(""); const [busy, setBusy] = useState(false); const router = useRouter(); async function remove() { if (busy) return; setBusy(true); setMessage(""); try { const response = await fetch(`/api/orders/${orderId}`, { method: "DELETE" }); if (response.ok) { if (returnToOrders) router.push("/orders"); else router.refresh(); return; } const result = await response.json().catch(() => null) as { error?: string } | null; setMessage(result?.error || `删除失败（HTTP ${response.status}），请稍后重试。`); } catch { setMessage(userFeedback.network); } finally { setBusy(false); } } return <><Button type="button" variant="danger" size={size} className={className} onClick={() => setConfirming(true)}>删除 SO</Button>{confirming && <DeleteConfirmDialog title="确认删除此 SO？" message={message} busy={busy} onClose={() => setConfirming(false)} onConfirm={remove}><p>将删除该订单及其上传文件。若已有后续业务记录，系统会阻止删除。</p></DeleteConfirmDialog>}</>; }

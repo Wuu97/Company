@@ -1,5 +1,35 @@
 import "./styles.css";
+import businessStyles from "@/components/business.module.css";
 import { currentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { LogoutButton } from "@/components/logout-button";
-export default async function Layout({children}:{children:React.ReactNode}){const user=await currentUser();const unread=user?await prisma.appNotification.count({where:{userId:user.id,readAt:null}}):0;return <html lang="zh-CN"><body><aside><h1>运柜管理</h1>{user&&<p className="signed-in">{user.name} · {user.role==="ADMIN"?"负责人":"成员"}</p>}<a href="/">工作台</a><a href="/alerts">业务预警</a><a href="/notifications">通知中心{unread?` (${unread})`:""}</a><a href="/orders">SO 订单</a><a href="/sailings">船期管理</a><a href="/etb-runs">ETB 查询任务</a><a href="/contact-tasks">客户联系待办</a><a href="/containers">柜子管理</a><a href="/customers">客户与工厂</a><a href="/plans">装柜计划</a><a href="/transport">运输任务</a><a href="/logs">操作日志</a>{user?<><a href="/profile">个人账户</a>{user.role==="ADMIN"&&<a href="/settings">系统设置 / ETB 平台账号</a>}<LogoutButton/></>:<a href="/login">登录</a>}</aside><main>{children}</main></body></html>}
+import { SidebarNav } from "@/components/sidebar-nav";
+import styles from "./layout.module.css";
+
+export default async function Layout({ children }: { children: React.ReactNode }) {
+  const user = await currentUser();
+  const [unread, contactTasks, etbHandoffs, transportImpacts] = user ? await Promise.all([
+    prisma.appNotification.count({ where: { userId: user.id, readAt: null } }),
+    prisma.customerContactTask.count({ where: { status: "OPEN" } }),
+    prisma.etbQueryRun.count({ where: { status: "AWAITING_MANUAL", manualHandledAt: null } }),
+    prisma.transportTask.count({ where: { etbImpactNeedsReview: true } }),
+  ]) : [0, 0, 0, 0];
+  const items = [
+    { group: "工作台", href: "/", label: "工作台" },
+    { group: "工作台", href: "/notifications", label: "通知中心", count: unread },
+    { group: "订单与计划", href: "/orders", label: "SO 订单" },
+    { group: "订单与计划", href: "/containers", label: "柜子管理" },
+    { group: "订单与计划", href: "/plans", label: "装柜与运输", count: transportImpacts },
+    { group: "船期", href: "/sailings", label: "船期管理" },
+    { group: "船期", href: "/etb-runs", label: "船期更新记录", count: etbHandoffs },
+    { group: "客户协同", href: "/contact-tasks", label: "客户联系待办", count: contactTasks },
+    { group: "业务档案", href: "/customers", label: "客户与工厂" },
+    { group: "业务档案", href: "/drivers", label: "司机档案" },
+    { group: "业务档案", href: "/fleet-owners", label: "合作车资料" },
+    { group: "业务档案", href: "/temporary-vehicles", label: "临时车资料" },
+    ...(user?.role === "ADMIN" ? [{ group: "财务结算", href: "/finance/bills", label: "账单管理" }, { group: "财务结算", href: "/finance/routes", label: "路线费用管理" }] : []),
+    { group: "系统与账户", href: "/logs", label: "操作日志" },
+    ...(user ? [{ group: "系统与账户", href: "/profile", label: "个人账户" }, ...(user.role === "ADMIN" ? [{ group: "系统与账户", href: "/settings", label: "系统设置" }] : [])] : [{ group: "系统与账户", href: "/login", label: "登录" }]),
+  ];
+  return <html lang="zh-CN"><body className={user ? undefined : "unauthenticated"}>{user && <aside><h1>运柜管理</h1><p className={businessStyles["signed-in"]}>{user.name} · {user.role === "ADMIN" ? "负责人" : "成员"}</p><SidebarNav items={items}/><LogoutButton/></aside>}<main className={styles.main}><div className={styles.content}>{children}</div></main></body></html>;
+}

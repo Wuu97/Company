@@ -1,0 +1,21 @@
+/* [project]/src/components/ui/file-upload-trigger.module.css [app-client] (css) */
+.file-upload-trigger-module__TQjcwG__trigger {
+  position: relative;
+}
+
+.file-upload-trigger-module__TQjcwG__busy {
+  opacity: .65;
+  cursor: not-allowed;
+}
+
+.file-upload-trigger-module__TQjcwG__trigger input {
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  overflow: hidden;
+}
+
+/*# sourceMappingURL=src_components_ui_file-upload-trigger_module_css_bad6b30c._.single.css.map*/

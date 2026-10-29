@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/components/auth-form.module.css"],"sourcesContent":[".form{display:grid;gap:14px}.form label{display:grid;gap:6px;color:#334155;font-size:14px;font-weight:600}.form input{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-size:16px}.form button{margin-top:4px}\n"],"names":[],"mappings":"AAAA;;;;;AAA4B;;;;;;;;AAA8E;;;;;;;;AAA8F"}}]
+}

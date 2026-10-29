@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/components/plan-adjust-form.module.css"],"sourcesContent":[".form summary{cursor:pointer;color:#1d4ed8;font-size:14px;font-weight:700}.form[open] summary{margin-bottom:10px}.form form{display:grid;gap:9px}.form label{display:grid;gap:5px;color:#334155;font-size:13px;font-weight:650}.form input{width:100%}.form button{justify-self:start}\n"],"names":[],"mappings":"AAAA;;;;;;;AAA0E;;;;AAAuC;;;;;AAAgC;;;;;;;;AAA8E;;;;AAAuB"}}]
+}

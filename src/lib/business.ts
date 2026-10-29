@@ -3,5 +3,6 @@ export function validatePlanAssignment(activePlanIds:string[]){if(activePlanIds.
 export function nextInternalContainerCode(orderId:string,index:number){return `IC-${orderId.slice(-6).toUpperCase()}-${String(index).padStart(3,"0")}`}
 export const orderStatuses=["PENDING_REVIEW","CONFIRMED","IN_PROGRESS","COMPLETED","CANCELLED"] as const;
 export type OrderStatus=(typeof orderStatuses)[number];
-const allowedOrderTransitions:Record<OrderStatus,OrderStatus[]>={PENDING_REVIEW:["CONFIRMED","CANCELLED"],CONFIRMED:["IN_PROGRESS","CANCELLED"],IN_PROGRESS:["COMPLETED","CANCELLED"],COMPLETED:[],CANCELLED:[]};
+const allowedOrderTransitions:Record<OrderStatus,OrderStatus[]>={PENDING_REVIEW:["CONFIRMED","CANCELLED"],CONFIRMED:["PENDING_REVIEW","IN_PROGRESS","CANCELLED"],IN_PROGRESS:["COMPLETED","CANCELLED"],COMPLETED:["CANCELLED"],CANCELLED:[]};
+export function allowedOrderStatusTransitions(status:OrderStatus){return [status,...allowedOrderTransitions[status]]}
 export function validateOrderStatusTransition(from:OrderStatus,to:OrderStatus){if(from===to)return;if(!allowedOrderTransitions[from].includes(to))throw new Error(`订单状态不能从 ${from} 变更为 ${to}`)}

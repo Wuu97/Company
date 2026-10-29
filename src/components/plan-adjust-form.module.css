@@ -1,0 +1,1 @@
+.form summary{cursor:pointer;color:#1d4ed8;font-size:14px;font-weight:700}.form[open] summary{margin-bottom:10px}.form form{display:grid;gap:9px}.form label{display:grid;gap:5px;color:#334155;font-size:13px;font-weight:650}.form input{width:100%}.form button{justify-self:start}

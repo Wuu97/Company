@@ -8,10 +8,11 @@ const resultSchema = z.object({
   carrier: z.string().trim().min(1).max(120),
   vesselName: z.string().trim().min(1).max(160),
   voyage: z.string().trim().min(1).max(100),
-  etbAt: z.coerce.date(),
+  etbAt: z.coerce.date().optional(),
+  portCutoffText: z.string().trim().min(1).max(100).optional(),
   sourceUrl: z.string().url().max(2000).optional(),
   screenshotStorageKey: z.string().trim().min(1).max(500).optional(),
-});
+}).refine(result => Boolean(result.etbAt || result.portCutoffText), { message: "结果需包含 ETB 或截关时间" });
 const schema = z.object({ source: z.string().trim().min(1).max(100), results: z.array(resultSchema).max(500) });
 
 function workerAuthorized(request: Request) {

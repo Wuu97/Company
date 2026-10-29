@@ -14,17 +14,16 @@ export type CreateLoadingPlanInput = {
 
 export type AdjustContainersInput = {
   orderId: string;
-  containers: Array<{ containerType: string; quantity: number }>;
-  reason: string;
+  containers: Array<{ id?: string; containerType: string; note?: string }>;
   actor?: AuditActor;
 };
 
-export async function createContainer(orderId:string, containerType:string, containerNo?:string, actor?:AuditActor) {
+export async function createContainer(orderId:string, containerType:string, actor?:AuditActor) {
   return prisma.$transaction(async tx => {
     await tx.$queryRaw`SELECT id FROM "SoOrder" WHERE id=${orderId} FOR UPDATE`;
     const count=await tx.containerUnit.count({where:{soOrderId:orderId}});
-    const container=await tx.containerUnit.create({data:{soOrderId:orderId,containerType,containerNo:containerNo||null,internalCode:nextInternalContainerCode(orderId,count+1)}});
-    await tx.operationLog.create({data:{action:"CONTAINER_CREATED",entityType:"ContainerUnit",entityId:container.id,...actorFields(actor),after:{soOrderId:orderId,containerType,containerNo:containerNo||null,internalCode:container.internalCode}}});
+    const container=await tx.containerUnit.create({data:{soOrderId:orderId,containerType,internalCode:nextInternalContainerCode(orderId,count+1)}});
+    await tx.operationLog.create({data:{action:"CONTAINER_CREATED",entityType:"ContainerUnit",entityId:container.id,...actorFields(actor),after:{soOrderId:orderId,containerType,internalCode:container.internalCode}}});
     return container;
   });
 }
@@ -120,33 +119,28 @@ export async function adjustContainers(input: AdjustContainersInput) {
     ]);
     if (activePlanItems) throw new Error("存在生效装柜计划；请先调整或取消计划后再调整柜量。");
 
-    const desiredTotal = input.containers.reduce((total, item) => total + item.quantity, 0);
+    const desiredTotal = input.containers.length;
     if (desiredTotal < (confirmations._sum.quantity ?? 0)) throw new Error("调整后的柜量不能少于已确认柜量。");
 
-    const desired = input.containers.reduce((totals, item) => {
-      totals.set(item.containerType, (totals.get(item.containerType) ?? 0) + item.quantity);
-      return totals;
-    }, new Map<string, number>());
-    const keepIds = new Set<string>();
-    for (const [containerType, quantity] of desired) {
-      current.filter(container => container.containerType === containerType).slice(0, quantity).forEach(container => keepIds.add(container.id));
-    }
+    const existingIds = new Set(current.map(container => container.id));
+    const submittedIds = input.containers.flatMap(container => container.id ? [container.id] : []);
+    if (submittedIds.some(id => !existingIds.has(id))) throw new Error("存在不属于当前 SO 的内部柜位");
+    const keepIds = new Set(submittedIds);
     const toDeactivate = current.filter(container => !keepIds.has(container.id));
-    const additions = [...desired].flatMap(([containerType, quantity]) => Array.from(
-      { length: Math.max(0, quantity - current.filter(container => container.containerType === containerType).length) },
-      () => containerType,
-    ));
     if (toDeactivate.some(container => container.containerNo)) throw new Error("带实际柜号的内部柜子不能自动移除，请人工处理。");
 
     if (toDeactivate.length) await tx.containerUnit.updateMany({ where: { id: { in: toDeactivate.map(container => container.id) } }, data: { active: false } });
+    for (const container of input.containers.filter((item): item is { id: string; containerType: string; note?: string } => Boolean(item.id))) {
+      await tx.containerUnit.update({ where: { id: container.id }, data: { containerType: container.containerType, note: container.note ?? null } });
+    }
+    const additions = input.containers.filter(container => !container.id);
     if (additions.length) {
       const total = await tx.containerUnit.count({ where: { soOrderId: input.orderId } });
-      await tx.containerUnit.createMany({ data: additions.map((containerType, index) => ({
-        soOrderId: input.orderId, containerType,
-        internalCode: nextInternalContainerCode(input.orderId, total + index + 1),
-      })) });
+      for (const [index, container] of additions.entries()) {
+        await tx.containerUnit.create({ data: { soOrderId: input.orderId, containerType: container.containerType, note: container.note ?? null, internalCode: nextInternalContainerCode(input.orderId, total + index + 1) } });
+      }
     }
     await tx.operationLog.create({ data: { action: "SO_CONTAINERS_ADJUSTED", entityType: "SoOrder", entityId: order.id, ...actorFields(input.actor), after: input } });
-    return { added: additions.length, removed: toDeactivate.length };
+    return { added: additions.length, removed: toDeactivate.length, updated: submittedIds.length };
   });
 }

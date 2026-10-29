@@ -1,0 +1,94 @@
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  margin: 16px 0;
+  padding: 16px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .03);
+}
+
+.upload {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.upload h3 {
+  margin: 0;
+}
+
+.upload > div:first-of-type {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.filter {
+  display: grid;
+  grid-template-columns: 280px 180px 180px 230px max-content;
+  align-items: end;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.filter label {
+  gap: 4px;
+  min-width: 0;
+  font-size: var(--type-field-label-size);
+  font-weight: var(--type-field-label-weight);
+  line-height: var(--type-field-label-line-height);
+}
+
+.filter input,
+.filter select {
+  min-width: 0;
+}
+
+.filter > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  white-space: nowrap;
+  justify-content: flex-start;
+}
+
+@media (min-width: 761px) and (max-width: 1200px) {
+  .filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .toolbar {
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .filter {
+    grid-template-columns: 1fr;
+  }
+
+  .filter > div {
+    grid-column: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    white-space: normal;
+  }
+}

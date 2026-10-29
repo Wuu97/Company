@@ -15,4 +15,7 @@ describe("ETB result evidence", () => {
     expect(invalidEtbEvidence("盐田", [{ ...result, screenshotStorageKey: "etb-credential-tests/login.png" }])).toBeTruthy();
     expect(invalidEtbEvidence("盐田", [{ ...result, sourceUrl: "https://example.com" }])).toBeTruthy();
   });
+  it("allows the authenticated Snakekou query application host", () => {
+    expect(invalidEtbEvidence("蛇口", [{ carrier: "A", vesselName: "V", voyage: "001", etbAt: new Date(), sourceUrl: "https://wk-eport.cmp1872.com/scct-query/VesselSchedule", screenshotStorageKey: "etb/shekou/result.png" }])).toBeUndefined();
+  });
 });

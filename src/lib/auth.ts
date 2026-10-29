@@ -2,12 +2,11 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword } from "./passwords";
-import { assertSessionConfigured } from "./session-config";
+import { assertSessionConfigured, SESSION_DURATION_MS, SESSION_RENEWAL_THRESHOLD_MS } from "./session-config";
 
 export { hashPassword, verifyPassword } from "./passwords";
 
 export const SESSION_COOKIE = "tms_session";
-const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
 
 export class AuthError extends Error {
   constructor(readonly status: 401 | 403, readonly code: "UNAUTHENTICATED" | "FORBIDDEN") { super(code); }
@@ -52,6 +51,9 @@ export async function currentUser() {
   if (!session) return null;
   const record = await prisma.appSession.findUnique({ where: { tokenHash: sha256(session.token) }, include: { user: true } });
   if (!record || record.revokedAt || record.expiresAt <= new Date() || !record.user.active) return null;
+  if (record.expiresAt.getTime() <= Date.now() + SESSION_RENEWAL_THRESHOLD_MS) {
+    await prisma.appSession.update({ where: { id: record.id }, data: { expiresAt: new Date(Date.now() + SESSION_DURATION_MS) } });
+  }
   return record.user;
 }
 

@@ -3,6 +3,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { currentUser } from "@/lib/auth";
 import { actorFields } from "@/lib/audit";
+import { etbAutoLinkEligibility } from "@/lib/etb-sailing-link";
+import { normalizeCarrierName } from "@/lib/carrier-name";
 
 const schema = z.object({
   customerId: z.string().min(1).optional(),
@@ -12,7 +14,6 @@ const schema = z.object({
   containers: z.array(z.object({
     containerType: z.string().min(1),
     quantity: z.number().int().min(1).default(1),
-    containerNo: z.string().optional(),
   })),
 });
 
@@ -55,7 +56,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         data: {
           customerId: input.data.customerId || before.customerId,
           soNumber: input.data.soNumber,
-          carrier: input.data.carrier,
+          carrier: normalizeCarrierName(input.data.carrier),
           siCutoffText: manualSiCutoff || before.siCutoffText,
           siCutoffSource: manualSiCutoff ? "MANUAL" : before.siCutoffSource,
           siCutoffEstimatedFromText: manualSiCutoff ? null : before.siCutoffEstimatedFromText,
@@ -67,7 +68,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const historicalCount = await tx.containerUnit.count({ where: { soOrderId: id } });
         const rows = input.data.containers.flatMap(item => Array.from(
           { length: item.quantity },
-          () => ({ soOrderId: id, containerType: item.containerType, containerNo: item.containerNo || null }),
+          () => ({ soOrderId: id, containerType: item.containerType }),
         ));
         await tx.containerUnit.createMany({
           data: rows.map((row, index) => ({
@@ -75,6 +76,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             internalCode: `IC-${id.slice(-6).toUpperCase()}-${String(historicalCount + index + 1).padStart(3, "0")}`,
           })),
         });
+      }
+
+      let result = updated;
+      // Human review is the business confirmation. A parser's earlier uncertainty
+      // must not prevent a complete, reviewed SO from being included in its sailing.
+      const eligibility = etbAutoLinkEligibility({ ...updated, parseReview: { needsReview: false } });
+      if (eligibility.eligible) {
+        const sailing = await tx.sailing.upsert({
+          where: { terminal_carrier_vesselName_voyage: { terminal: eligibility.terminal, carrier: updated.carrier, vesselName: updated.vesselName!, voyage: updated.voyage! } },
+          create: { terminal: eligibility.terminal, carrier: updated.carrier, vesselName: updated.vesselName!, voyage: updated.voyage!, loadPort: updated.loadPort! },
+          update: { loadPort: updated.loadPort! },
+        });
+        if (before.sailingId !== sailing.id) {
+          result = await tx.soOrder.update({ where: { id }, data: { sailingId: sailing.id, etbText: null, etbSource: null, etbObservedAt: null, etbNeedsReview: false } });
+          await tx.operationLog.create({ data: { action: "SO_ETB_SAILING_AUTO_LINKED", entityType: "SoOrder", entityId: id, ...actorFields(actor), before: { sailingId: before.sailingId }, after: { sailingId: sailing.id, terminal: eligibility.terminal, source: "VERIFIED_SO" } } });
+        }
+      } else if (before.sailingId) {
+        result = await tx.soOrder.update({ where: { id }, data: { sailingId: null, etbText: null, etbSource: null, etbObservedAt: null, etbNeedsReview: false } });
+        await tx.operationLog.create({ data: { action: "SO_SAILING_UNLINKED", entityType: "SoOrder", entityId: id, ...actorFields(actor), before: { sailingId: before.sailingId }, after: { source: "VERIFIED_SO_MISSING_SAILING_DATA" } } });
       }
 
       await tx.operationLog.create({
@@ -87,7 +107,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           after: input.data,
         },
       });
-      return updated;
+      return result;
     });
     return NextResponse.json(order);
   } catch (error) {

@@ -1,3 +1,5 @@
+import { normalizeCarrierName } from "./carrier-name";
+
 export type EtbMatchIdentity = { carrier: string; vesselName: string; voyage: string };
 
 function normalized(value: string) {
@@ -5,7 +7,7 @@ function normalized(value: string) {
 }
 
 export function sameEtbIdentity(left: EtbMatchIdentity, right: EtbMatchIdentity) {
-  return normalized(left.carrier) === normalized(right.carrier)
+  return normalizeCarrierName(left.carrier) === normalizeCarrierName(right.carrier)
     && normalized(left.vesselName) === normalized(right.vesselName)
     && normalized(left.voyage) === normalized(right.voyage);
 }

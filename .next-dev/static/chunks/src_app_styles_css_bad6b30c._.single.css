@@ -1,0 +1,131 @@
+/* [project]/src/app/styles.css [app-client] (css) */
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --type-page-title-size: 24px;
+  --type-page-title-weight: 600;
+  --type-page-title-line-height: 32px;
+  --type-section-title-size: 18px;
+  --type-section-title-weight: 600;
+  --type-section-title-line-height: 26px;
+  --type-card-title-size: 16px;
+  --type-card-title-weight: 600;
+  --type-card-title-line-height: 24px;
+  --type-body-size: 14px;
+  --type-body-weight: 400;
+  --type-body-line-height: 22px;
+  --type-field-label-size: 13px;
+  --type-field-label-weight: 500;
+  --type-field-label-line-height: 20px;
+  --type-control-size: 14px;
+  --type-control-weight: 400;
+  --type-control-line-height: 20px;
+  --type-control-compact-size: 13px;
+  --type-control-compact-weight: 400;
+  --type-control-compact-line-height: 20px;
+  --type-button-size: 14px;
+  --type-button-weight: 500;
+  --type-button-line-height: 20px;
+  --type-status-size: 12px;
+  --type-status-weight: 500;
+  --type-status-line-height: 18px;
+  --type-caption-size: 12px;
+  --type-caption-weight: 400;
+  --type-caption-line-height: 18px;
+}
+
+body {
+  color: #182230;
+  background: #f5f7fb;
+  min-height: 100vh;
+  margin: 0;
+  font-family: Arial, Microsoft YaHei, sans-serif;
+  display: flex;
+}
+
+aside {
+  color: #fff;
+  background: #14213d;
+  width: 220px;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+aside h1 {
+  margin: 0 0 32px;
+  font-size: 20px;
+}
+
+a {
+  color: #1d4ed8;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button:focus-visible {
+  outline-offset: 2px;
+  outline: 3px solid #93c5fd;
+}
+
+a:focus-visible {
+  outline-offset: 2px;
+  outline: 3px solid #93c5fd;
+}
+
+summary:focus-visible {
+  outline-offset: 2px;
+  outline: 3px solid #93c5fd;
+}
+
+@media (min-width: 761px) {
+  aside {
+    align-self: flex-start;
+    height: 100vh;
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --type-page-title-size: 20px;
+    --type-page-title-line-height: 28px;
+    --type-control-size: 16px;
+    --type-control-line-height: 24px;
+    --type-control-compact-size: 16px;
+    --type-control-compact-line-height: 24px;
+  }
+
+  body {
+    display: block;
+  }
+
+  aside {
+    white-space: nowrap;
+    z-index: 10;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    min-height: 0;
+    padding: 10px 12px;
+    display: flex;
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    overflow-x: auto;
+  }
+
+  aside h1 {
+    flex: none;
+    margin: 0 10px 0 0;
+    font-size: 16px;
+  }
+}
+
+/*# sourceMappingURL=src_app_styles_css_bad6b30c._.single.css.map*/

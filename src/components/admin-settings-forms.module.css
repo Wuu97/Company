@@ -1,0 +1,1 @@
+.form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px}.form label{display:grid;gap:5px;color:#475569;font-size:12px;font-weight:700}.form label input,.form label select{min-width:180px;width:100%}

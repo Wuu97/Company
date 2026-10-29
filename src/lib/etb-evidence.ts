@@ -11,11 +11,11 @@ export function missingEtbEvidence(results: EtbQueryResult[]) {
 
 export function invalidEtbEvidence(terminal: string, results: EtbQueryResult[]) {
   const config = getEtbSourceConfig(terminal);
-  const sourceHost = new URL(config.homeUrl).hostname;
+  const sourceHosts = new Set([new URL(config.homeUrl).hostname, ...(config.allowedEvidenceHosts || [])]);
   return results.find(result => {
     if (!result.sourceUrl || !result.screenshotStorageKey) return true;
     try {
-      return new URL(result.sourceUrl).hostname !== sourceHost
+      return !sourceHosts.has(new URL(result.sourceUrl).hostname)
         || !/^etb\/.+\.(png|jpe?g|webp)$/i.test(result.screenshotStorageKey);
     } catch { return true; }
   });

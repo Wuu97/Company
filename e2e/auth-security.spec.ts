@@ -3,8 +3,8 @@ import { PrismaClient } from "@prisma/client";
 import { resetAuthState, testDatabaseUrl } from "./test-db";
 
 const db = new PrismaClient({ datasources: { db: { url: testDatabaseUrl } } });
-const admin = { name: "Security Admin", email: "security-admin@example.test", password: "security-test-password" };
-const operator = { name: "Security Operator", email: "security-operator@example.test", password: "security-test-password" };
+const admin = { name: "Security Admin", email: "e2e-security-admin@example.test", password: "security-test-password" };
+const operator = { name: "Security Operator", email: "e2e-security-operator@example.test", password: "security-test-password" };
 
 async function clean() { await resetAuthState(db); }
 
@@ -30,7 +30,7 @@ test("管理员、成员权限与会话撤销均由服务端数据库状态决�
 
 test("并发登录限流与并发停用最后管理员保持一致", async ({ request, baseURL }) => {
   expect((await request.post("/api/auth/setup", { data: admin })).status()).toBe(201);
-  const secondAdmin = { name: "Second Admin", email: "second-admin@example.test", password: "security-test-password", role: "ADMIN" };
+  const secondAdmin = { name: "Second Admin", email: "e2e-second-admin@example.test", password: "security-test-password", role: "ADMIN" };
   expect((await request.post("/api/admin/users", { data: secondAdmin })).status()).toBe(201);
   const attempts = await Promise.all(Array.from({ length: 6 }, () => request.post("/api/auth/login", { data: { email: operator.email, password: "wrong-password" } })));
   expect(attempts.filter(response => response.status() === 401)).toHaveLength(5);

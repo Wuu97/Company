@@ -1,29 +1,58 @@
 "use client";
 
+import businessStyles from "@/components/business.module.css";
 import { useState } from "react";
+import { Button, ButtonLink } from "@/components/ui/button";
 
 type SoFilePreviewProps = {
   fileId: string;
   fileName: string;
-  version: number;
 };
 
-export function SoFilePreview({ fileId, fileName, version }: SoFilePreviewProps) {
+export function SoFilePreview({
+  fileId,
+  fileName,
+}: SoFilePreviewProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const url = `/api/files/${fileId}`;
 
+  function togglePreview() {
+    setIsOpen((open) => {
+      const next = !open;
+      if (next) setLoading(true);
+      return next;
+    });
+  }
+
   return (
-    <div className="so-file-preview">
-      <div className="so-file-preview__header">
-        <span>{fileName} · 版本 {version}</span>
-        <div className="so-file-preview__actions">
-          <button type="button" onClick={() => setIsOpen((open) => !open)}>
-            {isOpen ? "收起预览" : "预览 SO 文件"}
-          </button>
-          <a href={url} target="_blank" rel="noreferrer">在新窗口打开</a>
+    <div className={businessStyles["so-file-preview"]}>
+      <div className={businessStyles["so-file-preview__header"]}>
+        <div>
+          <b>{fileName}</b>
+        </div>
+        <div className={businessStyles["so-file-preview__actions"]}>
+          <Button variant="secondary" onClick={togglePreview} aria-expanded={isOpen}>
+            {isOpen ? "收起预览" : "预览"}
+          </Button>
+          <ButtonLink href={url} target="_blank" rel="noreferrer">
+            新窗口预览
+          </ButtonLink>
         </div>
       </div>
-      {isOpen && <iframe title={fileName} src={url} className="so-file-preview__document" />}
+      {isOpen && (
+        <div className={businessStyles["so-file-preview__viewer"]}>
+          {loading && (
+            <p className={businessStyles["so-file-preview__loading"]}>正在载入 PDF 预览…</p>
+          )}
+          <iframe
+            title={fileName}
+            src={url}
+            className={businessStyles["so-file-preview__document"]}
+            onLoad={() => setLoading(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }

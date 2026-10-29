@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/components/ui/data-table.module.css"],"sourcesContent":[".wrap{max-width:100%;overflow:auto;border:1px solid #e2e8f0;border-radius:10px;background:#fff}.table{width:100%;margin:0;border:0;border-radius:0}.table th,.table td{text-align:center;vertical-align:middle}.empty{text-align:center;color:#64748b}.hint{display:none;margin:8px 0;color:#64748b;font-size:13px}@media(max-width:760px){.hint{display:block}.table{min-width:720px}}\n"],"names":[],"mappings":"AAAA;;;;;;;;AAA+F;;;;;;;AAAoD;;;;;AAA4D;;;;;AAAuC;;;;;;;AAA6D;EAAwB;;;;EAAoB"}}]
+}

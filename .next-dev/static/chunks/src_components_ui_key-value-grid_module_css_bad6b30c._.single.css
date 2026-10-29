@@ -1,0 +1,59 @@
+/* [project]/src/components/ui/key-value-grid.module.css [app-client] (css) */
+.key-value-grid-module__vVNuPa__grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  display: grid;
+}
+
+.key-value-grid-module__vVNuPa__item {
+  background: #fff;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+  min-height: 70px;
+  padding: 6px 10px;
+  display: grid;
+}
+
+.key-value-grid-module__vVNuPa__item span {
+  color: #64748b;
+  font-size: var(--type-field-label-size);
+  font-weight: var(--type-field-label-weight);
+  line-height: var(--type-field-label-line-height);
+}
+
+.key-value-grid-module__vVNuPa__item b {
+  color: #111827;
+  min-width: 0;
+  font-size: var(--type-body-size);
+  font-weight: var(--type-card-title-weight);
+  line-height: var(--type-body-line-height);
+  overflow-wrap: anywhere;
+}
+
+.key-value-grid-module__vVNuPa__emphasis {
+  border-left: 3px solid #2563eb;
+  padding-left: 13px;
+}
+
+.key-value-grid-module__vVNuPa__emphasis span {
+  color: #1d4ed8;
+}
+
+.key-value-grid-module__vVNuPa__emphasis b {
+  color: #1e3a8a;
+}
+
+@media (max-width: 760px) {
+  .key-value-grid-module__vVNuPa__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .key-value-grid-module__vVNuPa__item {
+    min-height: 70px;
+  }
+}
+
+/*# sourceMappingURL=src_components_ui_key-value-grid_module_css_bad6b30c._.single.css.map*/

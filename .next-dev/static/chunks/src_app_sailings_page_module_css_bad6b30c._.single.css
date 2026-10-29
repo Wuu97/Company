@@ -1,0 +1,150 @@
+/* [project]/src/app/sailings/page.module.css [app-client] (css) */
+.page-module__QLH7pq__resultSummary {
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-line-height);
+  margin: 12px 0;
+}
+
+.page-module__QLH7pq__resultSummary b {
+  color: #1e3a8a;
+}
+
+.page-module__QLH7pq__list {
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.page-module__QLH7pq__card {
+  font-size: var(--type-body-size);
+  font-weight: var(--type-field-label-weight);
+  line-height: var(--type-body-line-height);
+  gap: 3px;
+  padding: 4px 12px;
+}
+
+.page-module__QLH7pq__cardReview {
+  background: #fffdf7;
+  border-color: #fcd34d;
+}
+
+.page-module__QLH7pq__header {
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 8px;
+}
+
+.page-module__QLH7pq__header h3 {
+  color: #1e3a8a;
+  font-size: var(--type-card-title-size);
+  font-weight: var(--type-card-title-weight);
+  line-height: var(--type-card-title-line-height);
+  margin: 4px 0 0;
+}
+
+.page-module__QLH7pq__label {
+  color: #64748b;
+  font-size: var(--type-field-label-size);
+  font-weight: var(--type-field-label-weight);
+  line-height: var(--type-field-label-line-height);
+  display: block;
+}
+
+.page-module__QLH7pq__footer {
+  color: #64748b;
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-line-height);
+  border-top: 1px solid #e2e8f0;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding-top: 8px;
+  display: flex;
+}
+
+.page-module__QLH7pq__footer > div {
+  gap: 4px;
+  display: grid;
+}
+
+.page-module__QLH7pq__footer small {
+  color: #94a3b8;
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-line-height);
+}
+
+.page-module__QLH7pq__footer a {
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  line-height: var(--type-button-line-height);
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .page-module__QLH7pq__footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.page-module__QLH7pq__orderDetails {
+  padding: 2px 0 4px;
+}
+
+.page-module__QLH7pq__orderDetails + .page-module__QLH7pq__orderDetails {
+  border-top: 1px solid #e2e8f0;
+}
+
+.page-module__QLH7pq__orderHeader {
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 3px;
+  display: flex;
+}
+
+.page-module__QLH7pq__orderTopLeft, .page-module__QLH7pq__orderIdentity {
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  display: flex;
+}
+
+.page-module__QLH7pq__orderIdentity span {
+  color: #64748b;
+  font-size: var(--type-field-label-size);
+  font-weight: var(--type-field-label-weight);
+  line-height: var(--type-field-label-line-height);
+  white-space: nowrap;
+}
+
+.page-module__QLH7pq__orderIdentity a {
+  color: #2563eb;
+  font-size: var(--type-field-label-size);
+  font-weight: var(--type-field-label-weight);
+  line-height: var(--type-field-label-line-height);
+  white-space: nowrap;
+}
+
+.page-module__QLH7pq__orderMeta {
+  color: #64748b;
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-field-label-weight);
+  line-height: var(--type-caption-line-height);
+}
+
+.page-module__QLH7pq__orderFields {
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+}
+
+.page-module__QLH7pq__orderFields b {
+  font-size: var(--type-body-size);
+  font-weight: var(--type-card-title-weight);
+  line-height: var(--type-body-line-height);
+}
+
+/*# sourceMappingURL=src_app_sailings_page_module_css_bad6b30c._.single.css.map*/

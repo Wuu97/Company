@@ -1,0 +1,3 @@
+{
+  "/api/orders/parse/progress/route": "app/api/orders/parse/progress/route.js"
+}

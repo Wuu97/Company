@@ -1,0 +1,2 @@
+.message{display:flex;align-items:flex-start;gap:7px;margin:10px 0 0;padding:8px 10px;border-radius:7px;font-size:13px;line-height:1.5}.info{background:#eff6ff;color:#1d4ed8}.success{background:#f0fdf4;color:#15803d}.warning{background:#fffbeb;color:#92400e}.error{background:#fef2f2;color:#b91c1c}
+.message{font-size:var(--type-caption-size);font-weight:var(--type-caption-weight);line-height:var(--type-caption-line-height)}

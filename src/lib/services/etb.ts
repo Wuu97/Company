@@ -1,17 +1,24 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { formatChinaDateTime } from "@/lib/time";
 import { notifyActiveUsers } from "@/lib/notifications";
 import { actorFields, type AuditActor } from "@/lib/audit";
 
-export async function recordEtbObservation(input:{sailingId:string;etbAt:Date;source:string;sourceUrl?:string;screenshotStorageKey?:string;note?:string;actor?:AuditActor}){
- return prisma.$transaction(async tx=>{
+export type EtbObservationInput = {sailingId:string;etbAt:Date;source:string;sourceUrl?:string;screenshotStorageKey?:string;note?:string;actor?:AuditActor};
+
+/** Records an observation in the caller's transaction so a query completion is atomic. */
+export async function recordEtbObservationInTransaction(tx: Prisma.TransactionClient, input: EtbObservationInput) {
   await tx.$queryRaw`SELECT id FROM "Sailing" WHERE id=${input.sailingId} FOR UPDATE`;
-  const sailing=await tx.sailing.findUnique({where:{id:input.sailingId},select:{id:true,adoptedEtbAt:true}});
+  const sailing=await tx.sailing.findUnique({where:{id:input.sailingId},select:{id:true,adoptedEtbAt:true,pendingEtbAt:true,pendingEtbSource:true}});
   if(!sailing)throw new Error("船期不存在");
-  const isSame=sailing.adoptedEtbAt?.valueOf()===input.etbAt.valueOf();
-  const {note,...observationInput}=input;
+  // Repeated polling commonly returns the same unadopted value.  Keep its
+  // evidence, but do not repeatedly create pending work and notifications.
+  const isSame=sailing.adoptedEtbAt?.valueOf()===input.etbAt.valueOf()
+    || (sailing.pendingEtbAt?.valueOf()===input.etbAt.valueOf() && sailing.pendingEtbSource===input.source);
+  const {note, actor, ...observationInput}=input;
   const observation=await tx.sailingObservation.create({data:{...observationInput,status:isSame?"IGNORED":"PENDING",reviewNote:note}});
   if(!isSame){
+   await tx.soOrder.updateMany({where:{sailingId:sailing.id},data:{etbText:formatChinaDateTime(input.etbAt),etbSource:input.source,etbObservedAt:new Date(),etbNeedsReview:true}});
    await tx.sailing.update({where:{id:sailing.id},data:{pendingEtbAt:input.etbAt,pendingEtbSource:input.source,pendingEtbObservedAt:new Date(),etbNeedsReview:true}});
    const orders=await tx.soOrder.findMany({where:{sailingId:sailing.id},select:{id:true}});
    await tx.soOrder.updateMany({where:{sailingId:sailing.id},data:{etbNeedsReview:true}});
@@ -22,7 +29,10 @@ export async function recordEtbObservation(input:{sailingId:string;etbAt:Date;so
   }
   await tx.operationLog.create({data:{action:"ETB_OBSERVED",entityType:"Sailing",entityId:sailing.id,...actorFields(input.actor),after:{etbAt:input.etbAt.toISOString(),source:input.source,status:observation.status}}});
   return observation;
- });
+}
+
+export async function recordEtbObservation(input: EtbObservationInput) {
+ return prisma.$transaction(tx => recordEtbObservationInTransaction(tx, input));
 }
 
 export async function adoptEtbObservation(sailingId:string,observationId:string,note?:string,actor?:AuditActor){

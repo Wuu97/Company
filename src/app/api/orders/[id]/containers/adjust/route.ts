@@ -4,13 +4,16 @@ import { adjustContainers } from "@/lib/services/orders";
 import { currentUser } from "@/lib/auth";
 
 const schema = z.object({
-  reason: z.string().min(1),
-  containers: z.array(z.object({ containerType: z.string().min(1), quantity: z.number().int().min(0) })).min(1),
+  containers: z.array(z.object({
+    id: z.string().cuid().optional(),
+    containerType: z.string().trim().min(1).max(30),
+    note: z.string().trim().max(300).optional(),
+  })).min(1),
 });
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const input = schema.safeParse(await request.json());
-  if (!input.success || !input.data.containers.some(item => item.quantity > 0)) {
+  if (!input.success || new Set(input.data.containers.filter(item => item.id).map(item => item.id)).size !== input.data.containers.filter(item => item.id).length) {
     return NextResponse.json({ error: "柜量调整资料无效" }, { status: 400 });
   }
   const actor = await currentUser();

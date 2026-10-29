@@ -1,0 +1,39 @@
+/* [project]/src/components/ui/feedback-message.module.css [app-client] (css) */
+.feedback-message-module__PXNC5G__message {
+  border-radius: 7px;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+}
+
+.feedback-message-module__PXNC5G__info {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.feedback-message-module__PXNC5G__success {
+  color: #15803d;
+  background: #f0fdf4;
+}
+
+.feedback-message-module__PXNC5G__warning {
+  color: #92400e;
+  background: #fffbeb;
+}
+
+.feedback-message-module__PXNC5G__error {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.feedback-message-module__PXNC5G__message {
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-line-height);
+}
+
+/*# sourceMappingURL=src_components_ui_feedback-message_module_css_bad6b30c._.single.css.map*/

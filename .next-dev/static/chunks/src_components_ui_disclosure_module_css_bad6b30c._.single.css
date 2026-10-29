@@ -1,0 +1,54 @@
+/* [project]/src/components/ui/disclosure.module.css [app-client] (css) */
+.disclosure-module___9sabG__disclosure {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+.disclosure-module___9sabG__summary {
+  color: #1d4ed8;
+  cursor: pointer;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 11px;
+  font-size: 14px;
+  font-weight: 700;
+  list-style: none;
+  display: flex;
+}
+
+.disclosure-module___9sabG__summary::-webkit-details-marker {
+  display: none;
+}
+
+.disclosure-module___9sabG__summary:after {
+  content: "⌄";
+  color: #64748b;
+  transition: transform .15s;
+}
+
+.disclosure-module___9sabG__disclosure[open] .disclosure-module___9sabG__summary {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.disclosure-module___9sabG__disclosure[open] .disclosure-module___9sabG__summary:after {
+  transform: rotate(180deg);
+}
+
+.disclosure-module___9sabG__content {
+  padding: 11px;
+}
+
+@media (max-width: 760px) {
+  .disclosure-module___9sabG__summary {
+    min-height: 42px;
+  }
+
+  .disclosure-module___9sabG__content {
+    padding: 12px;
+  }
+}
+
+/*# sourceMappingURL=src_components_ui_disclosure_module_css_bad6b30c._.single.css.map*/

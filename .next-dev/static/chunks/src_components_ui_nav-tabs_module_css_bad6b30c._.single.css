@@ -1,0 +1,39 @@
+/* [project]/src/components/ui/nav-tabs.module.css [app-client] (css) */
+.nav-tabs-module__PT_EAW__tabs {
+  background: rgba(255, 255, 255, .96);
+  border: 1px solid #dbeafe;
+  border-radius: 9px;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+  padding: 10px 12px;
+  display: flex;
+  overflow-x: auto;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .06);
+}
+
+.nav-tabs-module__PT_EAW__label {
+  color: #475569;
+  flex: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.nav-tabs-module__PT_EAW__tab {
+  flex: none;
+}
+
+.nav-tabs-module__PT_EAW__count {
+  opacity: .8;
+  margin-left: 5px;
+  font-size: 11px;
+}
+
+@media (max-width: 760px) {
+  .nav-tabs-module__PT_EAW__tabs {
+    margin: 12px 0;
+    padding: 8px;
+  }
+}
+
+/*# sourceMappingURL=src_components_ui_nav-tabs_module_css_bad6b30c._.single.css.map*/

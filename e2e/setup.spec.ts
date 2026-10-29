@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { resetAuthState, testDatabaseUrl } from "./test-db";
 
 const db = new PrismaClient({ datasources: { db: { url: testDatabaseUrl } } });
-const email = "setup-e2e@example.test";
+const email = "e2e-setup@example.test";
 
 async function resetSetupState() { await resetAuthState(db); }
 

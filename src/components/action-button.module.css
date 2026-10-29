@@ -1,0 +1,46 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 7px;
+  background: #2563eb;
+  color: #fff;
+  font: inherit;
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  line-height: var(--type-button-line-height);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, transform .15s ease;
+}
+
+.button:hover:not(:disabled) { background: #1d4ed8; text-decoration: none; transform: translateY(-1px); }
+.button:disabled { cursor: not-allowed; opacity: .65; }
+.button:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+
+.secondary { background: #dbeafe; color: #1d4ed8; }
+.secondary:hover:not(:disabled) { background: #bfdbfe; color: #1d4ed8; transform: none; }
+
+.danger { background: #fee2e2; color: #b91c1c; }
+.danger:hover:not(:disabled) { background: #fecaca; color: #991b1b; transform: none; }
+
+.neutral { background: #64748b; color: #fff; }
+.neutral:hover:not(:disabled) { background: #475569; transform: none; }
+.text { min-height: auto; padding: 0; background: transparent; color: #1d4ed8; }
+.text:hover:not(:disabled) { background: transparent; color: #1e40af; text-decoration: underline; transform: none; }
+.toolbar { min-height: 36px; font-size: 13px; font-weight: var(--type-button-weight); line-height: var(--type-button-line-height); }
+.small { min-height: 32px; padding: 0 8px; font-size: var(--type-status-size); font-weight: var(--type-status-weight); line-height: var(--type-status-line-height); }
+.statusAction { min-height: 24px; padding: 3px 8px; border-radius: 999px; font-size: var(--type-status-size); font-weight: var(--type-status-weight); line-height: var(--type-status-line-height); }
+.wide { width: 100%; }
+
+@media (max-width: 760px) {
+  .button { min-height: 44px; }
+  .toolbar { min-height: 44px; }
+  .small { min-height: 36px; }
+  .text { min-height: auto; }
+  .wideMobile { width: 100%; }
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { acquireProfileLock, classifyYantianPageText, isYantianLoggedInPage, shouldRetryYantianFailure } from "./yantian-browser";
+import { acquireProfileLock, classifyYantianPageText, formatYantianQueryDate, isYantianLoggedInPage, safeYantianUrl, shouldRetryYantianFailure, yantianQueryUrlForAuthenticatedPage, yantianVesselQuerySelectors } from "./yantian-browser";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -19,6 +19,13 @@ describe("Yantian page states", () => {
   it("retries only transient browser or network failures", () => {
     expect(shouldRetryYantianFailure(new Error("Timeout 15000ms exceeded"))).toBe(true);
     expect(shouldRetryYantianFailure(new Error("平台要求验证码"))).toBe(false);
+  });
+  it("uses verified query selectors, China dates, and redacted diagnostics", () => {
+    expect(yantianVesselQuerySelectors.vessel).toBe("#ship_name");
+    expect(yantianVesselQuerySelectors.voyage).toBe("#voyage_code");
+    expect(formatYantianQueryDate(new Date("2026-09-29T16:30:00.000Z"))).toBe("20260930");
+    expect(safeYantianUrl("https://www.156yt.cn/pqs?a=1&loginVerifyCode=secret")).toContain("loginVerifyCode=%5Bredacted%5D");
+    expect(safeYantianUrl(yantianQueryUrlForAuthenticatedPage("https://www.156yt.cn/pqs/voyQuery.jsp", "https://www.156yt.cn/member?loginVerifyCode=secret"))).toContain("loginVerifyCode=%5Bredacted%5D");
   });
 });
 

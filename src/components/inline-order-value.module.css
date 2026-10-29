@@ -1,0 +1,14 @@
+.select {
+  width: 100%;
+}
+
+.select :global(button) {
+  font-size: var(--type-control-size);
+  font-weight: var(--type-control-weight);
+  line-height: var(--type-control-line-height);
+}
+
+.dateTime {
+  width: 100%;
+  min-width: 0;
+}

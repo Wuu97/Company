@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EtbManualHandoffRequiredError, etbQueryFailureState } from "./etb-query-state";
 import { etbCompletionState } from "./etb-query-completion";
+import { activeEtbRunStatuses } from "./etb-query-status";
 
 describe("ETB query handoff", () => {
   it("turns robot verification into a manual-handoff task", () => {
@@ -22,5 +23,11 @@ describe("ETB query completion", () => {
 
   it("succeeds only when all returned rows have been attached", () => {
     expect(etbCompletionState(2, 0)).toMatchObject({ status: "SUCCEEDED", sessionState: "ACTIVE" });
+  });
+});
+
+describe("ETB queue de-duplication", () => {
+  it("treats a CAPTCHA handoff as an active run", () => {
+    expect(activeEtbRunStatuses).toEqual(["PENDING", "RUNNING", "AWAITING_MANUAL"]);
   });
 });

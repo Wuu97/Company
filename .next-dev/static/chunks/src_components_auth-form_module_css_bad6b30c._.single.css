@@ -1,0 +1,27 @@
+/* [project]/src/components/auth-form.module.css [app-client] (css) */
+.auth-form-module__UaVI8G__form {
+  gap: 14px;
+  display: grid;
+}
+
+.auth-form-module__UaVI8G__form label {
+  color: #334155;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  display: grid;
+}
+
+.auth-form-module__UaVI8G__form input {
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  width: 100%;
+  padding: 11px;
+  font-size: 16px;
+}
+
+.auth-form-module__UaVI8G__form button {
+  margin-top: 4px;
+}
+
+/*# sourceMappingURL=src_components_auth-form_module_css_bad6b30c._.single.css.map*/

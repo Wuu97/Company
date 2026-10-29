@@ -5,6 +5,6 @@ export function isLoginBlocked(failureCount: number) { return failureCount >= MA
 export function mayDeactivateAdmin(activeAdminCount: number) { return activeAdminCount > 1; }
 export function loginSourceKey(headers: Headers) {
   // Proxy headers are attacker-controlled unless an operator explicitly configures a trusted proxy.
-  if (process.env.TRUST_LOGIN_PROXY !== "true") return "unverified-client";
-  return headers.get("x-forwarded-for")?.split(",")[0]?.trim().slice(0, 128) || "trusted-proxy-unknown";
+  if (process.env.TRUST_LOGIN_PROXY !== "true") return null;
+  return headers.get("x-forwarded-for")?.split(",")[0]?.trim().slice(0, 128) || null;
 }

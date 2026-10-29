@@ -3,8 +3,9 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authErrorResponse, requireAdmin } from "@/lib/auth";
 import { actorFields } from "@/lib/audit";
+import { manualHandoffUpdate } from "@/lib/etb-manual-handoff";
 
-const schema = z.object({ note: z.string().trim().min(2).max(1000) });
+const schema = z.object({ note: z.string().trim().min(2).max(1000), resume: z.boolean().optional() });
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   let admin; try { admin = await requireAdmin(); } catch (error) { return authErrorResponse(error); }
@@ -16,8 +17,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (run.status !== "AWAITING_MANUAL") return NextResponse.json({ error: "只有待人工接管任务可以处理" }, { status: 409 });
   const updated = await prisma.etbQueryRun.update({
     where: { id },
-    data: { handoffReason: input.data.note, manualHandledAt: new Date() },
+    data: manualHandoffUpdate(input.data.note, Boolean(input.data.resume)),
   });
-  await prisma.operationLog.create({ data: { action: "ETB_QUERY_MANUAL_HANDOFF", entityType: "EtbQueryRun", entityId: id, ...actorFields(admin), after: { note: input.data.note } } });
+  await prisma.operationLog.create({ data: { action: "ETB_QUERY_MANUAL_HANDOFF", entityType: "EtbQueryRun", entityId: id, ...actorFields(admin), after: { note: input.data.note, resumed: Boolean(input.data.resume) } } });
   return NextResponse.json(updated);
 }

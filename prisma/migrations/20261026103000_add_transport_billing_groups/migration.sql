@@ -1,0 +1,17 @@
+CREATE TYPE "TransportBillingGroupType" AS ENUM ('SINGLE', 'DOUBLE_TRAILER', 'SHARED_TRAILER', 'UNRESOLVED');
+ALTER TABLE "SettlementLine" ADD COLUMN "transportBillingGroupId" TEXT;
+CREATE TABLE "TransportBillingGroup" ("id" TEXT NOT NULL, "transportTaskId" TEXT NOT NULL, "combinationType" "TransportBillingGroupType" NOT NULL DEFAULT 'UNRESOLVED', "confirmedAt" TIMESTAMP(3), "note" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "TransportBillingGroup_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "TransportBillingGroupLeg" ("id" TEXT NOT NULL, "transportBillingGroupId" TEXT NOT NULL, "transportLegId" TEXT NOT NULL, CONSTRAINT "TransportBillingGroupLeg_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "TransportBillingGroupContainer" ("id" TEXT NOT NULL, "transportBillingGroupId" TEXT NOT NULL, "containerUnitId" TEXT NOT NULL, CONSTRAINT "TransportBillingGroupContainer_pkey" PRIMARY KEY ("id"));
+CREATE INDEX "TransportBillingGroup_transportTaskId_confirmedAt_idx" ON "TransportBillingGroup"("transportTaskId", "confirmedAt");
+CREATE UNIQUE INDEX "TransportBillingGroupLeg_transportLegId_key" ON "TransportBillingGroupLeg"("transportLegId");
+CREATE UNIQUE INDEX "TransportBillingGroupLeg_transportBillingGroupId_transportL_key" ON "TransportBillingGroupLeg"("transportBillingGroupId", "transportLegId");
+CREATE INDEX "TransportBillingGroupContainer_containerUnitId_idx" ON "TransportBillingGroupContainer"("containerUnitId");
+CREATE UNIQUE INDEX "TransportBillingGroupContainer_transportBillingGroupId_cont_key" ON "TransportBillingGroupContainer"("transportBillingGroupId", "containerUnitId");
+CREATE INDEX "SettlementLine_transportBillingGroupId_idx" ON "SettlementLine"("transportBillingGroupId");
+ALTER TABLE "SettlementLine" ADD CONSTRAINT "SettlementLine_transportBillingGroupId_fkey" FOREIGN KEY ("transportBillingGroupId") REFERENCES "TransportBillingGroup"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "TransportBillingGroup" ADD CONSTRAINT "TransportBillingGroup_transportTaskId_fkey" FOREIGN KEY ("transportTaskId") REFERENCES "TransportTask"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "TransportBillingGroupLeg" ADD CONSTRAINT "TransportBillingGroupLeg_transportBillingGroupId_fkey" FOREIGN KEY ("transportBillingGroupId") REFERENCES "TransportBillingGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "TransportBillingGroupLeg" ADD CONSTRAINT "TransportBillingGroupLeg_transportLegId_fkey" FOREIGN KEY ("transportLegId") REFERENCES "TransportLeg"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "TransportBillingGroupContainer" ADD CONSTRAINT "TransportBillingGroupContainer_transportBillingGroupId_fkey" FOREIGN KEY ("transportBillingGroupId") REFERENCES "TransportBillingGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "TransportBillingGroupContainer" ADD CONSTRAINT "TransportBillingGroupContainer_containerUnitId_fkey" FOREIGN KEY ("containerUnitId") REFERENCES "ContainerUnit"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
