@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/components/ui/key-value-grid.module.css"],"sourcesContent":[".grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}.item{display:grid;align-content:start;gap:2px;min-width:0;min-height:70px;padding:6px 10px;border:1px solid #dbeafe;border-radius:8px;background:#fff}.item span{color:#64748b;font-size:var(--type-field-label-size);font-weight:var(--type-field-label-weight);line-height:var(--type-field-label-line-height)}.item b{min-width:0;color:#111827;font-size:var(--type-body-size);font-weight:var(--type-card-title-weight);line-height:var(--type-body-line-height);overflow-wrap:anywhere}.emphasis{padding-left:13px;border-left:3px solid #2563eb}.emphasis span{color:#1d4ed8}.emphasis b{color:#1e3a8a}@media(max-width:760px){.grid{grid-template-columns:1fr 1fr}.item{min-height:70px}}\n"],"names":[],"mappings":"AAAA;;;;;;AAAoF;;;;;;;;;;;;AAAuJ;;;;;;;AAA2J;;;;;;;;;AAA4K;;;;;AAA0D;;;;AAA6B;;;;AAA0B;EAAwB;;;;EAAoC"}}]
-}

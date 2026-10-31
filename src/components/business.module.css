@@ -1412,3 +1412,11 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Dark navigation palette. */
+.sidebar-nav__group-label { color: #a4b1c4; }
+.sidebar-nav a { color: #edf2fa; }
+.sidebar-nav a:hover, .sidebar-nav__group-label:hover { background: #252f3f; }
+.sidebar-nav a.sidebar-nav__link-active { background: #252f3f; color: #88acff; }
+.sidebar-nav__link-active .nav-count { background: #354052; color: #88acff; }
+.signed-in { color: #a4b1c4; border-bottom-color: #354052; }

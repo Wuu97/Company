@@ -22,7 +22,6 @@ export function LogoutButton() {
   return (
     <>
       <Button
-        className={businessStyles["logout-button"]}
         onClick={logout}
         disabled={busy}
       >

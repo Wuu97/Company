@@ -14,16 +14,16 @@ const schema = z.object({
 
 const instruction = `You extract shipping-order data. Return JSON only. Never invent values. Dates must preserve the document's stated local date/time. Return exactly {"fields":{"soNumber":{"value":"...","evidence":"...","confidence":0.95}},"containers":[{"containerType":"40HC","quantity":1}]}. Omit unknown fields. Every field value must be a string. Every populated field needs its exact source snippet and confidence 0..1. Valid fields: ${fields.join(", ")}. ETB is only a printed ETB, never calculate it. openingText is cargo receiving/opening date, never calculate it.`;
 
-export async function extractSoWithDeepSeek(input: { text: string; images: Array<{ mime: string; base64: string }> }): Promise<AiSoExtraction | undefined> {
+export async function extractSoWithDeepSeek(input: { text: string; images: Array<{ page: number; mime: string; base64: string }> }): Promise<AiSoExtraction | undefined> {
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) return undefined;
   // The legacy chat model cannot read page images; keep visual SO extraction
   // on Flash even if an old environment value remains configured.
   const configuredModel = process.env.DEEPSEEK_MODEL || "deepseek-flash";
   const model = configuredModel === "deepseek-chat" ? "deepseek-flash" : configuredModel;
-  const content: Array<Record<string, unknown>> = [{ type: "text", text: `${instruction}\n\nLocal PDF text (may contain layout errors):\n${input.text.slice(0, 60_000)}` }];
-  for (const image of input.images.slice(0, 3)) content.push({ type: "image_url", image_url: { url: `data:${image.mime};base64,${image.base64}`, detail: "high" } });
-  const response = await fetch("https://api.deepseek.com/chat/completions", { signal: AbortSignal.timeout(60_000), method: "POST", headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" }, body: JSON.stringify({ model, temperature: 0, max_tokens: 2_000, thinking: { type: "disabled" }, response_format: { type: "json_object" }, messages: [{ role: "user", content }] }) });
+  const content: Array<Record<string, unknown>> = [{ type: "text", text: `${instruction}\n\nAccuracy rules: examine every supplied page; ETD/ETA must be chronologically valid, and ETA must be for the stated final discharge port. Do not use document issue date as a shipping date.\n\nLocal PDF text (may contain layout errors):\n${input.text.slice(0, 60_000)}` }];
+  for (const image of input.images.slice(0, 6)) { content.push({ type: "text", text: `PDF page ${image.page}:` }); content.push({ type: "image_url", image_url: { url: `data:${image.mime};base64,${image.base64}`, detail: "high" } }); }
+  const response = await fetch("https://api.deepseek.com/chat/completions", { signal: AbortSignal.timeout(90_000), method: "POST", headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" }, body: JSON.stringify({ model, temperature: 0, max_tokens: 4_000, thinking: { type: "enabled" }, reasoning_effort: "high", response_format: { type: "json_object" }, messages: [{ role: "user", content }] }) });
   if (!response.ok) throw new Error(`DeepSeek 识别失败（HTTP ${response.status}）`);
   const body = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
   const raw = JSON.parse(body.choices?.[0]?.message?.content || "{}") as Record<string, unknown>;

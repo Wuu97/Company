@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/components/ui/inline-editor.module.css"],"sourcesContent":[".trigger{min-height:var(--type-body-line-height);margin:0;padding:1px 3px;border:1px dashed transparent;border-radius:4px;background:transparent;color:inherit;font:inherit;font-weight:inherit;line-height:inherit;cursor:text}.trigger:hover:not(:disabled),.trigger:focus-visible{border-color:#60a5fa;background:transparent;color:#1d4ed8;box-shadow:none;transform:none;outline:0}.select{position:relative;width:100%}.input{width:100%;min-width:110px;height:30px;padding:4px 6px;border:1px solid #93c5fd;border-radius:5px;background:#fff;color:#1e3a8a;font:inherit;font-weight:inherit;line-height:1.2;outline:2px solid #dbeafe}\n"],"names":[],"mappings":"AAAA;;;;;;;;;;;;;;AAAgO;;;;;;;;;AAAA;;;;;;;;;AAAwJ;;;;;AAAqC"}}]
-}

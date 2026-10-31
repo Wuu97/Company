@@ -22,8 +22,8 @@ async function pdfPageImages(path: string) {
   try {
     const prefix = join(directory, "page");
     await execFile(process.env.PDFTOPPM_BIN || "pdftoppm", ["-f", "1", "-l", "3", "-r", "144", "-png", path, prefix], { timeout: 30_000 });
-    const images = await Promise.all([1, 2, 3].map(async page => {
-      try { return { mime: "image/png", base64: (await readFile(`${prefix}-${page}.png`)).toString("base64") }; } catch { return undefined; }
+    const images = await Promise.all([1, 2, 3, 4, 5, 6].map(async page => {
+      try { return { page, mime: "image/png", base64: (await readFile(`${prefix}-${page}.png`)).toString("base64") }; } catch { return undefined; }
     }));
     return images.filter((image): image is { mime: string; base64: string } => Boolean(image));
   } catch { return []; } finally { await rm(directory, { recursive: true, force: true }); }

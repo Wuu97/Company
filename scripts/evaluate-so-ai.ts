@@ -17,8 +17,8 @@ async function images(pdf: string) {
   const directory = await mkdtemp(join(tmpdir(), "so-ai-eval-"));
   try {
     const prefix = join(directory, "page");
-    await execFile(process.env.PDFTOPPM_BIN || "pdftoppm", ["-f", "1", "-l", "3", "-r", "144", "-png", pdf, prefix], { timeout: 30_000 });
-    const rows = await Promise.all([1, 2, 3].map(async page => { try { return { mime: "image/png", base64: (await readFile(`${prefix}-${page}.png`)).toString("base64") }; } catch { return undefined; } }));
+    await execFile(process.env.PDFTOPPM_BIN || "pdftoppm", ["-f", "1", "-l", "6", "-r", "180", "-png", pdf, prefix], { timeout: 30_000 });
+    const rows = await Promise.all([1, 2, 3, 4, 5, 6].map(async page => { try { return { page, mime: "image/png", base64: (await readFile(`${prefix}-${page}.png`)).toString("base64") }; } catch { return undefined; } }));
     return rows.filter((row): row is { mime: string; base64: string } => Boolean(row));
   } finally { await rm(directory, { recursive: true, force: true }); }
 }

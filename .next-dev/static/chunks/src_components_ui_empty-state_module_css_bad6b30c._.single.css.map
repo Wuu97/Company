@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/components/ui/empty-state.module.css"],"sourcesContent":[".emptyState {\n  padding: 30px;\n  text-align: center;\n}\n\n.emptyState h3 {\n  margin-bottom: 6px;\n}\n\n.emptyState p {\n  margin: 0;\n  color: #64748b;\n}\n"],"names":[],"mappings":"AAAA;;;;;AAKA;;;;AAIA"}}]
-}

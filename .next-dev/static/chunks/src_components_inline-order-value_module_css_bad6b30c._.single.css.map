@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/components/inline-order-value.module.css"],"sourcesContent":[".select {\n  width: 100%;\n}\n\n.select :global(button) {\n  font-size: var(--type-control-size);\n  font-weight: var(--type-control-weight);\n  line-height: var(--type-control-line-height);\n}\n\n.dateTime {\n  width: 100%;\n  min-width: 0;\n}\n"],"names":[],"mappings":"AAAA;;;;AAIA;;;;;;AAMA"}}]
-}

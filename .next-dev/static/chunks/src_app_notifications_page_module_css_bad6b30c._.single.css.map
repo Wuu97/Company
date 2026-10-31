@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/app/notifications/page.module.css"],"sourcesContent":[".summary{margin:12px 0}.summary b{color:#1d4ed8}.list{display:grid;gap:10px}.item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;gap:12px;padding:13px 14px;border:1px solid #e2e8f0;border-radius:9px;background:#fff}.unread{border-color:#bfdbfe;background:#f8fbff}.meta{display:grid;gap:6px}.meta time{color:#64748b;font-size:12px;white-space:nowrap}.content b{color:#1e3a8a}.content p{margin:5px 0;color:#475569;line-height:1.5}.content a{text-decoration:none}.content a:hover b{text-decoration:underline}.content span{color:#1d4ed8;font-size:13px;font-weight:700}.action{justify-self:end}@media(max-width:760px){.item{grid-template-columns:1fr}.action{justify-self:stretch}.action :global(button){width:100%}}\n"],"names":[],"mappings":"AAAA;;;;AAAuB;;;;AAAyB;;;;;AAA4B;;;;;;;;;;;AAAyK;;;;;AAAgD;;;;;AAA2B;;;;;;AAA2D;;;;AAAyB;;;;;;AAAsD;;;;AAAgC;;;;AAA6C;;;;;;AAA2D;;;;AAAyB;EAAwB;;;;EAAgC;;;;EAA6B"}}]
-}

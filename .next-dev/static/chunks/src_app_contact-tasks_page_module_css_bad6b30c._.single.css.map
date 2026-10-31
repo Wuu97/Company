@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/app/contact-tasks/page.module.css"],"sourcesContent":[".list{display:grid;gap:12px}.task{padding:12px}.open{border-color:#fcd34d;background:#fffdf7}.header{padding-bottom:8px;border-bottom:1px solid #e2e8f0}.header>div{display:grid;gap:4px}.header b{color:#1e3a8a;font-size:var(--type-card-title-size);font-weight:var(--type-card-title-weight);line-height:var(--type-card-title-line-height)}.label{display:block;color:#64748b;font-size:var(--type-field-label-size);font-weight:var(--type-field-label-weight);line-height:var(--type-field-label-line-height)}.body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:9px 0}.body>div{display:grid;gap:4px}.body a{font-weight:var(--type-button-weight)}.note{grid-column:1/-1}.note p{margin:3px 0 0;color:#475569;font-size:var(--type-body-size);font-weight:var(--type-body-weight);line-height:var(--type-body-line-height)}@media(max-width:760px){.body{grid-template-columns:1fr}}\n"],"names":[],"mappings":"AAAA;;;;;AAA4B;;;;AAAmB;;;;;AAA8C;;;;;AAA2D;;;;;AAAiC;;;;;;;AAAuJ;;;;;;;;AAAqK;;;;;;;AAAwF;;;;;AAA+B;;;;AAA8C;;;;AAAuB;;;;;;;;AAAkJ;EAAwB"}}]
-}
