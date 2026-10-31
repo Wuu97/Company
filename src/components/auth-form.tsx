@@ -43,7 +43,7 @@ export function AuthForm({ mode }: { mode: "login" | "setup" }) {
       <TextField label="邮箱" name="email" type="email" placeholder="name@company.com" required disabled={busy} />
       <TextField label="密码" name="password" type="password" placeholder={setup ? "至少 8 位" : "请输入密码"} required minLength={setup ? 8 : undefined} disabled={busy} />
       <Button type="submit" wide disabled={busy}>
-        {busy ? "处理中…" : setup ? "创建账号并进入系统" : "登录"}
+        {busy ? "处理中…" : setup ? "新增账号并进入系统" : "登录"}
       </Button>
       {message && (
         <FeedbackMessage tone="error">{message}</FeedbackMessage>

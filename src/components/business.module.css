@@ -363,12 +363,19 @@
 }
 .master-data-form {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(2, minmax(0, 280px)) auto;
+  justify-content: start;
   align-items: end;
   gap: 12px;
 }
+.master-data-form--customer {
+  grid-template-columns: minmax(0, 360px) auto;
+}
+.master-data-form--customer > button {
+  justify-self: start;
+}
 .master-data-form--factory {
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  grid-template-columns: minmax(0, 240px) minmax(0, 280px) minmax(0, 360px) auto;
 }
 .master-data-form label {
   display: grid;
@@ -383,6 +390,7 @@
   .sailing-form,
   .etb-observation-form,
   .master-data-form,
+  .master-data-form--customer,
   .master-data-form--factory {
     grid-template-columns: 1fr;
   }

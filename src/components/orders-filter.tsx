@@ -1,6 +1,5 @@
 "use client";
 
-import styles from "./orders-filter.module.css";
 import businessStyles from "@/components/business.module.css";
 import { useCallback, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -40,6 +39,6 @@ export function OrdersFilter({ q, status, parseStatus, customerId, customers, re
     <FilterField label="解析状态"><FilterSelectField compact name="parseStatus" defaultValue={parseStatus || ""} onChange={apply}><option value="">全部解析状态</option>{parseStatuses.map(value => <option key={value} value={value}>{statusLabel(value)}</option>)}</FilterSelectField></FilterField>
     <FilterField label="客户"><FilterSelectField compact name="customerId" defaultValue={customerId || ""} onChange={apply}><option value="">全部客户</option>{customers.map(customer => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</FilterSelectField></FilterField>
     {reviewOnly && <FilterTextField type="hidden" name="review" value="1"/>}
-    <FilterActions className={businessStyles["orders-filter__actions"]}><FilterClearLink size="toolbar" href={clearHref}/><FilterActionLink className={styles.exportCsv} size="toolbar" href={exportHref}>导出 CSV</FilterActionLink></FilterActions>
+    <FilterActions className={businessStyles["orders-filter__actions"]}><FilterClearLink size="toolbar" href={clearHref}/><FilterActionLink size="toolbar" href={exportHref}>导出 CSV</FilterActionLink></FilterActions>
   </ListFilter>;
 }

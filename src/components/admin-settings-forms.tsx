@@ -50,7 +50,7 @@ export function UserCreateForm() {
           <option value="OPERATOR">业务成员：处理日常业务</option>
           <option value="ADMIN">负责人：可管理账号与系统设置</option>
       </SelectField>
-      <Button type="submit" disabled={busy}>{busy ? "正在创建…" : "创建账号"}</Button>
+      <Button type="submit" disabled={busy}>{busy ? "正在新增…" : "新增账号"}</Button>
       {message && <FeedbackMessage tone={message.startsWith("账号已") ? "success" : "error"} as="small">{message}</FeedbackMessage>}
     </form>
   );

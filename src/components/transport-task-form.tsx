@@ -27,5 +27,5 @@ export function TransportTaskForm({ planId }: { planId: string }) {
       else setMessage(userFeedback.retry("创建派车任务"));
     } catch { setMessage(userFeedback.network); } finally { setBusy(false); }
   }
-  return <Disclosure className={businessStyles["plan-action-form"]} title="创建派车任务"><form onSubmit={submit}><TextField label="计划提柜时间" name="scheduledAt" type="datetime-local" required disabled={busy} /><TextField label="预估主运费用（可选）" name="primaryCostText" placeholder="例如：1,800 CNY" disabled={busy} /><TextField label="派车说明（可选）" name="note" placeholder="例如：优先安排早班车" disabled={busy} /><FormActions><Button type="submit" wide="mobile" disabled={busy}>{busy ? "正在创建…" : "创建派车任务"}</Button>{message && <FormMessage as="span">{message}</FormMessage>}</FormActions></form></Disclosure>;
+  return <Disclosure className={businessStyles["plan-action-form"]} title="创建派车任务"><form onSubmit={submit}><TextField label="计划提柜时间" name="scheduledAt" type="datetime-local" required disabled={busy} /><TextField label="预估主运费用（可选）" name="primaryCostText" placeholder="例如：1,800 CNY" disabled={busy} /><TextField label="派车说明（可选）" name="note" placeholder="例如：优先安排早班车" disabled={busy} /><FormActions><Button type="submit" wide="mobile" disabled={busy}>{busy ? "正在新增…" : "新增派车任务"}</Button>{message && <FormMessage as="span">{message}</FormMessage>}</FormActions></form></Disclosure>;
 }

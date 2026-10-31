@@ -24,7 +24,6 @@ export function CustomerForm() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          code: data.get("code"),
           name: data.get("name"),
         }),
       });
@@ -42,10 +41,9 @@ export function CustomerForm() {
   return (
     <section>
       <h3>新增客户</h3>
-      <form className={businessStyles["master-data-form"]} onSubmit={submit}>
-        <TextField label="客户编码" name="code" placeholder="如：CUST-001" required disabled={busy} />
+      <form className={`${businessStyles["master-data-form"]} ${businessStyles["master-data-form--customer"]}`} onSubmit={submit}>
         <TextField label="客户名称" name="name" placeholder="公司全称" required disabled={busy} />
-        <Button type="submit" disabled={busy}>{busy ? "保存中…" : "创建客户"}</Button>
+        <Button type="submit" disabled={busy}>{busy ? "保存中…" : "新增客户"}</Button>
       </form>
       {message && (
         <FeedbackMessage>{message}</FeedbackMessage>

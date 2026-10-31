@@ -63,7 +63,7 @@ export function FactoryForm({
         </SelectField>
         <TextField label="工厂名称" name="name" placeholder="工厂名称" required disabled={busy} />
         <TextField label="装柜地址" name="address" placeholder="详细地址" required disabled={busy} />
-        <Button type="submit" disabled={busy}>{busy ? "保存中…" : "创建工厂"}</Button>
+        <Button type="submit" disabled={busy}>{busy ? "保存中…" : "新增工厂"}</Button>
       </form>
       {message && (
         <FeedbackMessage>{message}</FeedbackMessage>

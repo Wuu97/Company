@@ -1,4 +1,41 @@
 import { prisma } from "@/lib/prisma";
-import { PageHeader } from "@/components/ui/page-header";
 import { ResourceRecords } from "@/components/resource-records";
-export default async function FleetOwnersPage() { const rows = await prisma.fleetOwner.findMany({ orderBy: { name: "asc" } }); return <><PageHeader title="合作车资料" description="维护合作车老板或车队资料，供派车及合作车月结选择。" /><ResourceRecords kind="fleet-owners" rows={rows}/></>; }
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; status?: string }>;
+}) {
+  const input = await searchParams;
+  const q = input.q?.trim() || "";
+  const status =
+    input.status === "ACTIVE" || input.status === "INACTIVE"
+      ? input.status
+      : "";
+  const [rows, archiveTotal] = await Promise.all([
+    prisma.fleetOwner.findMany({
+      where: {
+        ...(status ? { active: status === "ACTIVE" } : {}),
+        ...(q
+          ? {
+              OR: [
+                { code: { contains: q, mode: "insensitive" as const } },
+                { name: { contains: q, mode: "insensitive" as const } },
+                { phone: { contains: q, mode: "insensitive" as const } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { name: "asc" },
+    }),
+    prisma.fleetOwner.count({ where: {} }),
+  ]);
+  return (
+    <ResourceRecords
+      kind="fleet-owners"
+      rows={rows}
+      q={q}
+      status={status}
+      archiveTotal={archiveTotal}
+    />
+  );
+}

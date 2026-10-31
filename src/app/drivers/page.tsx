@@ -1,4 +1,42 @@
 import { prisma } from "@/lib/prisma";
-import { PageHeader } from "@/components/ui/page-header";
 import { ResourceRecords } from "@/components/resource-records";
-export default async function DriversPage() { const rows = await prisma.driver.findMany({ orderBy: { name: "asc" } }); return <><PageHeader title="司机档案" description="维护司机基本资料，供派车、工资结算和路线工资模板选择。" /><ResourceRecords kind="drivers" rows={rows}/></>; }
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; status?: string }>;
+}) {
+  const input = await searchParams;
+  const q = input.q?.trim() || "";
+  const status =
+    input.status === "ACTIVE" || input.status === "INACTIVE"
+      ? input.status
+      : "";
+  const [rows, archiveTotal] = await Promise.all([
+    prisma.driver.findMany({
+      where: {
+        ...(status ? { active: status === "ACTIVE" } : {}),
+        ...(q
+          ? {
+              OR: [
+                  { plateNumber: { contains: q, mode: "insensitive" as const } },
+                { code: { contains: q, mode: "insensitive" as const } },
+                { name: { contains: q, mode: "insensitive" as const } },
+                { phone: { contains: q, mode: "insensitive" as const } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { name: "asc" },
+    }),
+    prisma.driver.count({ where: {} }),
+  ]);
+  return (
+    <ResourceRecords
+      kind="drivers"
+      rows={rows}
+      q={q}
+      status={status}
+      archiveTotal={archiveTotal}
+    />
+  );
+}

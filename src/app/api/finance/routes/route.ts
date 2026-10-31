@@ -1,3 +1,4 @@
+import { businessCode } from "@/lib/business-code";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -15,5 +16,5 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const input = schema.safeParse(await request.json()); if (!input.success) return NextResponse.json({ error: "路线资料无效" }, { status: 400 });
   try { await requireFinancialAccess(); } catch (error) { return authErrorResponse(error); }
-  try { return NextResponse.json(await prisma.route.create({ data: { ...input.data, code: input.data.code || `ROUTE-${Date.now()}` } }), { status: 201 }); } catch { return NextResponse.json({ error: "路线资料无法保存" }, { status: 409 }); }
+  try { return NextResponse.json(await prisma.route.create({ data: { ...input.data, code: businessCode("ROUTE") } }), { status: 201 }); } catch { return NextResponse.json({ error: "路线资料无法保存" }, { status: 409 }); }
 }

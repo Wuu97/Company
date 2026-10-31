@@ -4,10 +4,10 @@
   justify-content: center;
   min-height: 40px;
   padding: 0 9px;
-  border: 1px solid #d9d9d9;
+  border: 1px solid transparent;
   border-radius: 7px;
-  background: #ffffff;
-  color: #434343;
+  background: #2563eb;
+  color: #ffffff;
   font: inherit;
   font-size: var(--type-button-size);
   font-weight: var(--type-button-weight);
@@ -22,7 +22,7 @@
 }
 
 .button:hover:not(:disabled) {
-  background: #f5f5f5;
+  background: #1d4ed8;
   text-decoration: none;
   transform: translateY(-1px);
 }
@@ -119,4 +119,36 @@
   .wideMobile {
     width: 100%;
   }
+}
+
+/* Two adjacent actions share a consistent light-to-dark visual order. */
+:global(*):has(> .button + .button):not(
+    :has(> .button ~ .button ~ .button)
+  ):not(:has(> .danger))
+  > .button:has(+ .button) {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: transparent;
+}
+:global(*):has(> .button + .button):not(
+    :has(> .button ~ .button ~ .button)
+  ):not(:has(> .danger))
+  > .button
+  + .button {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: transparent;
+}
+:global(*):has(> .button + .button):not(
+    :has(> .button ~ .button ~ .button)
+  ):not(:has(> .danger))
+  > .button:has(+ .button):hover:not(:disabled) {
+  background: #bfdbfe;
+}
+:global(*):has(> .button + .button):not(
+    :has(> .button ~ .button ~ .button)
+  ):not(:has(> .danger))
+  > .button
+  + .button:hover:not(:disabled) {
+  background: #1d4ed8;
 }

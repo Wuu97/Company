@@ -77,7 +77,7 @@ export function PlanForm({ orders, factories, containers, confirmations }: { ord
           })}</div> : <p className={businessStyles["muted"]}>请先选择有内部柜子的 SO。</p>}
         </div>
         <FormActions>
-          <Button type="submit" wide="mobile" disabled={busy || !confirmationId || !selectedIds.length}>{busy ? "创建中…" : `创建计划${selectedIds.length ? `（${selectedIds.length} 柜）` : ""}`}</Button>
+          <Button type="submit" wide="mobile" disabled={busy || !confirmationId || !selectedIds.length}>{busy ? "新增中…" : `新增计划${selectedIds.length ? `（${selectedIds.length} 柜）` : ""}`}</Button>
         </FormActions>
         {message && <FeedbackMessage>{message}</FeedbackMessage>}
       </form>

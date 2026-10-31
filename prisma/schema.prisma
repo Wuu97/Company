@@ -426,6 +426,7 @@ model TransportCost {
 }
 
 model Driver {
+  plateNumber     String?
   id              String           @id @default(cuid())
   code            String           @unique
   name            String
@@ -453,6 +454,7 @@ model FleetOwner {
 model Vehicle {
   id           String         @id @default(cuid())
   plateNumber  String         @unique
+  phone        String?
   vehicleType  String?
   fleetOwnerId String?
   active       Boolean        @default(true)
