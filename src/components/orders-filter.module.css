@@ -1,0 +1,10 @@
+.exportCsv.exportCsv {
+  background: #e8eef7;
+  border: 1px solid #d3ddea;
+  color: #434343;
+}
+.exportCsv.exportCsv:hover:not(:disabled) {
+  background: #dde6f2;
+  border-color: #c5d2e4;
+  color: #434343;
+}
