@@ -3,3 +3,18 @@
 
 .selectOptions{max-height:260px;overflow-y:auto;overscroll-behavior:contain}
 .selectSearch{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;clip:rect(0 0 0 0);overflow:hidden;white-space:nowrap}.selectEmpty{padding:8px;color:#64748b;font-size:var(--type-caption-size);text-align:center}
+
+/* All filter actions use the same toolbar dimensions as CSV export. */
+.actions.actions > button,
+.actions.actions > a {
+  min-height: 36px;
+  padding: 0 9px;
+  font-size: 13px;
+  font-weight: var(--type-button-weight);
+  line-height: var(--type-button-line-height);
+  border-radius: 7px;
+}
+@media (max-width: 760px) {
+  .actions.actions > button,
+  .actions.actions > a { min-height: 44px; }
+}

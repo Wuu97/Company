@@ -12,7 +12,9 @@ const schema = z.object({
   })).default([]),
 });
 
-const instruction = `You extract shipping-order data. Return JSON only. Never invent values. Dates must preserve the document's stated local date/time. Return exactly {"fields":{"soNumber":{"value":"...","evidence":"...","confidence":0.95}},"containers":[{"containerType":"40HC","quantity":1}]}. Omit unknown fields. Every field value must be a string. Every populated field needs its exact source snippet and confidence 0..1. Valid fields: ${fields.join(", ")}. ETB is only a printed ETB, never calculate it. openingText is cargo receiving/opening date, never calculate it.`;
+const instruction = `You extract shipping-order data. Return JSON only. Never invent values. Dates must preserve the document's stated local date/time. Return exactly {"fields":{"soNumber":{"value":"...","evidence":"...","confidence":0.95}},"containers":[{"containerType":"40HC","quantity":1}]}. Omit unknown fields. Every field value must be a string. Every populated field needs its exact source snippet and confidence 0..1. Valid fields: ${fields.join(", ")}. ETB is only a printed ETB, never calculate it. openingText is cargo receiving/opening date, never calculate it.
+
+Business normalization rules: emptyPickupLocation must be a named empty-container depot only. Do NOT use a city/country shown as RELEASE FROM (for example SHENZHEN, CHINA) as an empty pickup location. If no named depot is printed, return the loadPort as emptyPickupLocation, with evidence that shows the release city and the load port. fullReturnLocation is the named RETURN INTO terminal. Normalize high-cube dry containers to the system code 40HC (so 40HQ / 40' HQ / 40' DRY HC become 40HC).`;
 
 export async function extractSoWithDeepSeek(input: { text: string; images: Array<{ page: number; mime: string; base64: string }> }): Promise<AiSoExtraction | undefined> {
   const apiKey = process.env.DEEPSEEK_API_KEY;
@@ -23,10 +25,12 @@ export async function extractSoWithDeepSeek(input: { text: string; images: Array
   const model = configuredModel === "deepseek-chat" ? "deepseek-flash" : configuredModel;
   const content: Array<Record<string, unknown>> = [{ type: "text", text: `${instruction}\n\nAccuracy rules: examine every supplied page; ETD/ETA must be chronologically valid, and ETA must be for the stated final discharge port. Do not use document issue date as a shipping date.\n\nLocal PDF text (may contain layout errors):\n${input.text.slice(0, 60_000)}` }];
   for (const image of input.images.slice(0, 6)) { content.push({ type: "text", text: `PDF page ${image.page}:` }); content.push({ type: "image_url", image_url: { url: `data:${image.mime};base64,${image.base64}`, detail: "high" } }); }
-  const response = await fetch("https://api.deepseek.com/chat/completions", { signal: AbortSignal.timeout(90_000), method: "POST", headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" }, body: JSON.stringify({ model, temperature: 0, max_tokens: 4_000, thinking: { type: "enabled" }, reasoning_effort: "high", response_format: { type: "json_object" }, messages: [{ role: "user", content }] }) });
+  const response = await fetch("https://api.deepseek.com/chat/completions", { signal: AbortSignal.timeout(90_000), method: "POST", headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" }, body: JSON.stringify({ model, temperature: 0, max_tokens: 8_000, thinking: { type: "enabled" }, reasoning_effort: "high", response_format: { type: "json_object" }, messages: [{ role: "user", content }] }) });
   if (!response.ok) throw new Error(`DeepSeek 识别失败（HTTP ${response.status}）`);
   const body = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
-  const raw = JSON.parse(body.choices?.[0]?.message?.content || "{}") as Record<string, unknown>;
+  const responseContent = body.choices?.[0]?.message?.content;
+  if (!responseContent?.trim()) throw new Error("DeepSeek 未返回结构化内容");
+  const raw = JSON.parse(responseContent) as Record<string, unknown>;
   // Models occasionally return the requested fields at the JSON top level.
   // Normalize both formats before validation instead of discarding a valid answer.
   const fieldInput = (raw.fields && typeof raw.fields === "object" ? raw.fields : Object.fromEntries(fields.map(field => [field, raw[field]]))) as Record<string, unknown>;
