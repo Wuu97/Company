@@ -135,7 +135,6 @@ export function RouteManagementClient({
       .map((part) => part.trim())
       .filter(Boolean);
     const body = {
-      code: editing.id ? editing.code : undefined,
       name: f.get("name"),
       origin: routeParts[0] || "未填写",
       destination: routeParts.at(-1) || "未填写",
@@ -194,7 +193,7 @@ export function RouteManagementClient({
   }
   async function toggleRoute(route: Route, active = !route.active) {
     try {
-      const updated = await request(`/api/finance/routes/${route.id}`, "PATCH", { code: route.code, name: route.name, origin: route.origin, destination: route.destination, viaPoints: route.viaPoints || null, routeType: route.routeType, standardKilometers: route.standardKilometers || null, standardToll: route.standardToll || null, standardFuel: route.standardFuel || null, applicableVehicleTypes: route.applicableVehicleTypes || [], applicableContainerTypes: route.applicableContainerTypes || [], note: route.note || null, active });
+      const updated = await request(`/api/finance/routes/${route.id}`, "PATCH", { name: route.name, origin: route.origin, destination: route.destination, viaPoints: route.viaPoints || null, routeType: route.routeType, standardKilometers: route.standardKilometers || null, standardToll: route.standardToll || null, standardFuel: route.standardFuel || null, applicableVehicleTypes: route.applicableVehicleTypes || [], applicableContainerTypes: route.applicableContainerTypes || [], note: route.note || null, active });
       setRoutes(all => all.map(item => item.id === route.id ? { ...item, ...updated } : item));
     } catch (error) { setNotice(error instanceof Error ? error.message : "状态更新失败"); }
   }
@@ -567,7 +566,7 @@ function PriceForm({
           inputMode="decimal"
         />
         <TextField label="适用柜型（逗号分隔）" name="containerTypes" />
-        <TextareaField label="备注" name="note" />
+        <TextField label="备注" name="note" />
       </form>
     </Dialog>
   );

@@ -5,7 +5,10 @@
 2. `docker compose up -d`
 3. `npm install`
 4. `npm run db:generate && npm run db:migrate`
-5. `npm run dev`
+5. `npm run db:seed`（导入已确认的历史路线、报价模板和司机账单工厂名称）
+6. `npm run dev`
+
+历史初始化资料保存在项目的 `scripts/import-confirmed-settlement-templates.ts` 和 `scripts/import-driver-excel-factories.ts`，新环境迁移数据库后运行上述导入命令。系统运行期间新增或修改的资料保存在 PostgreSQL，换电脑时需要连接同一个数据库，或从数据库备份恢复；初始化脚本不能替代业务数据备份。
 
 Original SO files are stored behind a storage interface; local development uses `FILE_STORAGE_ROOT`. Back up PostgreSQL plus this directory together. Never commit `.env` or production files.
 

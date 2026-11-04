@@ -101,7 +101,6 @@ export function ResourceRecords({
           active: id ? data.get("active") === "on" : true,
         }
       : {
-          code: data.get("code"),
           ...(kind === "drivers" ? { plateNumber: String(data.get("plateNumber") || "") || null } : {}),
           name: data.get("name"),
           phone: String(data.get("phone") || "") || null,
@@ -152,7 +151,7 @@ export function ResourceRecords({
             <FilterTextField
               name="q"
               defaultValue={q}
-              placeholder={isVehicle ? "车牌号或手机号" : kind === "drivers" ? "编码、姓名、车牌或联系电话" : "编码、名称或联系电话"}
+              placeholder={isVehicle ? "车牌号或手机号" : kind === "drivers" ? "姓名、车牌或联系电话" : "名称或联系电话"}
             />
           </FilterField>
           <FilterField label="档案状态">
@@ -179,7 +178,7 @@ export function ResourceRecords({
                     <small>
                       {isVehicle
                         ? item.phone || "手机号未填写"
-                        : `${item.code}${item.plateNumber ? ` · ${item.plateNumber}` : ""}${item.phone ? ` · ${item.phone}` : ""}`}
+                        : `${[item.plateNumber, item.phone].filter(Boolean).join(" · ")}`}
                     </small>
                   </div>
                   <StatusBadge tone={item.active ? "success" : "muted"}>
@@ -251,15 +250,6 @@ export function ResourceRecords({
               </>
             ) : (
               <>
-                {row && (
-                  <TextField
-                    label={label.code}
-                    name="code"
-                    defaultValue={row.code}
-                    required
-                    disabled={busy}
-                  />
-                )}
                 <TextField
                   label={label.name}
                   name="name"

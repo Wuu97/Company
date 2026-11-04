@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { CreateActions } from "./create-actions";
 import {
   CustomerRecordForm,
+  CustomerStatusSelect,
   FactoryRecordForm,
 } from "@/components/customer-record-forms";
 import { ArchiveSection, ArchiveEmptyState } from "@/components/ui/archive";
@@ -98,7 +99,7 @@ export default async function Customers({
             <FilterTextField
               name="q"
               defaultValue={q}
-              placeholder="客户编码、客户或工厂名称"
+              placeholder="客户或工厂名称"
             />
           </FilterField>
           <FilterField label="档案状态">
@@ -115,26 +116,19 @@ export default async function Customers({
         </ListFilter>
       </ArchiveSection>
       <ArchiveSection title="客户与工厂" count={total}>
-        <ResultSummary className={styles.resultSummary}>
-          共 {total} 个客户，第 {currentPage} / {totalPages} 页。
-        </ResultSummary>
+
         <RecordCardList className={styles.list} density="compact">
           {customers.length ? (
             customers.map((c) => (
               <RecordCard
                 density="compact"
-                className={c.active ? undefined : styles.inactive}
+                className={`${styles.customerRow} ${c.active ? "" : styles.inactive}`}
                 key={c.id}
               >
                 <RecordCardHeader density="compact" className={styles.header}>
                   <div>
-                    <span className={styles.label}>客户</span>
                     <b>{c.name}</b>
-                    <small>{c.code}</small>
                   </div>
-                  <StatusBadge tone={c.active ? "success" : "muted"}>
-                    {c.active ? "启用" : "停用"}
-                  </StatusBadge>
                 </RecordCardHeader>
                 <div className={styles.body}>
                   <div>
@@ -144,7 +138,7 @@ export default async function Customers({
                         {c.factories.map((factory) => (
                           <div className={styles.factory} key={factory.id}>
                             <b>{factory.name}</b>
-                            <span>{factory.address}</span>
+                            <span className={styles.address}>{factory.address}</span>
                             {factory.contactName && (
                               <small>
                                 {factory.contactName}
@@ -153,10 +147,6 @@ export default async function Customers({
                                   : ""}
                               </small>
                             )}
-                            <FactoryRecordForm
-                              customerId={c.id}
-                              factory={factory}
-                            />
                           </div>
                         ))}
                       </div>
@@ -166,15 +156,11 @@ export default async function Customers({
                   </div>
                 </div>
                 <div className={styles.footer}>
+                  <CustomerStatusSelect customer={c} />
+                  {c.factories.map((factory) => (
+                    <FactoryRecordForm key={factory.id} customerId={c.id} factory={factory} />
+                  ))}
                   <CustomerRecordForm customer={c} />
-                  <CreateActions
-                    customers={
-                      allActive.some((item) => item.id === c.id)
-                        ? allActive
-                        : [{ id: c.id, name: c.name }, ...allActive]
-                    }
-                    customerId={c.id}
-                  />
                 </div>
               </RecordCard>
             ))

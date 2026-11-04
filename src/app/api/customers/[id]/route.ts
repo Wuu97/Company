@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { currentUser } from "@/lib/auth";
 import { actorFields } from "@/lib/audit";
 
-const schema = z.object({ code: z.string().trim().min(1).max(80), name: z.string().trim().min(1).max(200), active: z.boolean() });
+const schema = z.object({ name: z.string().trim().min(1).max(200).optional(), active: z.boolean() });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const input = schema.safeParse(await request.json());

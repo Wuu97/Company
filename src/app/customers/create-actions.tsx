@@ -75,13 +75,11 @@ export function CreateActions({
       ) : (
         <>
           <Button
-            className={styles.primaryAction}
             onClick={() => open("customer")}
           >
             + 新增客户
           </Button>
           <Button
-            className={styles.secondaryAction}
             variant="secondary"
             onClick={() => open("factory")}
           >
