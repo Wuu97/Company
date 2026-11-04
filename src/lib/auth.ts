@@ -1,7 +1,6 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { hashPassword, verifyPassword } from "./passwords";
 import { assertSessionConfigured, SESSION_DURATION_MS, SESSION_RENEWAL_THRESHOLD_MS } from "./session-config";
 
 export { hashPassword, verifyPassword } from "./passwords";

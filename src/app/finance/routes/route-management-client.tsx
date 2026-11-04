@@ -223,17 +223,6 @@ export function RouteManagementClient({
       setNotice(x instanceof Error ? x.message : "更新失败");
     }
   }
-  async function aliasStatus(id: string, status: string) {
-    try {
-      await request(`/api/finance/route-aliases/${id}`, "PATCH", {
-        status,
-        routeId: detail.id,
-      });
-      await refresh(detail.id);
-    } catch (x) {
-      setNotice(x instanceof Error ? x.message : "更新失败");
-    }
-  }
   const shownPrices =
     detail?.prices.filter(
       (p: any) =>

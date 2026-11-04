@@ -23,7 +23,6 @@ import {
   RecordCardList,
 } from "@/components/ui/record-card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import businessStyles from "@/components/business.module.css";
 
 type Kind = "drivers" | "fleet-owners" | "temporary-vehicles";
 type Row = {

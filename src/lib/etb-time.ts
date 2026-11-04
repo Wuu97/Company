@@ -5,6 +5,8 @@
  */
 export function parseChinaEtb(raw: string): Date | undefined {
   const normalized = raw.trim().replace(/年|\//g, "-").replace(/月/g, "-").replace(/日/g, "");
-  const value = new Date(normalized.includes("T") ? normalized : `${normalized.replace(" ", "T")}+08:00`);
+  const dateTime = normalized.replace(" ", "T");
+  const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(dateTime);
+  const value = new Date(hasTimezone ? dateTime : `${dateTime}+08:00`);
   return Number.isNaN(value.valueOf()) ? undefined : value;
 }

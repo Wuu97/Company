@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
-import { SelectField, TextField } from "@/components/ui/form-controls";
+import { SelectField } from "@/components/ui/form-controls";
 import { NavTabs } from "@/components/ui/nav-tabs";
 import { PageHeader } from "@/components/ui/page-header";
 import { CompactSelect } from "@/components/ui/compact-select";

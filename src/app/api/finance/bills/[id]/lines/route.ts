@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { authErrorResponse, requireFinancialAccess } from "@/lib/auth";
+import { requireFinancialAccess } from "@/lib/auth";
 import { addSettlementLine } from "@/lib/settlement/bill-service";
 const fee = z.object({ code: z.string().min(1), amount: z.string().regex(/^\d+(?:\.\d{1,2})?$/), participatesInSettlement: z.boolean(), bearer: z.enum(["COMPANY", "DRIVER", "PARTNER", "CUSTOMER", "THIRD_PARTY"]), includedInBaseRate: z.boolean() });
 const schema = z.object({ transportTaskId: z.string(), transportLegId: z.string(), billingBasis: z.enum(["CONTAINER", "TRIP", "LEG", "COMBINATION", "ADHOC"]), combination: z.enum(["SINGLE", "DOUBLE_TRAILER", "SHARED_TRAILER"]), quantity: z.string().regex(/^\d+(?:\.\d{1,2})?$/), containerUnitId: z.string().optional(), transportBillingGroupId: z.string().optional(), manualFees: z.array(fee).optional(), deductions: z.array(z.object({ code: z.string(), amount: z.string().regex(/^\d+(?:\.\d{1,2})?$/) })).optional() });
