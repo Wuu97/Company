@@ -25,7 +25,7 @@
   --type-control-compact-weight: 400;
   --type-control-compact-line-height: 20px;
   --type-button-size: 14px;
-  --type-button-weight: 500;
+  --type-button-weight: 400;
   --type-button-line-height: 20px;
   --type-status-size: 12px;
   --type-status-weight: 500;
@@ -116,3 +116,13 @@ summary:focus-visible {
     font-size: 16px;
   }
 }
+
+/* Keep all button labels at regular weight, including nested label elements. */
+button, button *, [role="button"], [role="button"] *, input[type="button"], input[type="submit"], input[type="reset"] {
+  font-weight: 400 !important;
+}
+
+/* Shared geometry for content-centered dialogs and notifications. */
+body{--content-sidebar-width:0px}
+@media(min-width:761px){body:has(>aside){--content-sidebar-width:220px}body>aside{width:var(--content-sidebar-width);flex-shrink:0}}
+@media(min-width:761px) and (max-width:1200px){body:has(>aside){--content-sidebar-width:196px}}

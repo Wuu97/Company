@@ -1,0 +1,1 @@
+ALTER TABLE "AppUser" ADD COLUMN "lastActiveAt" TIMESTAMP(3);

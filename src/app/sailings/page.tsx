@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { RecordCard, RecordCardField, RecordCardFields, RecordCardList } from "@/components/ui/record-card";
 import { EtbConfirmationTag } from "@/components/etb-confirmation-tag";
-import { Pagination } from "@/components/ui/list";
+import { Pagination } from "@/components/ui/pagination";
 import styles from "./page.module.css";
 
 const pageSize = 5;
@@ -39,6 +39,6 @@ export default async function Sailings({ searchParams }: { searchParams: Promise
         </RecordCardFields>
       </section>)}
     </RecordCard>) : <EmptyState title="暂无自动归集的船期">请先完成 SO 核对；船名、航次和装货港齐全后，系统会自动创建或关联船期。</EmptyState>}</RecordCardList>
-    <Pagination currentPage={currentPage} totalPages={totalPages} href={page => `/sailings?page=${page}`} label="船期分页" />
+    <Pagination currentPage={currentPage} totalPages={totalPages} total={found.length} href={page => `/sailings?page=${page}`} label="船期分页" />
   </>;
 }

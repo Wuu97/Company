@@ -163,7 +163,6 @@ export function ResourceRecords({
           </FilterField>
           <FilterActions>
             <FilterClearLink href={`/${kind}`} />
-            <Button type="submit">搜索</Button>
           </FilterActions>
         </ListFilter>
       </ArchiveSection>

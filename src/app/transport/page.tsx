@@ -8,9 +8,9 @@ import { TransportCostForm } from "@/components/transport-cost-form";
 import { currentUser } from "@/lib/auth";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { FilterActions, FilterClearLink, FilterField, FilterSelectField, FilterTextField, ListFilter, Pagination, ResultSummary } from "@/components/ui/list";
+import { FilterActions, FilterClearLink, FilterField, FilterSelectField, FilterTextField, ListFilter, ResultSummary } from "@/components/ui/list";
+import { Pagination } from "@/components/ui/pagination";
 import { RecordCard, RecordCardField, RecordCardFields, RecordCardHeader, RecordCardList } from "@/components/ui/record-card";
-import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { NavTabs } from "@/components/ui/nav-tabs";
 import styles from "./page.module.css";
@@ -30,7 +30,7 @@ export default async function Transport({ searchParams }: { searchParams: Promis
   return <>
     <PageHeader title="运输任务" description={<>按任务记录派车、换车和实际还柜情况。完成前，请确保每一段运输都已补充实际还柜时间。 {canManageCosts ? <a href="/api/transport-tasks/export">导出运输记录</a> : <span className={businessStyles["muted"]}>费用记录仅管理员可维护。</span>}</>} />
     <NavTabs className={businessStyles["status-quick-filter"]} label="快捷查看" items={[{ label: "全部", href: statusHref(input), active: !status }, ...statuses.map(value => ({ label: statusLabel(value), href: statusHref(input, value), active: status === value, count: statusGroups.find(item => item.status === value)?._count._all || 0 }))]} />
-    <ListFilter className={styles.filter}><FilterField label="查找任务" search><FilterTextField name="q" defaultValue={q} placeholder="输入 SO 或工厂名称" /></FilterField><FilterField label="运输状态"><FilterSelectField name="status" defaultValue={status || ""}><option value="">全部</option>{statuses.map(value => <option key={value} value={value}>{statusLabel(value)}</option>)}</FilterSelectField></FilterField><FilterActions className={styles.filterActions}><Button type="submit">查看任务</Button><FilterClearLink href="/transport" /></FilterActions></ListFilter>
+    <ListFilter className={styles.filter}><FilterField label="查找任务" search><FilterTextField name="q" defaultValue={q} placeholder="输入 SO 或工厂名称" /></FilterField><FilterField label="运输状态"><FilterSelectField name="status" defaultValue={status || ""}><option value="">全部</option>{statuses.map(value => <option key={value} value={value}>{statusLabel(value)}</option>)}</FilterSelectField></FilterField><FilterActions className={styles.filterActions}><FilterClearLink href="/transport" /></FilterActions></ListFilter>
     <ResultSummary className={styles.resultSummary}>共 {total} 个运输任务，第 {currentPage} / {totalPages} 页。</ResultSummary>
     <RecordCardList className={styles.list} density="compact">{tasks.length ? tasks.map(task => <RecordCard density="compact" className={task.etbImpactNeedsReview ? styles.attentionCard : undefined} key={task.id}>
       <RecordCardHeader density="compact" className={styles.header}><div><span className={styles.label}>订单 / 工厂</span><a href={`/orders/${task.loadingPlan.soOrder.id}`}>{task.loadingPlan.soOrder.soNumber}</a><b> · {task.loadingPlan.factory.name}</b></div><StatusBadge tone={statusTone(task.status)}>{statusLabel(task.status)}</StatusBadge></RecordCardHeader>
@@ -39,6 +39,6 @@ export default async function Transport({ searchParams }: { searchParams: Promis
       <div className={styles.details}><h4>运输执行</h4><TransportLegEditorList taskId={task.id} status={task.status} legs={task.legs} factoryFallback="工厂待定" emptyMessage="尚未记录运输段，请先补充车辆和路线。"/></div>
       <div className={styles.cost}><TransportCostForm taskId={task.id} costs={task.costs} canManage={canManageCosts} /></div>
     </RecordCard>) : <EmptyState title="未找到运输任务">可尝试调整 SO、工厂或运输状态。</EmptyState>}</RecordCardList>
-    <Pagination currentPage={currentPage} totalPages={totalPages} href={page => href(input, page)} label="运输任务分页"/>
+    <Pagination currentPage={currentPage} totalPages={totalPages} total={total} href={page => href(input, page)} label="运输任务分页"/>
   </>;
 }

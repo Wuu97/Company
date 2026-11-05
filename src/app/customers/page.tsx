@@ -15,9 +15,9 @@ import {
   FilterSelectField,
   FilterTextField,
   ListFilter,
-  Pagination,
   ResultSummary,
 } from "@/components/ui/list";
+import { Pagination } from "@/components/ui/pagination";
 import {
   RecordCard,
   RecordCardHeader,
@@ -26,7 +26,6 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PageHeader } from "@/components/ui/page-header";
 import styles from "./page.module.css";
-import { Button } from "@/components/ui/button";
 
 const pageSize = 50;
 type Search = { q?: string; status?: string; page?: string };
@@ -111,7 +110,6 @@ export default async function Customers({
           </FilterField>
           <FilterActions className={styles.filterActions}>
             <FilterClearLink href="/customers" />
-            <Button type="submit">搜索</Button>
           </FilterActions>
         </ListFilter>
       </ArchiveSection>
@@ -176,7 +174,7 @@ export default async function Customers({
         </RecordCardList>
         <Pagination
           currentPage={currentPage}
-          totalPages={totalPages}
+          totalPages={totalPages} total={total}
           href={(page) => href(input, page)}
           label="客户档案分页"
         />

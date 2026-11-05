@@ -1,0 +1,5 @@
+.clearButton.clearButton{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:0 10px;border:1px solid #fecaca;border-radius:6px;background:#fee2e2;color:#b42318;font-size:13px;line-height:20px;box-shadow:none;transition:background .15s,border-color .15s,color .15s}
+.clearButton.clearButton svg{width:16px;height:16px;flex:none;stroke-width:1.6}
+.clearButton.clearButton:hover:not(:disabled){background:#fecaca;border-color:#f1a6a1;color:#b42318;box-shadow:none;transform:none}
+.clearButton.clearButton:active:not(:disabled){background:#fca5a5;box-shadow:none}
+@media(max-width:760px){.clearButton.clearButton{min-height:44px}}

@@ -16,7 +16,7 @@ import {
 import styles from "./orders-toolbar.module.css";
 import orderStyles from "./orders.module.css";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Pagination } from "@/components/ui/list";
+import { Pagination } from "@/components/ui/pagination";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 
@@ -285,7 +285,7 @@ export default async function Orders({
       ) : (
         <EmptyState title={reviewOnly ? "暂无待复核 SO" : "未找到符合条件的订单"}>{reviewOnly ? "当前没有识别冲突或缺少核心字段的订单。" : "可尝试调整关键词或筛选条件。"}</EmptyState>
       )}
-      <Pagination currentPage={currentPage} totalPages={totalPages} href={page => href(input, page)} label="订单分页"/>
+      <Pagination currentPage={currentPage} totalPages={totalPages} total={total} href={page => href(input, page)} label="订单分页"/>
     </>
   );
 }

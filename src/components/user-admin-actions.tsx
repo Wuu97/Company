@@ -54,13 +54,16 @@ export function UserAdminActions({
       <Button
         size="small"
         disabled={busy}
-        onClick={() => void update({ action: "set-active", active: !active })}
+        variant="text"
+        style={{ color: active ? "#dc2626" : "#2563eb" }}
+        onClick={() => { if (!active || window.confirm("确定停用此账号？该成员将无法登录系统。")) void update({ action: "set-active", active: !active }); }}
       >
-        {busy ? "处理中…" : active ? "停用账号" : "启用账号"}
+        {busy ? "处理中…" : active ? "停用" : "启用"}
       </Button>{" "}
       <Button
         size="small"
         disabled={busy}
+        variant="text"
         onClick={() => setShowReset(true)}
       >
         重置密码
@@ -68,7 +71,7 @@ export function UserAdminActions({
       {showReset && (
         <form className={businessStyles["password-reset-form"]} onSubmit={resetPassword}>
           <TextField label="新初始密码" type="password" value={password} minLength={8} autoComplete="new-password" onChange={(event) => setPassword(event.target.value)} placeholder="至少 8 位" disabled={busy} required />
-          <Button type="submit" size="small" disabled={busy}>
+          <Button type="submit" variant="text" size="small" disabled={busy}>
             {busy ? "正在保存…" : "确认重置"}
           </Button>
           <Button

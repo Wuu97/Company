@@ -53,6 +53,12 @@ export async function currentUser() {
   if (record.expiresAt.getTime() <= Date.now() + SESSION_RENEWAL_THRESHOLD_MS) {
     await prisma.appSession.update({ where: { id: record.id }, data: { expiresAt: new Date(Date.now() + SESSION_DURATION_MS) } });
   }
+  // Limit activity writes to once a minute, including concurrent authenticated requests.
+  const activityCutoff = new Date(Date.now() - 60_000);
+  await prisma.appUser.updateMany({
+    where: { id: record.user.id, OR: [{ lastActiveAt: null }, { lastActiveAt: { lt: activityCutoff } }] },
+    data: { lastActiveAt: new Date() },
+  });
   return record.user;
 }
 

@@ -27,6 +27,7 @@ model AppUser {
   passwordHash      String
   active            Boolean                @default(true)
   createdAt         DateTime               @default(now())
+  lastActiveAt      DateTime?
   sessions          AppSession[]
   credentialChanges DataSourceCredential[] @relation("CredentialChangedBy")
   notifications     AppNotification[]

@@ -1,20 +1,20 @@
+import { ListFilter, FilterField, FilterTextField, FilterActions, FilterClearLink } from "@/components/ui/list";
 import { redirect } from "next/navigation";
-import businessStyles from "@/components/business.module.css";
+
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { CredentialForm, TestCredentialButton, UserCreateForm } from "@/components/admin-settings-forms";
+import { EditCredentialButton, TestCredentialButton, CreateMemberButton, ViewCredentialButton } from "@/components/admin-settings-forms";
 import { UserAdminActions } from "@/components/user-admin-actions";
-import { statusLabel, statusTone } from "@/lib/status-labels";
+import { statusLabel } from "@/lib/status-labels";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { ButtonLink } from "@/components/ui/button";
+
 import styles from "./page.module.css";
 
-function credentialTestHint(status: string) {
-  return ({ SUCCEEDED: "登录验证通过，可用于后续船期更新。", FAILED: "最近验证未通过，请核对账号后再次验证。", AWAITING_MANUAL: "需要人工协助后才能继续验证。", QUEUED: "验证已安排，结果稍后更新。", RUNNING: "正在验证登录信息。" } as Record<string, string>)[status] || "验证结果已记录，可按需再次验证。";
-}
-
-export default async function Settings() {
+export default async function Settings({ searchParams }: { searchParams: Promise<{ tab?: string; q?: string }> }) {
+  const { tab, q = "" } = await searchParams;
+  const platforms = tab === "platforms";
   try { await requireAdmin(); } catch { redirect("/login"); }
   const [users, credentials, tests] = await Promise.all([
     prisma.appUser.findMany({ select: { id: true, name: true, email: true, role: true, active: true, createdAt: true }, orderBy: { createdAt: "asc" } }),
@@ -23,11 +23,19 @@ export default async function Settings() {
   ]);
   const byTerminal = new Map(credentials.map(item => [item.terminal, item]));
   return <>
-    <PageHeader title="系统设置" description="管理船期平台账号和业务人员权限。平台密码会安全保存，保存后不可再次查看。" />
-    <section><h3>船期平台配置</h3><p className={businessStyles["muted"]}>如平台需要人工验证，会在船期更新记录中提示处理；不会影响已经确认的业务时间。</p><div className={styles.sourceList}>{["盐田", "蛇口"].map(terminal => {
+    <PageHeader title="系统设置" description="管理船期平台账号和业务人员权限。平台密码加密保存，仅管理员可查看。" />
+    <nav className={styles.tabs} aria-label="设置分类"><a href="/settings" aria-current={!platforms ? "page" : undefined}>账号与权限</a><a href="/settings?tab=platforms" aria-current={platforms ? "page" : undefined}>港口平台配置</a></nav>
+    {platforms ? <>    <section aria-label="港口平台配置"><p className={styles.platformHint}><span aria-hidden="true" className={styles.infoIcon}>i</span>修改后请点击“测试连接”验证登录状态。</p><div className={styles.sourceList}>{["盐田", "蛇口"].map(terminal => {
       const item = byTerminal.get(terminal); const test = tests.find(run => run.terminal === terminal);
-      return <article className={styles.sourceCard} key={terminal}><div className={styles.sourceHeader}><div><span>平台</span><h4>{terminal}</h4></div><StatusBadge tone={item ? "success" : "muted"}>{item ? "已配置" : "待配置"}</StatusBadge></div><p>{item ? <>使用账号：<b>{item.username}</b><br/><small>上次更新：{item.updatedAt.toLocaleString("zh-CN")}</small></> : "尚未配置平台账号。"}</p><CredentialForm terminal={terminal} username={item?.username}/>{item && <div className={styles.sourceTest}><TestCredentialButton terminal={terminal}/><p>最近验证：{test ? <><StatusBadge tone={statusTone(test.status)} size="small">{statusLabel(test.status)}</StatusBadge> · {test.createdAt.toLocaleString("zh-CN")}<br/><small>{credentialTestHint(test.status)}</small>{test.screenshotStorageKey && <><br/><ButtonLink variant="secondary" size="small" href={`/api/evidence?key=${encodeURIComponent(test.screenshotStorageKey)}`} target="_blank" rel="noopener noreferrer">查看依据</ButtonLink></>}</> : "尚无验证记录；建议保存账号后先验证登录。"}</p></div>}</article>;
+      return <article className={styles.sourceCard} key={terminal}>
+        <header className={styles.sourceHeader}><div className={styles.portTitle}><span className={styles.portIcon} aria-hidden="true">⚓</span><div><h4>{terminal}港</h4><small>{terminal === "盐田" ? "深圳盐田综合保税区平台" : "招商局蛇口港平台互联系统"}</small></div></div><div className={styles.headerActions}><StatusBadge tone={item ? "success" : "muted"}>{item ? "已配置" : "未配置"}</StatusBadge></div></header>
+        <div className={styles.cardBody}><dl className={styles.credentials}><div><dt>平台账号</dt><dd>{item?.username || "尚未配置"}</dd></div><div><dt>平台密码</dt><dd>{item ? <ViewCredentialButton key={item.updatedAt.toISOString()} terminal={terminal}/> : "—"}</dd></div><div className={styles.updatedAt}><dt>更新时间</dt><dd>{item ? item.updatedAt.toLocaleString("zh-CN") : "—"}</dd></div></dl></div>
+        <footer className={styles.sourceActions}><div className={styles.sourceStatus} data-status={test?.status || "NONE"}>{test ? <><span title={test.errorMessage || undefined}>{test.status === "SUCCEEDED" ? "✓" : test.status === "FAILED" ? "✕" : "●"} {statusLabel(test.status)} · {test.createdAt.toLocaleString("zh-CN")}</span>{test.screenshotStorageKey && <ButtonLink variant="text" size="small" href={`/api/evidence?key=${encodeURIComponent(test.screenshotStorageKey)}`} target="_blank" rel="noopener noreferrer">查看依据</ButtonLink>}</> : <span>● 尚无验证记录</span>}</div><div className={styles.footerAction}>{item && <TestCredentialButton terminal={terminal} pending={Boolean(test && ["PENDING", "RUNNING", "AWAITING_MANUAL"].includes(test.status))}/>}<EditCredentialButton terminal={terminal} username={item?.username}/></div></footer>
+      </article>;
     })}</div></section>
-    <section><h3>账号与权限</h3><p className={businessStyles["muted"]}>管理员可管理账号和系统设置；业务成员可处理 SO、计划和运输等日常业务。</p><UserCreateForm/><div className={styles.userList}>{users.map(user => <article className={styles.userCard} key={user.id}><div><span>姓名</span><b>{user.name}</b><small>{user.email}</small></div><div><span>权限</span><b>{user.role === "ADMIN" ? "管理员" : "业务成员"}</b></div><div><span>状态</span><StatusBadge tone={user.active ? "success" : "muted"}>{user.active ? "启用" : "停用"}</StatusBadge></div><div className={styles.userAction}><UserAdminActions id={user.id} active={user.active}/></div></article>)}</div></section>
+</> : <section className={styles.members}>
+      <div className={styles.memberToolbar}><ListFilter className={styles.memberFilter}><FilterField label="成员姓名 / 邮箱" search><FilterTextField name="q" defaultValue={q} placeholder="搜索成员姓名 / 邮箱" /></FilterField><FilterActions><FilterClearLink href="/settings" /></FilterActions></ListFilter><CreateMemberButton /></div>
+      <div className={styles.tableWrap}><table className={styles.memberTable}><thead><tr><th>成员姓名</th><th>登录邮箱</th><th>角色权限</th><th>账号状态</th><th>操作</th></tr></thead><tbody>{users.filter(user => `${user.name} ${user.email}`.toLowerCase().includes(q.trim().toLowerCase())).map(user => <tr key={user.id}><td>{user.name}</td><td>{user.email}</td><td>{user.role === "ADMIN" ? "管理员" : "业务成员"}</td><td><StatusBadge tone={user.active ? "success" : "muted"}>{user.active ? "● 启用" : "● 停用"}</StatusBadge></td><td><UserAdminActions id={user.id} active={user.active}/></td></tr>)}</tbody></table>{!users.some(user => `${user.name} ${user.email}`.toLowerCase().includes(q.trim().toLowerCase())) && <p>未找到匹配成员</p>}</div>
+    </section>}
   </>;
 }

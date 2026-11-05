@@ -4,10 +4,10 @@ import { ContactTaskActions } from "@/components/contact-task-actions";
 import { formatChinaDateTime } from "@/lib/time";
 import { statusLabel, statusTone } from "@/lib/status-labels";
 import { EmptyState } from "@/components/ui/empty-state";
-import { FilterActions, FilterClearLink, FilterField, FilterSelectField, FilterTextField, ListFilter, Pagination, ResultSummary } from "@/components/ui/list";
+import { FilterActions, FilterClearLink, FilterField, FilterSelectField, FilterTextField, ListFilter, ResultSummary } from "@/components/ui/list";
+import { Pagination } from "@/components/ui/pagination";
 import { RecordCard, RecordCardHeader } from "@/components/ui/record-card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import styles from "./page.module.css";
 const pageSize = 50;
@@ -73,7 +73,6 @@ export default async function ContactTasks({
           </FilterSelectField>
         </FilterField>
         <FilterActions className={styles.filterActions}>
-          <Button type="submit">查看待办</Button>
           <FilterClearLink href="/contact-tasks" />
         </FilterActions>
       </ListFilter>
@@ -130,7 +129,7 @@ export default async function ContactTasks({
           <EmptyState title="暂无符合条件的待办">客户确认事项会在开仓后显示在这里。</EmptyState>
         )}
       </div>
-      <Pagination currentPage={currentPage} totalPages={totalPages} href={page => href(input, page)} label="客户联系待办分页"/>
+      <Pagination currentPage={currentPage} totalPages={totalPages} total={total} href={page => href(input, page)} label="客户联系待办分页"/>
     </>
   );
 }

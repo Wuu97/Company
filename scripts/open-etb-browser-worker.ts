@@ -1,3 +1,5 @@
+import { acceptShekouAgreement } from "../src/lib/shekou-login";
+import { restoreEtbSession, saveEtbSession } from "../src/lib/etb-browser-session";
 import { chromium } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -189,6 +191,7 @@ async function runShekouWorker() {
   try {
     await disableYantianBrowserPasswordSaving(profilePath);
     context = await chromium.launchPersistentContext(profilePath, { executablePath, headless: false, viewport: { width: 1440, height: 960 }, args: ["--disable-save-password-bubble", "--disable-features=PasswordManagerOnboarding"] });
+    await restoreEtbSession(context, profilePath);
     const page = context.pages()[0] || await context.newPage();
     let diagnostic;
     for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -211,9 +214,7 @@ async function runShekouWorker() {
       await password.waitFor({ state: "visible", timeout: 15_000 });
       await username.fill(credential.username);
       await password.fill(credential.password);
-      const agreement = page.locator("label.ivu-checkbox-wrapper", { hasText: "阅读条款并同意" }).first();
-      await agreement.waitFor({ state: "visible", timeout: 10_000 });
-      if (!await agreement.locator("input.ivu-checkbox-input").isChecked().catch(() => false)) await agreement.click({ timeout: 10_000 });
+      await acceptShekouAgreement(page);
       await page.getByRole("button", { name: /^登录$/ }).click({ timeout: 15_000 });
       console.log(JSON.stringify({ terminal: "蛇口", event: "credential_login_submitted", finalUrl: safeShekouUrl(page.url()), title: await page.title(), reason: "已预填账号密码并提交；若出现图形验证码，请员工在受控浏览器手动完成。" }));
     }
@@ -228,6 +229,7 @@ async function runShekouWorker() {
       }
       if (!loggedIn) throw new Error("等待蛇口人工登录验证超时；未尝试绕过验证码，保留待验收状态。");
     }
+    await saveEtbSession(context, profilePath);
     if (!inspectQuery) return;
     await page.waitForFunction(() => {
       const text = document.body?.innerText || "";

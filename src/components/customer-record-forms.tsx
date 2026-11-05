@@ -54,7 +54,7 @@ export function CustomerRecordForm({ customer }: { customer: Customer }) {
   return (
     <>
       <Button
-        variant="secondary"
+        variant="text"
         size="small"
         onClick={() => {
           setMessage("");
@@ -162,7 +162,7 @@ export function FactoryRecordForm({
   return (
     <>
       <Button
-        variant="secondary"
+        variant="text"
         size="small"
         onClick={() => {
           setMessage("");

@@ -24,5 +24,9 @@
 .time i { font-style: normal; color: #475569; }
 .actions { display: flex; justify-content: flex-end; gap: 5px; margin-top: 6px; }
 .actions button { min-height: 26px; padding: 0 8px; border: 0; border-radius: 5px; background: #dbeafe; color: #1d4ed8; font: inherit; font-size: 11px; font-weight: var(--type-button-weight); cursor: pointer; }
-.actions button:last-child { background: #2563eb; color: #fff; }
+.actions button:last-child { background: #1677ff; color: #fff; }
 .actions button:disabled { cursor: not-allowed; opacity: .55; }
+
+.actions button{background:#1677ff;color:#fff;box-shadow:0 2px 5px rgb(22 119 255 / 22%)}
+.actions button:hover:not(:disabled){background:#4096ff}
+.actions button:active:not(:disabled){background:#0958d9;box-shadow:none}

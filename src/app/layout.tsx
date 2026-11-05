@@ -31,5 +31,5 @@ export default async function Layout({ children }: { children: React.ReactNode }
     { group: "系统与账户", href: "/logs", label: "操作日志" },
     ...(user ? [{ group: "系统与账户", href: "/profile", label: "个人账户" }, ...(user.role === "ADMIN" ? [{ group: "系统与账户", href: "/settings", label: "系统设置" }] : [])] : [{ group: "系统与账户", href: "/login", label: "登录" }]),
   ];
-  return <html lang="zh-CN"><body className={user ? undefined : "unauthenticated"}>{user && <aside><h1>运柜管理</h1><p className={businessStyles["signed-in"]}>{user.name} · {user.role === "ADMIN" ? "负责人" : "成员"}</p><SidebarNav items={items}/><LogoutButton/></aside>}<main className={styles.main}><div className={styles.content}>{children}</div></main></body></html>;
+  return <html lang="zh-CN"><body className={user ? undefined : "unauthenticated"}>{user && <aside><h1>运柜管理</h1><div className={styles.userInfo}><p className={businessStyles["signed-in"]}>{user.name} · {user.role === "ADMIN" ? "管理员" : "业务成员"}</p><LogoutButton compact/></div><SidebarNav items={items}/></aside>}<main className={styles.main}><div className={styles.content}>{children}</div></main></body></html>;
 }

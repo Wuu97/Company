@@ -1,1 +1,6 @@
 .tabs{display:flex;align-items:center;gap:8px;overflow-x:auto;margin:16px 0;padding:10px 12px;border:1px solid #dbeafe;border-radius:9px;background:rgba(255,255,255,.96);box-shadow:0 2px 8px rgba(15,23,42,.06)}.label{flex:none;color:#475569;font-size:13px;font-weight:700}.tab{flex:none}.count{margin-left:5px;font-size:11px;opacity:.8}@media(max-width:760px){.tabs{margin:12px 0;padding:8px}}
+
+.tabs .tab{background:#dbeafe;color:#1d4ed8;border-color:transparent;box-shadow:none}
+.tabs .tab:hover:not(:disabled){background:#bfdbfe;color:#1d4ed8;transform:none}
+.tabs .tab[aria-current=page]{background:#2563eb;color:#fff}
+.tabs .tab[aria-current=page]:hover:not(:disabled){background:#1d4ed8;color:#fff}

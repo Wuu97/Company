@@ -70,7 +70,11 @@ export function FilterSelect({ children, className, triggerClassName, optionsCla
 
   const choose = (nextValue: string) => {
     if (!isControlled) setValue(nextValue);
-    if (inputRef.current) inputRef.current.value = nextValue;
+    if (inputRef.current) {
+      inputRef.current.value = nextValue;
+      // Let the ListFilter shell apply this discrete condition immediately.
+      inputRef.current.dispatchEvent(new Event("change", { bubbles: true }));
+    }
     setOpen(false);
     setQuery("");
     onChange?.({ target: { value: nextValue, name }, currentTarget: { value: nextValue, name } } as ChangeEvent<HTMLSelectElement>);

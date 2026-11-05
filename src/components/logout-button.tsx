@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
 import businessStyles from "@/components/business.module.css";
+import actionStyles from "@/components/action-button.module.css";
 import { Button } from "@/components/ui/button";
-export function LogoutButton() {
+export function LogoutButton({ compact = false }: { compact?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   async function logout() {
@@ -24,6 +25,8 @@ export function LogoutButton() {
       <Button
         onClick={logout}
         disabled={busy}
+        size={compact ? "small" : "default"}
+        className={compact ? actionStyles.sidebarLogout : undefined}
       >
         {busy ? "退出中…" : "退出登录"}
       </Button>

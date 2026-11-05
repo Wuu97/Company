@@ -8,7 +8,7 @@ export function NavTabs({ label, items, className }: { label: string; items: Ite
     <span className={styles.label}>{label}</span>
     {items.map((item, index) => {
       const content = <>{item.label}{item.count !== undefined && <span className={styles.count}>{item.count}</span>}</>;
-      const common = { className: styles.tab, variant: item.active ? "primary" as const : "secondary" as const, size: "toolbar" as const, "aria-current": item.active ? "page" as const : undefined };
+      const common = { "data-navigation-tab": true, className: styles.tab, variant: item.active ? "primary" as const : "secondary" as const, size: "toolbar" as const, "aria-current": item.active ? "page" as const : undefined };
       return item.href
         ? <ButtonLink key={index} {...common} href={item.href}>{content}</ButtonLink>
         : <Button key={index} {...common} onClick={item.onClick}>{content}</Button>;

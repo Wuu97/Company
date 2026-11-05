@@ -11,6 +11,7 @@ type Props = {
   tone?: "default" | "danger";
   message?: ReactNode;
   closeDisabled?: boolean;
+  variant?: "credential";
 };
 
 const focusableSelector = [
@@ -23,7 +24,7 @@ const focusableSelector = [
 ].join(",");
 
 /** Accessible modal dialog for disruptive actions that require an explicit confirmation. */
-export function Dialog({ title, children, actions, onClose, tone = "default", message, closeDisabled = false }: Props) {
+export function Dialog({ title, children, actions, onClose, tone = "default", message, closeDisabled = false, variant }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
@@ -76,8 +77,8 @@ export function Dialog({ title, children, actions, onClose, tone = "default", me
   }
 
   return <div className={styles.backdrop} onMouseDown={closeFromBackdrop}>
-    <div ref={dialogRef} className={[styles.dialog, tone === "danger" ? styles.danger : undefined].filter(Boolean).join(" ")} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1}>
-      <h4 className={styles.title} id={titleId}>{title}</h4>
+    <div ref={dialogRef} className={[styles.dialog, tone === "danger" ? styles.danger : undefined, variant === "credential" ? styles.credential : undefined].filter(Boolean).join(" ")} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1}>
+      <h4 className={styles.title} id={titleId}>{title}</h4>{variant === "credential" && <button className={styles.close} type="button" aria-label="关闭" onClick={onClose}>×</button>}
       <div className={styles.body} id={descriptionId}>{children}</div>
       {message && <small className={styles.message} role="status">{message}</small>}
       <div className={styles.actions}>{actions}</div>

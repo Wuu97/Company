@@ -71,7 +71,7 @@ export async function acquireProfileLock(profilePath: string) {
     await handle.writeFile(`${process.pid}\n${new Date().toISOString()}\n`);
     return async () => { await handle.close(); await unlink(lockPath).catch(() => undefined); };
   } catch (error: unknown) {
-    if ((error as NodeJS.ErrnoException).code === "EEXIST") throw new Error(`盐田浏览器配置目录正被其他 Worker 使用：${profilePath}`);
+    if ((error as NodeJS.ErrnoException).code === "EEXIST") throw new Error(`平台浏览器会话正在使用中，请等待当前登录或查询结束后重试：${profilePath}`);
     throw error;
   }
 }

@@ -6,7 +6,8 @@
   padding: 0 9px;
   border: 1px solid transparent;
   border-radius: 7px;
-  background: #2563eb;
+  gap: 8px;
+  background: #1677ff;
   color: #ffffff;
   font: inherit;
   font-size: var(--type-button-size);
@@ -22,9 +23,9 @@
 }
 
 .button:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: #4096ff;
   text-decoration: none;
-  transform: translateY(-1px);
+  transform: none;
 }
 .button:disabled {
   cursor: not-allowed;
@@ -91,6 +92,11 @@
   font-weight: var(--type-status-weight);
   line-height: var(--type-status-line-height);
 }
+.sidebarLogout {
+  min-height: 28px;
+  padding: 0 7px;
+  border-radius: 999px;
+}
 .statusAction {
   min-height: 24px;
   padding: 3px 8px;
@@ -121,34 +127,74 @@
   }
 }
 
-/* Two adjacent actions share a consistent light-to-dark visual order. */
-:global(*):has(> .button + .button):not(
-    :has(> .button ~ .button ~ .button)
-  ):not(:has(> .danger))
-  > .button:has(+ .button) {
+.button.outline { gap: 8px; background: #fff; border: 1px solid #d9d9d9; color: #595959; }
+.button.outline:hover:not(:disabled) { background: #fff; border-color: #2563eb; color: #2563eb; transform: none; }
+
+.button, .button * { font-weight: 400 !important; }
+
+.button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger){background:#1677ff;color:#fff;border-color:#1677ff;box-shadow:0 2px 5px rgb(22 119 255 / 22%)}
+.button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger):hover:not(:disabled){background:#4096ff;border-color:#4096ff;transform:none}
+.button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger):active:not(:disabled){background:#0958d9;border-color:#0958d9;box-shadow:none}
+
+/* Paired blue actions retain their light-to-dark hierarchy. */
+:global(*):has(> .button + .button):not(:has(> .button ~ .button ~ .button))
+> .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger):has(+ .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger)) {
   background: #dbeafe;
+  border-color: transparent;
   color: #1d4ed8;
-  border-color: transparent;
+  box-shadow: none;
 }
-:global(*):has(> .button + .button):not(
-    :has(> .button ~ .button ~ .button)
-  ):not(:has(> .danger))
-  > .button
-  + .button {
-  background: #2563eb;
-  color: #ffffff;
-  border-color: transparent;
-}
-:global(*):has(> .button + .button):not(
-    :has(> .button ~ .button ~ .button)
-  ):not(:has(> .danger))
-  > .button:has(+ .button):hover:not(:disabled) {
+:global(*):has(> .button + .button):not(:has(> .button ~ .button ~ .button))
+> .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger):has(+ .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger)):hover:not(:disabled) {
   background: #bfdbfe;
+  border-color: transparent;
 }
-:global(*):has(> .button + .button):not(
-    :has(> .button ~ .button ~ .button)
-  ):not(:has(> .danger))
-  > .button
-  + .button:hover:not(:disabled) {
-  background: #1d4ed8;
+:global(*):has(> .button + .button):not(:has(> .button ~ .button ~ .button))
+> .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger):has(+ .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger)):active:not(:disabled) {
+  background: #bfdbfe;
+  border-color: transparent;
+}
+
+:global(*):has(> .button + .button):not(:has(> .button ~ .button ~ .button))
+> .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger):has(+ .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger))
++ .button {background:#2563eb;color:#fff;border-color:transparent}
+:global(*):has(> .button + .button):not(:has(> .button ~ .button ~ .button))
+> .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger):has(+ .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger))
++ .button:hover:not(:disabled) {background:#1d4ed8;border-color:transparent}
+
+/* Repeated row actions stay visually subordinate to table data. */
+:global(:is(td, [role="row"], li)) .button:not(:global([role="dialog"] *)),
+.button.text {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0;
+  box-shadow: none !important;
+  color: #1677ff !important;
+  min-height: 28px;
+  padding: 2px 0;
+  transform: none !important;
+}
+:global(:is(td, [role="row"], li)) .button:not(:global([role="dialog"] *)):hover:not(:disabled),
+.button.text:hover:not(:disabled) {
+  background: transparent !important;
+  color: #4096ff !important;
+  text-decoration: underline;
+}
+:global(:is(td, [role="row"], li)) .button.danger:not(:global([role="dialog"] *)) {
+  color: #dc2626 !important;
+}
+:global(:is(td, [role="row"], li)) .button:not(:global([role="dialog"] *)) + .button:not(:global([role="dialog"] *)),
+.button.text + .button.text {
+  position: relative;
+  margin-left: 10px;
+}
+:global(:is(td, [role="row"], li)) .button:not(:global([role="dialog"] *)) + .button:not(:global([role="dialog"] *))::before,
+.button.text + .button.text::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  height: 12px;
+  border-left: 1px solid #e5e7eb;
+  transform: translateY(-50%);
 }

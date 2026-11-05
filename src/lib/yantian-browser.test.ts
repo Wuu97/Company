@@ -33,7 +33,7 @@ describe("Yantian profile isolation", () => {
   it("allows only one worker to claim a profile", async () => {
     const root = await mkdtemp(join(tmpdir(), "yantian-lock-"));
     const release = await acquireProfileLock(root);
-    await expect(acquireProfileLock(root)).rejects.toThrow("正被其他 Worker 使用");
+    await expect(acquireProfileLock(root)).rejects.toThrow("平台浏览器会话正在使用中");
     await release();
     await rm(root, { recursive: true, force: true });
   });
