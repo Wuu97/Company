@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 
 async function dispatch(id: string) {
+  if (process.env.ETB_EXECUTION_MODE === "cloud") return;
   await new Promise<void>((done, reject) => {
     const child = spawn(process.execPath, ["--import", "tsx", resolve("scripts/process-etb-credential-test.ts"), "--run", id], { cwd: process.cwd(), env: process.env, detached: true, stdio: "ignore" });
     child.once("exit", (code) => {

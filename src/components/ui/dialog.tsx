@@ -1,7 +1,14 @@
 "use client";
 
-import { useEffect, useId, useRef, type MouseEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import styles from "./dialog.module.css";
+import { Button } from "./button";
 
 type Props = {
   title: ReactNode;
@@ -11,7 +18,7 @@ type Props = {
   tone?: "default" | "danger";
   message?: ReactNode;
   closeDisabled?: boolean;
-  variant?: "credential";
+  variant?: "manual";
 };
 
 const focusableSelector = [
@@ -24,7 +31,16 @@ const focusableSelector = [
 ].join(",");
 
 /** Accessible modal dialog for disruptive actions that require an explicit confirmation. */
-export function Dialog({ title, children, actions, onClose, tone = "default", message, closeDisabled = false, variant }: Props) {
+export function Dialog({
+  title,
+  children,
+  actions,
+  onClose,
+  tone = "default",
+  message,
+  closeDisabled = false,
+  variant,
+}: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
@@ -36,9 +52,13 @@ export function Dialog({ title, children, actions, onClose, tone = "default", me
   closeDisabledRef.current = closeDisabled;
 
   useEffect(() => {
-    openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    openerRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     const dialog = dialogRef.current;
-    const firstFocusable = dialog?.querySelector<HTMLElement>(focusableSelector);
+    const firstFocusable =
+      dialog?.querySelector<HTMLElement>(focusableSelector);
     (firstFocusable || dialog)?.focus();
 
     function onKeyDown(event: globalThis.KeyboardEvent) {
@@ -48,7 +68,9 @@ export function Dialog({ title, children, actions, onClose, tone = "default", me
         return;
       }
       if (event.key !== "Tab" || !dialog) return;
-      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector));
+      const focusable = Array.from(
+        dialog.querySelectorAll<HTMLElement>(focusableSelector),
+      );
       if (!focusable.length) {
         event.preventDefault();
         dialog.focus();
@@ -68,7 +90,10 @@ export function Dialog({ title, children, actions, onClose, tone = "default", me
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      if (openerRef.current?.isConnected) openerRef.current.focus();
+      const opener = openerRef.current;
+      if (opener?.isConnected) {
+        opener.focus({ preventScroll: true });
+      }
     };
   }, []);
 
@@ -76,12 +101,58 @@ export function Dialog({ title, children, actions, onClose, tone = "default", me
     if (event.target === event.currentTarget && !closeDisabled) onClose();
   }
 
-  return <div className={styles.backdrop} onMouseDown={closeFromBackdrop}>
-    <div ref={dialogRef} className={[styles.dialog, tone === "danger" ? styles.danger : undefined, variant === "credential" ? styles.credential : undefined].filter(Boolean).join(" ")} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1}>
-      <h4 className={styles.title} id={titleId}>{title}</h4>{variant === "credential" && <button className={styles.close} type="button" aria-label="关闭" onClick={onClose}>×</button>}
-      <div className={styles.body} id={descriptionId}>{children}</div>
-      {message && <small className={styles.message} role="status">{message}</small>}
-      <div className={styles.actions}>{actions}</div>
+  return (
+    <div className={styles.backdrop} onMouseDown={closeFromBackdrop}>
+      <div
+        ref={dialogRef}
+        className={[
+          styles.dialog,
+          tone === "danger" ? styles.danger : undefined,
+          variant === "manual" ? styles.manual : undefined,
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+        tabIndex={-1}
+      >
+        <h4 className={styles.title} id={titleId}>
+          {title}
+        </h4>
+        {
+          <Button
+            variant="text"
+            size="small"
+            iconOnly
+            className={styles.close}
+            type="button"
+            aria-label="关闭"
+            disabled={closeDisabled}
+            onClick={onClose}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              aria-hidden="true"
+            >
+              <path d="m6 6 12 12M6 18 18 6" />
+            </svg>
+          </Button>
+        }
+        <div className={styles.body} id={descriptionId}>
+          {children}
+        </div>
+        {message && (
+          <small className={styles.message} role="status">
+            {message}
+          </small>
+        )}
+        <div className={styles.actions}>{actions}</div>
+      </div>
     </div>
-  </div>;
+  );
 }

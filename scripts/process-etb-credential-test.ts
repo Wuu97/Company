@@ -1,3 +1,4 @@
+import { manualSessions } from "../src/lib/etb-manual-session";
 import { acceptShekouAgreement } from "../src/lib/shekou-login";
 import { chromium, type BrowserContext, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
@@ -33,7 +34,7 @@ export async function processCredentialTestRun(id: string) {
       : resolve(".runtime/etb-credential-tests", id);
     release = await acquireProfileLock(profile);
     await disableYantianBrowserPasswordSaving(profile);
-    context = await chromium.launchPersistentContext(profile, { executablePath: process.env.ETB_CHROME_EXECUTABLE_PATH || undefined, headless: run.terminal === "盐田", viewport: { width: 1200, height: 800 } });
+    context = await chromium.launchPersistentContext(profile, { executablePath: process.env.ETB_CHROME_EXECUTABLE_PATH || undefined, headless: process.env.ETB_EXECUTION_MODE === "cloud" || run.terminal === "盐田", viewport: { width: 1200, height: 800 } });
     if (run.terminal === "蛇口") await restoreEtbSession(context, profile);
     page = context.pages()[0] || await context.newPage();
     page.setDefaultTimeout(15_000);
@@ -41,8 +42,11 @@ export async function processCredentialTestRun(id: string) {
     await page.goto(config.homeUrl, { waitUntil: "domcontentloaded" });
     const alreadyLoggedIn = (run.terminal === "盐田" ? isYantianLoggedInPage : isShekouLoggedInPage)(await page.locator("body").innerText());
     if (!alreadyLoggedIn) {
-    const loginLink = page.getByText(/立即登录|登录/).first();
-    if (run.terminal === "盐田" && await loginLink.count()) await loginLink.click();
+    if (run.terminal === "盐田") {
+      const loginLink = page.getByText("登录", { exact: true }).first();
+      await loginLink.waitFor({ state: "visible", timeout: 20_000 });
+      await loginLink.click();
+    }
     const username = page.locator('input[placeholder*="用户名"], input[placeholder*="账号"], input[name*="user" i], input[id*="user" i]').first();
     const password = page.locator('input[type="password"]').first();
     const submit = page.getByRole("button", { name: /^登录$/ }).first();
@@ -56,10 +60,11 @@ export async function processCredentialTestRun(id: string) {
     const image = await screenshot(page, id);
     const body = await page.locator("body").innerText();
     if (/机器人|人机验证|验证码|安全验证|请依次点击|拖动滑块|滑动验证/.test(body) || (run.terminal === "蛇口" && !isShekouLoggedInPage(body))) {
-      if (run.terminal === "盐田") throw new Error("盐田平台本次要求人工验证，无头验证无法继续，请使用可视化浏览器完成登录");
+      if (run.terminal === "盐田" && process.env.ETB_EXECUTION_MODE !== "cloud") throw new Error("盐田平台本次要求人工验证，无头验证无法继续，请使用可视化浏览器完成登录");
       await prisma.etbCredentialTestRun.update({ where: { id }, data: { status: "AWAITING_MANUAL", errorMessage: "请在验证浏览器中确认登录协议并完成人工验证码", screenshotStorageKey: image } });
       await prisma.operationLog.create({ data: { action: "ETB_CREDENTIAL_TEST_AWAITING_MANUAL", entityType: "EtbCredentialTestRun", entityId: id, after: { terminal: run.terminal } } });
       console.log("需要人工验证；请在打开的 Worker 浏览器完成验证，系统确认后会自动保存会话并关闭浏览器。");
+      if (process.env.ETB_EXECUTION_MODE === "cloud") manualSessions.set(id, page);
       const deadline = Date.now() + 5 * 60_000;
       while (Date.now() < deadline && !page.isClosed()) {
         const text = await page.locator("body").innerText();
@@ -79,7 +84,7 @@ export async function processCredentialTestRun(id: string) {
     const image = page ? await screenshot(page, id).catch(() => undefined) : undefined;
     await prisma.etbCredentialTestRun.update({ where: { id }, data: { status: "FAILED", errorMessage: error instanceof Error ? error.message : "未知登录测试失败", screenshotStorageKey: image, finishedAt: new Date() } });
     throw error;
-  } finally { if (context) await context.close().catch(() => undefined); await release?.(); }
+  } finally { manualSessions.delete(id); if (context) await context.close().catch(() => undefined); await release?.(); }
 }
 async function main() {
   const id = argument("--run");

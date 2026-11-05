@@ -61,7 +61,7 @@ export default async function ContactTasks({
   return (
     <>
       <PageHeader title="客户联系待办" description="在开仓后联系客户确认柜量。可分批确认，再按已确认柜量安排装柜。" />
-      <ListFilter className={styles.filter}>
+      <ListFilter>
         <FilterField label="查找订单" search>
           <FilterTextField name="q" defaultValue={q} placeholder="输入 SO 编号" />
         </FilterField>
@@ -72,11 +72,11 @@ export default async function ContactTasks({
             <option value="COMPLETED">已完成</option>
           </FilterSelectField>
         </FilterField>
-        <FilterActions className={styles.filterActions}>
+        <FilterActions>
           <FilterClearLink href="/contact-tasks" />
         </FilterActions>
       </ListFilter>
-      <ResultSummary className={styles.resultSummary}>
+      <ResultSummary>
         共 {total} 条，第 {currentPage} / {totalPages} 页。
       </ResultSummary>
       <div className={styles.list}>

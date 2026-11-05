@@ -1,0 +1,21 @@
+services:
+  etb-worker:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.etb-worker
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      ETB_EXECUTION_MODE: cloud
+      ETB_WORKER_HOST: 0.0.0.0
+      ETB_CHROME_EXECUTABLE_PATH: ""
+      ETB_BROWSER_PROFILE_ROOT: /data/profiles
+      FILE_STORAGE_ROOT: /data/uploads
+    volumes:
+      - etb_profiles:/data/profiles
+      - ../uploads:/data/uploads
+    # Only a same-host web service can reach this authenticated bridge.
+    ports: ["127.0.0.1:3100:3100"]
+    shm_size: 1gb
+volumes:
+  etb_profiles:

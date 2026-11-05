@@ -95,14 +95,14 @@ export function CreateActions({
           closeDisabled={busy}
           actions={
             <>
-              <Button
+              <Button size="toolbar"
                 variant="secondary"
                 disabled={busy}
                 onClick={() => setMode(null)}
               >
                 取消
               </Button>
-              <Button type="submit" form={id} disabled={busy}>
+              <Button size="toolbar" type="submit" form={id} disabled={busy}>
                 {busy ? "保存中…" : "确认新增"}
               </Button>
             </>

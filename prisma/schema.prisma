@@ -74,6 +74,7 @@ model LoginAttempt {
 model DataSourceCredential {
   id          String                 @id @default(cuid())
   terminal    String                 @unique
+  loginUrl    String?
   username    String
   ciphertext  String
   iv          String

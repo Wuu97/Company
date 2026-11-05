@@ -1,3 +1,5 @@
+import { manualSessions } from "../src/lib/etb-manual-session";
+import { restoreEtbSession, saveEtbSession } from "../src/lib/etb-browser-session";
 import { chromium, type Frame, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -136,15 +138,18 @@ async function awaitManualCaptcha(page: Page, run: Run, terminal: "盐田" | "�
   const deadline = Date.now() + 15 * 60_000;
   await prisma.etbQueryRun.update({ where: { id: run.id }, data: { status: "AWAITING_MANUAL", sessionState: "ROBOT_VERIFICATION_REQUIRED", errorMessage: "平台要求人工完成图形/点击验证；受控浏览器已保持打开。", handoffReason: "请在受控浏览器完成验证码，Worker 会在验证消失后自动继续。", screenshotStorageKey: key, retryAfter: new Date(deadline) } });
   console.log(JSON.stringify({ event: "captcha_manual_action_required", terminal, runId: run.id, deadline: new Date(deadline).toISOString(), screenshotStorageKey: key }));
+  if (process.env.ETB_EXECUTION_MODE === "cloud") manualSessions.set(run.id, page);
   while (Date.now() < deadline && !page.isClosed()) {
     await page.waitForTimeout(1_000);
     const current = await page.locator("body").innerText().catch(() => "");
     if (!captchaPattern.test(current)) {
       await prisma.etbQueryRun.update({ where: { id: run.id, status: "AWAITING_MANUAL" }, data: { status: "RUNNING", sessionState: "ACTIVE", errorMessage: null, handoffReason: null, retryAfter: null } });
       console.log(JSON.stringify({ event: "captcha_manual_action_completed", terminal, runId: run.id }));
+      manualSessions.delete(run.id);
       return;
     }
   }
+  manualSessions.delete(run.id);
   throw new EtbManualHandoffRequiredError("等待人工完成验证码超时；未尝试自动点击验证内容。", "ROBOT_VERIFICATION_REQUIRED", { screenshotStorageKey: key, retryAfter: new Date(Date.now() + 15 * 60_000) });
 }
 
@@ -159,7 +164,7 @@ async function processYantian(run: Run) {
   let context: Awaited<ReturnType<typeof chromium.launchPersistentContext>> | undefined;
   try {
     await disableYantianBrowserPasswordSaving(profile);
-    context = await chromium.launchPersistentContext(profile, { executablePath: process.env.ETB_CHROME_EXECUTABLE_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", headless: false, viewport: { width: 1440, height: 960 }, args: ["--disable-save-password-bubble", "--disable-features=PasswordManagerOnboarding"] });
+    context = await chromium.launchPersistentContext(profile, { executablePath: process.env.ETB_CHROME_EXECUTABLE_PATH || (process.env.ETB_EXECUTION_MODE === "cloud" ? undefined : "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"), headless: process.env.ETB_EXECUTION_MODE === "cloud", viewport: process.env.ETB_EXECUTION_MODE === "cloud" ? { width: 1200, height: 800 } : { width: 1440, height: 960 }, args: ["--disable-save-password-bubble", "--disable-features=PasswordManagerOnboarding"] });
     const page = context.pages()[0] || await context.newPage();
     await page.goto(getEtbSourceConfig("盐田").homeUrl, { waitUntil: "domcontentloaded", timeout: 20_000 });
     await awaitManualCaptcha(page, run, "盐田");
@@ -173,7 +178,7 @@ async function processYantian(run: Run) {
     }
     await submit(run, results);
     await queueContinuation(run, sailings.length, hasMore);
-  } finally { await context?.close().catch(() => undefined); await release(); }
+  } finally { manualSessions.delete(run.id); await context?.close().catch(() => undefined); await release(); }
 }
 
 async function openShekouQuery(page: Page): Promise<Frame> {
@@ -186,6 +191,7 @@ async function openShekouQuery(page: Page): Promise<Frame> {
   await entry.waitFor({ state: "visible", timeout: 20_000 });
   await entry.click({ timeout: 20_000 });
   const deadline = Date.now() + 30_000;
+  if (process.env.ETB_EXECUTION_MODE === "cloud") manualSessions.set(run.id, page);
   while (Date.now() < deadline) {
     const frame = page.frames().find(candidate => /scct-query\/VesselSchedule/.test(candidate.url()));
     if (frame && await frame.locator("body").count()) return frame;
@@ -278,7 +284,8 @@ async function processShekou(run: Run) {
   let context: Awaited<ReturnType<typeof chromium.launchPersistentContext>> | undefined;
   try {
     await disableYantianBrowserPasswordSaving(profile);
-    context = await chromium.launchPersistentContext(profile, { executablePath: process.env.ETB_CHROME_EXECUTABLE_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", headless: false, viewport: { width: 1440, height: 960 }, args: ["--disable-save-password-bubble", "--disable-features=PasswordManagerOnboarding"] });
+    context = await chromium.launchPersistentContext(profile, { executablePath: process.env.ETB_CHROME_EXECUTABLE_PATH || (process.env.ETB_EXECUTION_MODE === "cloud" ? undefined : "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"), headless: process.env.ETB_EXECUTION_MODE === "cloud", viewport: process.env.ETB_EXECUTION_MODE === "cloud" ? { width: 1200, height: 800 } : { width: 1440, height: 960 }, args: ["--disable-save-password-bubble", "--disable-features=PasswordManagerOnboarding"] });
+    await restoreEtbSession(context, profile);
     const page = context.pages()[0] || await context.newPage();
     const config = getEtbSourceConfig("蛇口");
     // ePort renders its authenticated workbench after navigation commits.  Do
@@ -294,12 +301,13 @@ async function processShekou(run: Run) {
       if (index) await pause(throttle.queryIntervalMs);
       results.push(await queryWithRetry(run, sailing, () => queryShekouOne(frame, run, sailing, index)));
     }
+    await saveEtbSession(context, profile);
     await submit(run, results);
     await queueContinuation(run, sailings.length, hasMore);
-  } finally { await context?.close().catch(() => undefined); await release(); }
+  } finally { manualSessions.delete(run.id); await context?.close().catch(() => undefined); await release(); }
 }
 
-async function main() {
+export async function processNextEtbQuery() {
   await recoverStaleRunningRuns();
   const run = await claim(arg("--terminal"));
   if (!run) return console.log(JSON.stringify({ event: "no_pending_etb_run" }));
@@ -321,4 +329,4 @@ async function main() {
     process.exitCode = 1;
   }
 }
-main().catch(error => { console.error(error); process.exitCode = 1; });
+if (require.main === module) processNextEtbQuery().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => prisma.$disconnect());

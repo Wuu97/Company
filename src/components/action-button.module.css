@@ -2,32 +2,23 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
-  padding: 0 9px;
-  border: 1px solid transparent;
-  border-radius: 7px;
-  gap: 8px;
-  background: #1677ff;
-  color: #ffffff;
-  font: inherit;
-  font-size: var(--type-button-size);
-  font-weight: var(--type-button-weight);
-  line-height: var(--type-button-line-height);
+  box-sizing: border-box;
+  border-radius: 6px;
+  font-family: inherit;
+  font-weight: var(--font-weight-regular);
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
   transition:
     background 0.15s ease,
     color 0.15s ease,
-    transform 0.15s ease;
+    border-color 0.15s ease;
 }
-
-.button:hover:not(:disabled) {
-  background: #4096ff;
+.button:hover {
   text-decoration: none;
-  transform: none;
 }
-.button:disabled {
+.button:disabled,
+.button[aria-disabled="true"] {
   cursor: not-allowed;
   opacity: 0.65;
 }
@@ -35,166 +26,118 @@
   outline: 3px solid #93c5fd;
   outline-offset: 2px;
 }
-
+.default {
+  min-height: var(--btn-height-default);
+  padding: 0 var(--btn-padding-default);
+  font-size: var(--font-body);
+  line-height: var(--line-height-control);
+  gap: var(--btn-gap-default);
+}
+.toolbar {
+  min-height: var(--btn-height-toolbar);
+  padding: 0 var(--btn-padding-toolbar);
+  font-size: var(--font-body);
+  line-height: var(--line-height-control);
+  gap: var(--btn-gap-default);
+}
+.small {
+  min-height: var(--btn-height-small);
+  padding: 0 var(--btn-padding-small);
+  font-size: var(--font-body-sm);
+  line-height: var(--line-height-control);
+  gap: var(--btn-gap-small);
+}
+.compact {
+  min-height: var(--btn-height-compact);
+  padding: 0 var(--btn-padding-compact);
+  font-size: var(--font-caption);
+  line-height: var(--line-height-caption);
+  gap: var(--btn-gap-compact);
+}
+.icon {
+  padding: 0;
+  flex-shrink: 0;
+}
+.icon.default {
+  width: var(--btn-height-default);
+}
+.icon.toolbar {
+  width: var(--btn-height-toolbar);
+}
+.icon.small {
+  width: var(--btn-height-small);
+}
+.icon.compact {
+  width: var(--btn-height-compact);
+}
+.button svg {
+  width: 1.15em;
+  height: 1.15em;
+  flex: none;
+}
+.primary {
+  color: #fff;
+  background: #1677ff;
+  border: 1px solid #1677ff;
+  box-shadow: 0 2px 5px rgb(22 119 255 / 22%);
+}
+.primary:hover:not(:disabled) {
+  background: #4096ff;
+  border-color: #4096ff;
+}
+.primary:active:not(:disabled) {
+  background: #0958d9;
+  border-color: #0958d9;
+  box-shadow: none;
+}
 .secondary {
-  border-color: transparent;
-  background: #dbeafe;
   color: #1d4ed8;
+  background: #dbeafe;
+  border: 1px solid transparent;
 }
 .secondary:hover:not(:disabled) {
   background: #bfdbfe;
-  color: #1d4ed8;
-  transform: none;
 }
-
+.outline {
+  color: #595959;
+  background: #fff;
+  border: 1px solid #d9d9d9;
+}
+.outline:hover:not(:disabled) {
+  color: #2563eb;
+  border-color: #2563eb;
+}
 .danger {
-  border-color: transparent;
+  color: #b42318;
   background: #fee2e2;
-  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
 .danger:hover:not(:disabled) {
-  background: #fecaca;
   color: #991b1b;
-  transform: none;
+  background: #fecaca;
 }
-
 .neutral {
-  background: #ffffff;
   color: #434343;
+  background: #fff;
+  border: 1px solid transparent;
 }
 .neutral:hover:not(:disabled) {
   background: #f5f5f5;
-  transform: none;
 }
 .text {
-  border: 0;
-  min-height: auto;
-  padding: 0;
+  color: #1677ff;
   background: transparent;
-  color: #1d4ed8;
+  border: 1px solid transparent;
 }
 .text:hover:not(:disabled) {
-  background: transparent;
-  color: #1e40af;
+  color: #4096ff;
   text-decoration: underline;
-  transform: none;
-}
-.toolbar {
-  min-height: 36px;
-  font-size: 13px;
-  font-weight: var(--type-button-weight);
-  line-height: var(--type-button-line-height);
-}
-.small {
-  min-height: 32px;
-  padding: 0 8px;
-  font-size: var(--type-status-size);
-  font-weight: var(--type-status-weight);
-  line-height: var(--type-status-line-height);
-}
-.sidebarLogout {
-  min-height: 28px;
-  padding: 0 7px;
-  border-radius: 999px;
-}
-.statusAction {
-  min-height: 24px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  font-size: var(--type-status-size);
-  font-weight: var(--type-status-weight);
-  line-height: var(--type-status-line-height);
 }
 .wide {
   width: 100%;
 }
-
 @media (max-width: 760px) {
-  .button {
-    min-height: 44px;
-  }
-  .toolbar {
-    min-height: 44px;
-  }
-  .small {
-    min-height: 36px;
-  }
-  .text {
-    min-height: auto;
-  }
   .wideMobile {
     width: 100%;
   }
-}
-
-.button.outline { gap: 8px; background: #fff; border: 1px solid #d9d9d9; color: #595959; }
-.button.outline:hover:not(:disabled) { background: #fff; border-color: #2563eb; color: #2563eb; transform: none; }
-
-.button, .button * { font-weight: 400 !important; }
-
-.button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger){background:#1677ff;color:#fff;border-color:#1677ff;box-shadow:0 2px 5px rgb(22 119 255 / 22%)}
-.button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger):hover:not(:disabled){background:#4096ff;border-color:#4096ff;transform:none}
-.button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger):active:not(:disabled){background:#0958d9;border-color:#0958d9;box-shadow:none}
-
-/* Paired blue actions retain their light-to-dark hierarchy. */
-:global(*):has(> .button + .button):not(:has(> .button ~ .button ~ .button))
-> .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger):has(+ .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger)) {
-  background: #dbeafe;
-  border-color: transparent;
-  color: #1d4ed8;
-  box-shadow: none;
-}
-:global(*):has(> .button + .button):not(:has(> .button ~ .button ~ .button))
-> .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger):has(+ .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger)):hover:not(:disabled) {
-  background: #bfdbfe;
-  border-color: transparent;
-}
-:global(*):has(> .button + .button):not(:has(> .button ~ .button ~ .button))
-> .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger):has(+ .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger)):active:not(:disabled) {
-  background: #bfdbfe;
-  border-color: transparent;
-}
-
-:global(*):has(> .button + .button):not(:has(> .button ~ .button ~ .button))
-> .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger):has(+ .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger))
-+ .button {background:#2563eb;color:#fff;border-color:transparent}
-:global(*):has(> .button + .button):not(:has(> .button ~ .button ~ .button))
-> .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger):has(+ .button:not([data-navigation-tab]):not(.outline):not(.text):not(.neutral):not(.danger))
-+ .button:hover:not(:disabled) {background:#1d4ed8;border-color:transparent}
-
-/* Repeated row actions stay visually subordinate to table data. */
-:global(:is(td, [role="row"], li)) .button:not(:global([role="dialog"] *)),
-.button.text {
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 0;
-  box-shadow: none !important;
-  color: #1677ff !important;
-  min-height: 28px;
-  padding: 2px 0;
-  transform: none !important;
-}
-:global(:is(td, [role="row"], li)) .button:not(:global([role="dialog"] *)):hover:not(:disabled),
-.button.text:hover:not(:disabled) {
-  background: transparent !important;
-  color: #4096ff !important;
-  text-decoration: underline;
-}
-:global(:is(td, [role="row"], li)) .button.danger:not(:global([role="dialog"] *)) {
-  color: #dc2626 !important;
-}
-:global(:is(td, [role="row"], li)) .button:not(:global([role="dialog"] *)) + .button:not(:global([role="dialog"] *)),
-.button.text + .button.text {
-  position: relative;
-  margin-left: 10px;
-}
-:global(:is(td, [role="row"], li)) .button:not(:global([role="dialog"] *)) + .button:not(:global([role="dialog"] *))::before,
-.button.text + .button.text::before {
-  content: "";
-  position: absolute;
-  left: -10px;
-  top: 50%;
-  height: 12px;
-  border-left: 1px solid #e5e7eb;
-  transform: translateY(-50%);
 }

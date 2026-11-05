@@ -1,9 +1,38 @@
 "use client";
 
+import { Button } from "./ui/button";
 import { useState, type ReactNode } from "react";
 import styles from "@/app/logs/page.module.css";
 
-export function AuditExpandedRow({ children, detail }: { children: ReactNode; detail: ReactNode }) {
+export function AuditExpandedRow({
+  children,
+  detail,
+}: {
+  children: ReactNode;
+  detail: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
-  return <article><div className={styles.logRow}>{children}<div className={styles.detail}>{detail ? <button type="button" className={styles.expandButton} aria-expanded={open} onClick={() => setOpen(value => !value)}>{open ? "收起 ⌃" : "查看 ⌄"}</button> : <span className={styles.noDetail}>—</span>}</div></div>{open && <div className={styles.expandedPanel}>{detail}</div>}</article>;
+  return (
+    <article>
+      <div className={styles.logRow}>
+        {children}
+        <div className={styles.detail}>
+          {detail ? (
+            <Button
+              variant="text"
+              size="small"
+              type="button"
+              aria-expanded={open}
+              onClick={() => setOpen((value) => !value)}
+            >
+              {open ? "收起 ⌃" : "查看 ⌄"}
+            </Button>
+          ) : (
+            <span className={styles.noDetail}>—</span>
+          )}
+        </div>
+      </div>
+      {open && <div className={styles.expandedPanel}>{detail}</div>}
+    </article>
+  );
 }

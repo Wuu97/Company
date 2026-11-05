@@ -1,3 +1,104 @@
-.toolbar{display:flex;gap:12px;align-items:flex-start;margin:14px 0}.routeSearch,.customerSelect{width:min(320px,100%)}.toolbar span{align-self:center;color:#475569;font-size:13px}.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.form>*{align-self:start}.detail{display:grid;gap:9px}.detail p{margin:0}.detail h5{margin:12px 0 0}.price{display:grid;gap:7px;padding:10px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc}.price small{color:#64748b}@media(max-width:760px){.toolbar{align-items:stretch;flex-direction:column}.routeSearch,.customerSelect{width:100%}.form{grid-template-columns:1fr}}
-
-.monthPicker{display:grid;gap:5px;color:#475569;font-size:var(--type-field-label-size);font-weight:var(--type-field-label-weight);line-height:var(--type-field-label-line-height)}.monthPicker em{color:#dc2626;font-style:normal}.monthPickerControls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 14px 0;
+}
+.routeSearch,
+.customerSelect {
+  width: min(320px, 100%);
+}
+.notice {
+  align-self: center;
+  color: #475569;
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-line-height);
+}
+.form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.form > * {
+  align-self: start;
+}
+.detail {
+  display: grid;
+  gap: 9px;
+}
+.detail p {
+  margin: 0;
+}
+.price {
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-line-height);
+}
+.price > b,
+.name {
+  font-weight: var(--type-name-weight);
+}
+.price small {
+  color: #64748b;
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-line-height);
+}
+.monthPicker {
+  display: grid;
+  gap: 5px;
+}
+.monthPickerControls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.billSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 0 0 16px;
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-line-height);
+}
+.billSummary > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.billSummary dt {
+  color: #64748b;
+  font-size: var(--type-field-label-size);
+  font-weight: var(--type-field-label-weight);
+  line-height: var(--type-field-label-line-height);
+}
+.billSummary dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.billDetails h3 {
+  font-size: var(--type-section-title-size);
+  font-weight: var(--type-section-title-weight);
+  line-height: var(--type-section-title-line-height);
+}
+@media (max-width: 760px) {
+  .toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .routeSearch,
+  .customerSelect {
+    width: 100%;
+  }
+  .form {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,40 +1,160 @@
-.form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px}.form label{display:grid;gap:5px;color:#475569;font-size:12px;font-weight:700}.form label input,.form label select{min-width:180px;width:100%}.revealedPassword{display:inline-flex;align-items:center;gap:6px;min-width:0;padding:4px 7px;border:1px solid #fde68a;border-radius:7px;background:#fffbeb;color:#92400e;font-size:12px}.revealedPassword code{max-width:180px;overflow:auto;font:inherit;white-space:nowrap}
-
-.passwordLine{display:flex;align-items:center;gap:8px;color:#64748b;font-size:13px}.passwordLine code{overflow-wrap:anywhere}.passwordLine button{padding:4px;min-height:28px}
-.credentialDialog .form{display:grid;grid-template-columns:1fr;align-items:stretch;gap:18px}.credentialDialog .form label input{min-width:0}.credentialDialog .form>small{color:#64748b;font-size:12px}.credentialDialog .form>button{justify-self:end}
-.credentialDialog{position:relative}.dialogClose{position:absolute;right:-4px;top:-49px;border:0;background:transparent;color:#8c8c8c;font-size:24px;line-height:1;cursor:pointer;padding:4px}.dialogActions{display:flex;justify-content:flex-end;gap:8px}.credentialDialog .form label small{font-size:12px;color:#8c8c8c;font-weight:400}.credentialDialog .form input:focus{outline:none;box-shadow:0 0 0 2px rgba(24,144,255,.2);border-color:#1890ff}
-.credentialDialog .form{gap:18px}.credentialDialog .form input{border-radius:6px}.credentialDialog .form input:focus{box-shadow:0 0 0 2px rgba(24,144,255,.15)}
-
-.dialogHeading{display:flex;align-items:center;gap:10px;color:#0f172a}.portBadge{padding:3px 9px;border:1px solid #dbeafe;border-radius:5px;background:#eff6ff;color:#2563eb;font-size:13px;font-weight:600}
-.credentialDialog .form{gap:20px}.credentialDialog .form label{color:#334155;font-size:13px}.credentialDialog .form input{min-height:42px;padding:9px 12px;border:1px solid #cbd5e1;border-radius:6px;background:white;color:#1e293b;font:inherit}.credentialDialog .form input::placeholder{color:#94a3b8}
-.passwordField{display:grid;gap:6px}.passwordField label{display:block!important}.passwordField em{color:#ef4444;font-style:normal}.passwordInput{position:relative}.passwordInput input{width:100%;padding-right:44px!important}.passwordInput button{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:32px;height:32px;border:0;background:transparent;color:#94a3b8;cursor:pointer}.passwordInput button:focus-visible{outline:2px solid #2563eb;outline-offset:1px}.passwordField small{margin-top:4px;color:#94a3b8;font-size:12px}.passwordField small span{font-size:16px}
-.dialogActions button{padding:0 18px}
-
-
-
-.dialogHeading{align-items:center;line-height:24px}
-.portBadge{display:inline-flex;align-items:center;justify-content:center;flex:none;box-sizing:border-box;height:22px;padding:0 8px;border-radius:4px;font-size:12px;line-height:20px}
-.credentialDialog .form{gap:20px;padding:24px 0 0}
-.credentialDialog .form>label,.credentialDialog .form>.passwordField,.credentialDialog .form>small{margin-left:24px;margin-right:24px}
-.credentialDialog .dialogActions{box-sizing:border-box;width:100%;margin:4px 0 0;padding:16px 24px 20px;border-top:1px solid #f0f0f0;background:#f8fafc;gap:10px}
-.passwordField small{display:flex;align-items:flex-start;gap:6px;color:#8c8c8c;font-size:12px;line-height:18px}
-.passwordField small svg{flex:none;margin-top:2px}
-.toast{position:fixed;z-index:1000;top:24px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;max-width:calc(100vw - 32px);padding:12px 18px;border:1px solid #e8edf3;border-radius:8px;background:#fff;color:#334155;box-shadow:0 4px 18px rgba(15,23,42,.12);font-size:14px;line-height:1.5;animation:toastAppear .15s ease-out}.toast>span{color:#1677ff}.spinner{width:13px;height:13px;border:2px solid #cbd5e1;border-top-color:#64748b;border-radius:50%;animation:credentialSpin .7s linear infinite}
-
-
-
-@keyframes credentialSpin{to{transform:rotate(360deg)}}@keyframes toastAppear{from{opacity:0}to{opacity:1}}
-@media(prefers-reduced-motion:reduce){.toast,.spinner{animation:none}}
-.passwordLine{justify-content:flex-end;flex-wrap:wrap}.passwordLine code{font:inherit;overflow-wrap:anywhere;min-width:0}.passwordLine button{flex:none;color:#64748b}
-
-.passwordLine button svg{width:14px;height:14px;stroke-width:1.5}
-
-.credentialDialog .form{padding-top:16px;gap:14px}
-.credentialDialog .form>label,.credentialDialog .form>.passwordField,.credentialDialog .form>small{margin-left:20px;margin-right:20px}
-.credentialDialog .form input{min-height:36px;padding:7px 10px;font-size:13px;font-weight:400}
-.credentialDialog .dialogActions{margin-top:2px;padding:12px 20px 16px;gap:8px}
-.credentialDialog .dialogActions button{min-height:34px;padding:0 14px;font-size:13px}
-.passwordField small{margin-top:2px;font-size:12px;line-height:18px}
-.dialogHeading{gap:8px}
-
-.toast{left:calc(50% + var(--content-sidebar-width, 0px) / 2);max-width:calc(100vw - var(--content-sidebar-width, 0px) - 32px)}
+.form {
+  display: grid;
+  gap: 14px;
+}
+.form > small {
+  color: #64748b;
+  font-size: var(--font-caption);
+  line-height: var(--line-height-caption);
+}
+.passwordLine {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  color: #64748b;
+}
+.passwordLine code {
+  min-width: 0;
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+.dialogHeading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #0f172a;
+}
+.portBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: 0 8px;
+  border: 1px solid #dbeafe;
+  border-radius: 4px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: var(--font-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-caption);
+}
+.passwordField {
+  display: grid;
+  gap: 6px;
+}
+.passwordField label {
+  color: #334155;
+  font-size: var(--type-field-label-size);
+  font-weight: var(--type-field-label-weight);
+  line-height: var(--type-field-label-line-height);
+}
+.passwordField em {
+  color: #ef4444;
+  font-style: normal;
+}
+.passwordInput {
+  position: relative;
+}
+.passwordInput input {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 7px 48px 7px 9px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  font-family: inherit;
+  font-size: var(--type-control-size);
+  font-weight: var(--type-control-weight);
+  line-height: var(--type-control-line-height);
+}
+.passwordInput input:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+.passwordInput > button {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.passwordField small {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 2px;
+  color: #8c8c8c;
+  font-size: var(--font-caption);
+  line-height: var(--line-height-caption);
+}
+.passwordField small svg {
+  flex: none;
+  margin-top: 2px;
+}
+.toast {
+  position: fixed;
+  z-index: 1000;
+  top: 24px;
+  left: calc(50% + var(--content-sidebar-width, 0px) / 2);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100vw - var(--content-sidebar-width, 0px) - 32px);
+  padding: 12px 18px;
+  border: 1px solid #e8edf3;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.12);
+  font-size: var(--font-body);
+  line-height: var(--line-height-body);
+  animation: toastAppear 0.15s ease-out;
+}
+.toast > span {
+  color: #1677ff;
+}
+.spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid #cbd5e1;
+  border-top-color: #64748b;
+  border-radius: 50%;
+  animation: credentialSpin 0.7s linear infinite;
+}
+.memberActions {
+  display: flex;
+  justify-content: flex-start;
+}
+.memberCardActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+@keyframes credentialSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes toastAppear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .spinner {
+    animation: none;
+  }
+}
+@media (max-width: 760px) {
+  .passwordInput input {
+    min-height: var(--control-height);
+  }
+}

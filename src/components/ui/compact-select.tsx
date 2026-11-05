@@ -20,7 +20,28 @@ const toneClass: Record<string, string | undefined> = {
   REVERSED: styles.critical,
 };
 
-export function CompactSelect({ children, className, value, defaultValue, ...props }: SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }) {
+export function CompactSelect({
+  children,
+  className,
+  value,
+  defaultValue,
+  ...props
+}: SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }) {
   const currentValue = String(value ?? defaultValue ?? "");
-  return <FilterSelect className={styles.root} triggerClassName={[styles.select, toneClass[currentValue], className].filter(Boolean).join(" ")} optionsClassName={styles.options} searchable={false} value={value} defaultValue={defaultValue} {...props}>{children}</FilterSelect>;
+  return (
+    <FilterSelect
+      className={styles.root}
+      triggerClassName={[styles.select, toneClass[currentValue], className]
+        .filter(Boolean)
+        .join(" ")}
+      optionsClassName={styles.options}
+      optionClassName={styles.option}
+      searchable={false}
+      value={value}
+      defaultValue={defaultValue}
+      {...props}
+    >
+      {children}
+    </FilterSelect>
+  );
 }

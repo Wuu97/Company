@@ -1,47 +1,45 @@
+@import "./tokens.css";
+
 * {
   box-sizing: border-box;
 }
 
 :root {
-  --type-page-title-size: 24px;
-  --type-page-title-weight: 600;
-  --type-page-title-line-height: 32px;
-  --type-section-title-size: 18px;
-  --type-section-title-weight: 600;
-  --type-section-title-line-height: 26px;
-  --type-card-title-size: 16px;
-  --type-card-title-weight: 600;
-  --type-card-title-line-height: 24px;
-  --type-body-size: 14px;
-  --type-body-weight: 400;
-  --type-body-line-height: 22px;
-  --type-field-label-size: 13px;
-  --type-field-label-weight: 500;
-  --type-field-label-line-height: 20px;
-  --type-control-size: 14px;
-  --type-control-weight: 400;
-  --type-control-line-height: 20px;
-  --type-control-compact-size: 13px;
-  --type-control-compact-weight: 400;
-  --type-control-compact-line-height: 20px;
-  --type-button-size: 14px;
-  --type-button-weight: 400;
-  --type-button-line-height: 20px;
-  --type-status-size: 12px;
-  --type-status-weight: 500;
-  --type-status-line-height: 18px;
-  --type-caption-size: 12px;
-  --type-caption-weight: 400;
-  --type-caption-line-height: 18px;
-}
-
-body {
-  min-height: 100vh;
-  margin: 0;
-  font-family: Arial, "Microsoft YaHei", sans-serif;
-  background: #f5f7fb;
-  color: #182230;
-  display: flex;
+  --page-heading-gap: 16px;
+  --type-page-title-size: var(--font-title-lg);
+  --type-page-title-weight: var(--font-weight-semibold);
+  --type-page-title-line-height: var(--line-height-title-lg);
+  --type-section-title-size: var(--font-title-sm);
+  --type-section-title-weight: var(--font-weight-semibold);
+  --type-section-title-line-height: var(--line-height-title-sm);
+  --type-card-title-size: var(--font-title-sm);
+  --type-card-title-weight: var(--font-weight-semibold);
+  --type-card-title-line-height: var(--line-height-title-sm);
+  --type-table-header-size: var(--font-body-sm);
+  --type-table-header-weight: var(--font-weight-medium);
+  --type-table-header-line-height: var(--line-height-body-sm);
+  --type-name-weight: var(--font-weight-medium);
+  --type-body-size: var(--font-body);
+  --type-body-weight: var(--font-weight-regular);
+  --type-body-line-height: var(--line-height-body);
+  --type-field-label-size: var(--font-body-sm);
+  --type-field-label-weight: var(--font-weight-medium);
+  --type-field-label-line-height: var(--line-height-body-sm);
+  --type-control-size: var(--font-body);
+  --type-control-weight: var(--font-weight-regular);
+  --type-control-line-height: var(--line-height-control);
+  --type-control-compact-size: var(--font-body);
+  --type-control-compact-weight: var(--font-weight-regular);
+  --type-control-compact-line-height: var(--line-height-control);
+  --type-button-size: var(--font-body);
+  --type-button-weight: var(--font-weight-regular);
+  --type-button-line-height: var(--line-height-control);
+  --type-status-size: var(--font-caption);
+  --type-status-weight: var(--font-weight-regular);
+  --type-status-line-height: var(--line-height-caption);
+  --type-caption-size: var(--font-caption);
+  --type-caption-weight: var(--font-weight-regular);
+  --type-caption-line-height: var(--line-height-caption);
 }
 
 aside {
@@ -54,7 +52,7 @@ aside {
 
 aside h1 {
   margin: 0 0 32px;
-  font-size: 20px;
+  font-size: var(--font-title-lg);
 }
 
 a {
@@ -72,28 +70,14 @@ summary:focus-visible {
   outline-offset: 2px;
 }
 
-@media (min-width: 761px) {
-  aside {
-    position: sticky;
-    top: 0;
-    align-self: flex-start;
-    height: 100vh;
-    overflow-y: auto;
-  }
-}
-
 @media (max-width: 760px) {
   :root {
-    --type-page-title-size: 20px;
-    --type-page-title-line-height: 28px;
-    --type-control-size: 16px;
+    --type-page-title-size: 18px;
+    --type-page-title-line-height: 26px;
+    --type-control-size: var(--font-title-sm);
     --type-control-line-height: 24px;
-    --type-control-compact-size: 16px;
+    --type-control-compact-size: var(--font-title-sm);
     --type-control-compact-line-height: 24px;
-  }
-
-  body {
-    display: block;
   }
 
   aside {
@@ -113,16 +97,54 @@ summary:focus-visible {
   aside h1 {
     flex: none;
     margin: 0 10px 0 0;
-    font-size: 16px;
+    font-size: var(--font-title-sm);
   }
 }
 
 /* Keep all button labels at regular weight, including nested label elements. */
-button, button *, [role="button"], [role="button"] *, input[type="button"], input[type="submit"], input[type="reset"] {
-  font-weight: 400 !important;
-}
 
 /* Shared geometry for content-centered dialogs and notifications. */
-body{--content-sidebar-width:0px}
-@media(min-width:761px){body:has(>aside){--content-sidebar-width:220px}body>aside{width:var(--content-sidebar-width);flex-shrink:0}}
-@media(min-width:761px) and (max-width:1200px){body:has(>aside){--content-sidebar-width:196px}}
+body {
+  min-height: 100vh;
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-line-height);
+  margin: 0;
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+  background: #f5f7fb;
+  color: #182230;
+  display: flex;
+  --content-sidebar-width: 0px;
+}
+@media (max-width: 760px) {
+  body {
+    display: block;
+  }
+}
+@media (min-width: 761px) {
+  body:has(> aside) {
+    --content-sidebar-width: 220px;
+  }
+  body > aside {
+    width: var(--content-sidebar-width);
+    flex-shrink: 0;
+  }
+}
+@media (min-width: 761px) and (max-width: 1200px) {
+  body:has(> aside) {
+    --content-sidebar-width: 196px;
+  }
+}
+@media (min-width: 761px) {
+  aside {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 20px 24px;
+  }
+  aside h1 {
+    margin-bottom: 20px;
+  }
+}

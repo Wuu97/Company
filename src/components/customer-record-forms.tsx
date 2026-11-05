@@ -73,14 +73,14 @@ export function CustomerRecordForm({ customer }: { customer: Customer }) {
           onClose={() => setOpen(false)}
           actions={
             <>
-              <Button
+              <Button size="toolbar"
                 variant="secondary"
                 disabled={busy}
                 onClick={() => setOpen(false)}
               >
                 取消
               </Button>
-              <Button type="submit" form={formId} disabled={busy}>
+              <Button size="toolbar" type="submit" form={formId} disabled={busy}>
                 {busy ? "保存中…" : "保存修改"}
               </Button>
             </>
@@ -181,14 +181,14 @@ export function FactoryRecordForm({
           onClose={() => setOpen(false)}
           actions={
             <>
-              <Button
+              <Button size="toolbar"
                 variant="secondary"
                 disabled={busy}
                 onClick={() => setOpen(false)}
               >
                 取消
               </Button>
-              <Button type="submit" form={formId} disabled={busy}>
+              <Button size="toolbar" type="submit" form={formId} disabled={busy}>
                 {busy ? "保存中…" : "保存修改"}
               </Button>
             </>

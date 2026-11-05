@@ -1,1 +1,75 @@
-.summary{margin:12px 0}.summary b{color:#1d4ed8}.list{display:grid;gap:10px}.item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;gap:12px;padding:13px 14px;border:1px solid #e2e8f0;border-radius:9px;background:#fff}.unread{border-color:#bfdbfe;background:#f8fbff}.meta{display:grid;gap:6px}.meta time{color:#64748b;font-size:12px;white-space:nowrap}.content b{color:#1e3a8a}.content p{margin:5px 0;color:#475569;line-height:1.5}.content a{text-decoration:none}.content a:hover b{text-decoration:underline}.content span{color:#1d4ed8;font-size:13px;font-weight:700}.action{justify-self:end}@media(max-width:760px){.item{grid-template-columns:1fr}.action{justify-self:stretch}.action :global(button){width:100%}}
+.summary {
+  margin: 12px 0;
+}
+.summary b {
+  color: #1d4ed8;
+  font-weight: var(--type-name-weight);
+}
+.list {
+  display: grid;
+  gap: 10px;
+}
+.item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+}
+.unread {
+  border-color: #bfdbfe;
+  background: #f8fbff;
+}
+.meta {
+  display: grid;
+  gap: 6px;
+}
+.meta time {
+  color: #64748b;
+  white-space: nowrap;
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-line-height);
+}
+.content b {
+  color: #1e3a8a;
+  font-size: var(--type-card-title-size);
+  font-weight: var(--type-card-title-weight);
+  line-height: var(--type-card-title-line-height);
+}
+.content p {
+  margin: 5px 0;
+  color: #475569;
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-line-height);
+}
+.content a {
+  text-decoration: none;
+}
+.content a:hover b {
+  text-decoration: underline;
+}
+.content span {
+  color: #1d4ed8;
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  line-height: var(--type-button-line-height);
+}
+.action {
+  justify-self: end;
+}
+@media (max-width: 760px) {
+  .item {
+    grid-template-columns: 1fr;
+  }
+  .action {
+    justify-self: stretch;
+  }
+  .action :global(button) {
+    width: 100%;
+  }
+}

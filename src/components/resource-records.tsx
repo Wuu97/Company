@@ -141,7 +141,7 @@ export function ResourceRecords({
         }
         description={label.description}
         actions={
-          <Button onClick={() => open(null)}>+ 新增{label.singular}</Button>
+          <Button size="toolbar" onClick={() => open(null)}>+ 新增{label.singular}</Button>
         }
       />
       {message && <FeedbackMessage tone="success">{message}</FeedbackMessage>}
@@ -213,14 +213,14 @@ export function ResourceRecords({
           onClose={() => setEditing(undefined)}
           actions={
             <>
-              <Button
+              <Button size="toolbar"
                 variant="secondary"
                 disabled={busy}
                 onClick={() => setEditing(undefined)}
               >
                 取消
               </Button>
-              <Button type="submit" form={formId} disabled={busy}>
+              <Button size="toolbar" type="submit" form={formId} disabled={busy}>
                 {busy ? "保存中…" : row ? "保存修改" : "确认新增"}
               </Button>
             </>

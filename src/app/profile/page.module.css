@@ -1,1 +1,143 @@
-.page{max-width:1120px}.columns{display:grid;grid-template-columns:minmax(0,1fr);gap:24px}.summary,.passwordSection{box-sizing:border-box;min-width:0;margin:0;padding:32px;background:#fff;border:1px solid #e2e8f0;border-radius:12px}.summary{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:16px 28px}.avatar{display:grid;place-items:center;width:56px;height:56px;flex-shrink:0;border:3px solid #f5f8ff;border-radius:50%;background:#edf4ff;color:#1677ff;font-size:26px;font-weight:700}.details{display:grid;gap:6px;width:100%;min-width:0}.identity{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px}.identity strong{font-size:20px;color:#1e293b}.tag{padding:2px 9px;border:1px solid #bfdbfe;background:#eff6ff;color:#1677ff;border-radius:5px;font-size:12px}.email{overflow-wrap:anywhere;color:#475569}.accountMeta{box-sizing:border-box;width:100%;margin:2px 0 0;padding-top:8px;border-top:1px solid #f1f5f9;display:grid;gap:6px;text-align:left;font-size:14px}.accountMeta>div{display:flex;justify-content:space-between;gap:16px}.accountMeta dt{color:#94a3b8}.accountMeta dd{margin:0;text-align:right;color:#334155}.accountMeta .active{color:#059669}.passwordSection{padding:20px 28px}.passwordSection h2{margin:0;font-size:18px}.alert{display:flex;align-items:flex-start;gap:8px;margin:12px 0 16px;padding:9px 12px;border:1px solid #bfdbfe;border-radius:8px;background:#eff6ff;color:#1e40af;font-size:13px;line-height:1.6}@media(max-width:760px){.columns{gap:16px}.summary,.passwordSection{padding:20px}.summary{padding-block:16px}.avatar{width:52px;height:52px;font-size:24px}}
+.page {
+  width: 100%;
+  min-width: 0;
+}
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+.summary,
+.passwordSection {
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+.summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 16px 28px;
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border: 3px solid #f5f8ff;
+  border-radius: 50%;
+  background: #edf4ff;
+  color: #1677ff;
+  font-size: var(--font-display-sm);
+  font-weight: var(--font-weight-bold);
+}
+.details {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+.identity {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.identity strong {
+  color: #1e293b;
+  font-size: var(--type-body-size);
+  font-weight: var(--type-name-weight);
+  line-height: var(--type-body-line-height);
+}
+.tag {
+  padding: 2px 9px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1677ff;
+  border-radius: 5px;
+  font-size: var(--type-status-size);
+  font-weight: var(--type-status-weight);
+  line-height: var(--type-status-line-height);
+}
+.email {
+  overflow-wrap: anywhere;
+  color: #475569;
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-line-height);
+}
+.accountMeta {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 2px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-line-height);
+}
+.accountMeta > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.accountMeta dt {
+  color: #94a3b8;
+  font-size: var(--type-field-label-size);
+  font-weight: var(--type-field-label-weight);
+  line-height: var(--type-field-label-line-height);
+}
+.accountMeta dd {
+  margin: 0;
+  text-align: right;
+  color: #334155;
+}
+.accountMeta .active {
+  color: #059669;
+}
+.passwordSection {
+  padding: 16px 20px;
+}
+.passwordSection h2 {
+  margin: 0;
+  font-size: var(--type-section-title-size);
+  font-weight: var(--type-section-title-weight);
+  line-height: var(--type-section-title-line-height);
+}
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 8px 0 12px;
+  padding: 6px 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-line-height);
+}
+@media (max-width: 760px) {
+  .summary {
+    padding: 16px 20px;
+  }
+  .passwordSection {
+    padding: 16px;
+  }
+  .avatar {
+    width: 52px;
+    height: 52px;
+    font-size: var(--font-display-sm);
+  }
+}

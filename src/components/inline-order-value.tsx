@@ -182,7 +182,6 @@ export function InlineOrderValue({
   return options ? (
     <FilterSelect
       className={styles.select}
-      triggerClassName={styles.input}
       value={draft}
       autoFocus
       aria-label={placeholder}
@@ -202,7 +201,6 @@ export function InlineOrderValue({
     </FilterSelect>
   ) : (
     <InlineEditInput
-      className={styles.input}
       placeholder={placeholder}
       {...common}
     />

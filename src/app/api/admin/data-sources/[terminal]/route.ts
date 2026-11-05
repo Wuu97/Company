@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { authErrorResponse, requireAdmin } from "@/lib/auth";
 import { decryptCredential, encryptCredential } from "@/lib/credential-crypto";
-import { getEtbSourceConfig } from "@/lib/etb-source-config";
 import { prisma } from "@/lib/prisma";
 import { actorFields } from "@/lib/audit";
 
@@ -10,7 +9,7 @@ const schema = z.object({ username: z.string().trim().min(1).max(200), password:
 export async function GET(_request: Request, { params }: { params: Promise<{ terminal: string }> }) {
   let admin; try { admin = await requireAdmin(); } catch (error) { return authErrorResponse(error); }
   const terminal = decodeURIComponent((await params).terminal);
-  try { getEtbSourceConfig(terminal); } catch { return NextResponse.json({ error: "不支持的 ETB 平台" }, { status: 400 }); }
+  if (!terminal.trim() || terminal.length > 100) return NextResponse.json({ error: "平台名称无效" }, { status: 400 });
   const credential = await prisma.dataSourceCredential.findUnique({ where: { terminal } });
   if (!credential) return NextResponse.json({ error: "该平台尚未配置账号" }, { status: 404 });
   try {
@@ -24,7 +23,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ter
   const input = schema.safeParse(await request.json());
   if (!input.success) return NextResponse.json({ error: "账号或密码无效" }, { status: 400 });
   const terminal = decodeURIComponent((await params).terminal);
-  try { getEtbSourceConfig(terminal); } catch { return NextResponse.json({ error: "不支持的 ETB 平台" }, { status: 400 }); }
+  if (!terminal.trim() || terminal.length > 100) return NextResponse.json({ error: "平台名称无效" }, { status: 400 });
   try {
     const encrypted = encryptCredential(input.data.password);
     const credential = await prisma.dataSourceCredential.upsert({ where: { terminal }, create: { terminal, username: input.data.username, changedById: admin.id, ...encrypted }, update: { username: input.data.username, changedById: admin.id, ...encrypted } });

@@ -243,7 +243,7 @@ export function RouteManagementClient({
       <PageHeader
         title="路线费用管理"
         description="分别维护司机工资、合作车运价和客户报价模板；三类费用彼此独立。"
-        actions={<><Button onClick={() => setEditing(blanks)}>新增路线</Button><Button variant="secondary" onClick={() => setMode("price")}>新增价格版本</Button></>}
+        actions={<><Button size="toolbar" onClick={() => setEditing(blanks)}>新增路线</Button><Button size="toolbar" variant="secondary" onClick={() => setMode("price")}>新增价格版本</Button></>}
       />
       <NavTabs
         label="路线费用分类"
@@ -306,7 +306,7 @@ export function RouteManagementClient({
             ))}
           </SelectField>
         )}
-        {notice && <span role="status">{notice}</span>}
+        {notice && <span className={styles.notice} role="status">{notice}</span>}
       </div>
       {filtered.length ? (
         <DataTable>
@@ -314,7 +314,7 @@ export function RouteManagementClient({
             <tr>{tab === "driver" ? <><th>行驶路线</th><th>工厂名称</th><th>柜型</th><th>付运费</th></> : tab === "customer" ? <><th>行驶路线</th><th>工厂名称</th><th>柜型</th><th>运费</th></> : <><th>装卸地点</th><th>柜型</th><th>公里数</th><th>路桥费</th><th>油费</th></>}<th>状态</th></tr>
           </thead>
           <tbody>
-            {filtered.map((r) => { const price = r.prices.find((p: any) => p.billType === type && (type !== "CUSTOMER" || !customerId || (p.scope === "OBJECT" && p.customerId === customerId)) && (type !== "DRIVER" || !driverId || !p.driverId || p.driverId === driverId) && (type !== "PARTNER" || !fleetOwnerId || !p.fleetOwnerId || p.fleetOwnerId === fleetOwnerId)); const factoryName = price?.factory?.name || price?.customer?.factories?.[0]?.name || "—"; return <tr key={r.id}>{tab === "driver" || tab === "customer" ? <><td>{r.name}</td><td>{factoryName}</td><td>{price?.applicableContainerTypes?.join("、") || "—"}</td><td>{price?.unitPrice ?? "—"}</td></> : <><td>{r.name}</td><td>{r.applicableContainerTypes?.join("、") || "—"}</td><td>{r.standardKilometers || "—"}</td><td>{r.standardToll || "—"}</td><td>{r.standardFuel || "—"}</td></>}<td><CompactSelect aria-label="修改路线状态" value={r.active ? "ACTIVE" : "INACTIVE"} onChange={event => toggleRoute(r, event.target.value === "ACTIVE")}><option value="ACTIVE">启用</option><option value="INACTIVE">停用</option></CompactSelect></td></tr>; })}
+            {filtered.map((r) => { const price = r.prices.find((p: any) => p.billType === type && (type !== "CUSTOMER" || !customerId || (p.scope === "OBJECT" && p.customerId === customerId)) && (type !== "DRIVER" || !driverId || !p.driverId || p.driverId === driverId) && (type !== "PARTNER" || !fleetOwnerId || !p.fleetOwnerId || p.fleetOwnerId === fleetOwnerId)); const factoryName = price?.factory?.name || price?.customer?.factories?.[0]?.name || "—"; return <tr key={r.id}>{tab === "driver" || tab === "customer" ? <><td><span className={styles.name}>{r.name}</span></td><td><span className={styles.name}>{factoryName}</span></td><td>{price?.applicableContainerTypes?.join("、") || "—"}</td><td>{price?.unitPrice ?? "—"}</td></> : <><td><span className={styles.name}>{r.name}</span></td><td>{r.applicableContainerTypes?.join("、") || "—"}</td><td>{r.standardKilometers || "—"}</td><td>{r.standardToll || "—"}</td><td>{r.standardFuel || "—"}</td></>}<td><CompactSelect aria-label="修改路线状态" value={r.active ? "ACTIVE" : "INACTIVE"} onChange={event => toggleRoute(r, event.target.value === "ACTIVE")}><option value="ACTIVE">启用</option><option value="INACTIVE">停用</option></CompactSelect></td></tr>; })}
           </tbody>
         </DataTable>
       ) : (
@@ -342,7 +342,7 @@ export function RouteManagementClient({
           title={detail.name}
           onClose={() => setDetail(null)}
           actions={
-            <Button variant="secondary" onClick={() => setDetail(null)}>
+            <Button size="toolbar" variant="secondary" onClick={() => setDetail(null)}>
               关闭
             </Button>
           }
@@ -389,10 +389,10 @@ function RouteForm({ value, onClose, onSubmit }: any) {
       onClose={onClose}
       actions={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button size="toolbar" variant="secondary" onClick={onClose}>
             取消
           </Button>
-          <Button type="submit" form="route-form">
+          <Button size="toolbar" type="submit" form="route-form">
             保存
           </Button>
         </>
@@ -453,7 +453,7 @@ function RouteForm({ value, onClose, onSubmit }: any) {
 function Prices({ rows, onAdd, onStatus }: any) {
   return (
     <section className={styles.detail}>
-      <Button size="small" onClick={onAdd}>
+      <Button onClick={onAdd}>
         新增价格版本
       </Button>
       {rows.length ? (
@@ -497,13 +497,13 @@ function Prices({ rows, onAdd, onStatus }: any) {
               </p>
             ) : null}
             {p.status === "DRAFT" && (
-              <Button size="small" onClick={() => onStatus(p.id, "CONFIRMED")}>
+              <Button onClick={() => onStatus(p.id, "CONFIRMED")}>
                 确认
               </Button>
             )}
             {p.status !== "DISABLED" && (
               <Button
-                size="small"
+
                 variant="secondary"
                 onClick={() => onStatus(p.id, "DISABLED")}
               >
@@ -534,10 +534,10 @@ function PriceForm({
       onClose={onClose}
       actions={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button size="toolbar" variant="secondary" onClick={onClose}>
             取消
           </Button>
-          <Button type="submit" form="price-form">
+          <Button size="toolbar" type="submit" form="price-form">
             保存草稿
           </Button>
         </>
@@ -578,10 +578,10 @@ function AliasForm({ onClose, onSubmit }: any) {
       onClose={onClose}
       actions={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button size="toolbar" variant="secondary" onClick={onClose}>
             取消
           </Button>
-          <Button type="submit" form="alias-form">
+          <Button size="toolbar" type="submit" form="alias-form">
             保存候选
           </Button>
         </>

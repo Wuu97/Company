@@ -1,0 +1,99 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 6px;
+  color: #182230;
+  font-size: var(--font-body);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-control);
+}
+.header b {
+  font-weight: inherit;
+}
+.navigation {
+  display: flex;
+  gap: 2px;
+}
+.navigation button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+}
+.row > span,
+.row > button {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 28px;
+  padding: 0;
+  font-family: inherit;
+  font-size: var(--font-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-caption);
+}
+.row > span {
+  color: #64748b;
+}
+.row > button {
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #182230;
+  cursor: pointer;
+}
+.row > button[data-outside="true"] {
+  color: #64748b;
+}
+.row > button[aria-current="date"] {
+  box-shadow: inset 0 0 0 1px #60a5fa;
+  font-weight: var(--font-weight-medium);
+}
+.navigation button:hover:not(:disabled),
+.navigation button:active:not(:disabled),
+.row > button:hover:not(:disabled):not([data-selected="true"]),
+.row > button:active:not(:disabled):not([data-selected="true"]) {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.row > button[data-selected="true"]:not(:disabled) {
+  background: #2563eb;
+  color: #fff;
+  font-weight: var(--font-weight-medium);
+}
+.navigation button:disabled,
+.row > button:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.navigation button:focus-visible,
+.row > button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+@media (max-width: 767px) {
+  .navigation button {
+    width: 32px;
+    height: 36px;
+  }
+  .row > span,
+  .row > button {
+    min-height: 36px;
+  }
+}

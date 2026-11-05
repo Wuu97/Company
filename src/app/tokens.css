@@ -1,0 +1,40 @@
+:root {
+  --font-caption: 12px;
+  --font-body-sm: 13px;
+  --font-body: 14px;
+  --font-title-sm: 16px;
+  --font-title-lg: 18px;
+  --font-display-sm: 24px;
+  --font-display-lg: 30px;
+  --line-height-caption: 18px;
+  --line-height-body-sm: 20px;
+  --line-height-body: 22px;
+  --line-height-control: 20px;
+  --line-height-title-sm: 24px;
+  --line-height-title-lg: 26px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --btn-height-default: 40px;
+  --btn-height-toolbar: 36px;
+  --btn-height-small: 32px;
+  --btn-height-compact: 24px;
+  --btn-padding-default: 16px;
+  --btn-padding-toolbar: 14px;
+  --btn-padding-small: 10px;
+  --btn-padding-compact: 8px;
+  --btn-gap-default: 8px;
+  --btn-gap-small: 6px;
+  --btn-gap-compact: 4px;
+  --control-height: 36px;
+}
+@media (max-width: 760px) {
+  :root {
+    --btn-height-default: 44px;
+    --btn-height-toolbar: 44px;
+    --btn-height-small: 36px;
+    --btn-height-compact: 32px;
+    --control-height: 44px;
+  }
+}

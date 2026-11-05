@@ -69,7 +69,7 @@ function objectRows(entityType: string, before: unknown, after: unknown, entityI
   const rows = keys.flatMap(key => values[key] === undefined || values[key] === null || values[key] === ""
     ? []
     : [{ label: labels[key] || displayFieldLabel(key), value: displayValue(values[key]) }]);
-  return rows.length ? rows.slice(0, 2) : [{ label: auditEntityLabel(entityType), value: entityType === "SoOrder" ? "(未关联单号)" : "—" }];
+  return rows.length ? rows.slice(0, 2) : [{ label: auditEntityLabel(entityType), value: entityType === "SoOrder" ? "(未关联单号)" : "" }];
 }
 function hasChangeDetail(before: unknown, after: unknown) {
   return Object.keys(recordValue(before)).length > 0 && Object.keys(recordValue(after)).length > 0 && changeRows(before, after).length > 0;
@@ -232,12 +232,11 @@ export default async function Logs({
           <time className={styles.time}><span>{log.createdAt.toLocaleDateString("zh-CN")}</span><b>{log.createdAt.toLocaleTimeString("zh-CN", { hour12: false })}</b></time>
           <div className={styles.actor}>
             <b>{log.actorName || "系统处理"}</b>
-            {log.actorName && <small>{log.actorRole === "ADMIN" ? "管理员" : "业务成员"}</small>}
           </div>
           <div className={styles.action}>
             <StatusBadge tone="muted" size="small">{auditActionLabel(log.action)}</StatusBadge>
           </div>
-          <div className={styles.objectTags}>{objectRows(log.entityType, log.before, log.after, log.entityId, businessById.get(`${log.entityType}:${log.entityId}`)).map(item => <span key={item.label} data-missing={item.value === "(未关联单号)" || item.value === "—" || undefined} title={`${item.label}：${item.value}`}><b>{item.label}</b>{item.value}</span>)}</div>
+          <div className={styles.objectTags}>{objectRows(log.entityType, log.before, log.after, log.entityId, businessById.get(`${log.entityType}:${log.entityId}`)).map(item => <span key={item.label} data-missing={item.value === "(未关联单号)" || !item.value || undefined} title={item.value ? `${item.label}：${item.value}` : item.label}><b>{item.label}</b>{item.value}</span>)}</div>
         </AuditExpandedRow>)}
       </section> : <section className={styles.empty}>暂无符合条件的操作记录。请调整筛选条件后重试。</section>}
       <Pagination currentPage={currentPage} totalPages={totalPages} total={total} pageSize={pageSize} href={page => href(input, page)} label="操作日志分页"/>

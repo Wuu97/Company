@@ -16,5 +16,5 @@ type Props = {
 
 /** Shared destructive-action dialog with consistent type, spacing and actions. */
 export function DeleteConfirmDialog({ title, children, message, busy = false, onClose, onConfirm, confirmingLabel = "正在删除…" }: Props) {
-  return <Dialog tone="danger" title={title} message={message} closeDisabled={busy} onClose={onClose} actions={<><Button type="button" variant="neutral" size="small" wide="mobile" disabled={busy} onClick={onClose}>返回</Button><Button type="button" variant="danger" size="small" wide="mobile" disabled={busy} onClick={onConfirm}>{busy ? confirmingLabel : "确认删除"}</Button></>}>{children}</Dialog>;
+  return <Dialog tone="danger" title={title} message={message} closeDisabled={busy} onClose={onClose} actions={<><Button type="button" variant="neutral" size="toolbar" wide="mobile" disabled={busy} onClick={onClose}>返回</Button><Button type="button" variant="danger" size="toolbar" wide="mobile" disabled={busy} onClick={onConfirm}>{busy ? confirmingLabel : "确认删除"}</Button></>}>{children}</Dialog>;
 }
