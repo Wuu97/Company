@@ -141,3 +141,39 @@
     width: 100%;
   }
 }
+
+/* Only page action slots opt in. Dialog and embedded record actions keep their sizes. */
+.button:is([data-page-toolbar] *, [data-list-filter] *, [data-filter-actions] *):not(:is([role="dialog"] *, [role="alertdialog"] *, [data-record-card] *, article *)) {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  gap: 6px;
+}
+.button:is([data-page-toolbar] *, [data-list-filter] *, [data-filter-actions] *):not(:is([role="dialog"] *, [role="alertdialog"] *, [data-record-card] *, article *)):has(svg) { padding-inline: 12px; }
+.button:is([data-page-toolbar] *, [data-list-filter] *, [data-filter-actions] *):not(:is([role="dialog"] *, [role="alertdialog"] *, [data-record-card] *, article *)) svg { width: 14px; height: 14px; }
+.button:is([data-page-toolbar] *, [data-list-filter] *, [data-filter-actions] *)[data-icon-only]:not(:is([role="dialog"] *, [role="alertdialog"] *, article *)) { width: 32px; padding: 0; }
+.button:is([data-page-toolbar] *, [data-list-filter] *, [data-filter-actions] *)[data-variant="reset"],
+.button:is([data-page-toolbar] *, [data-list-filter] *, [data-filter-actions] *)[data-variant="outline"] { border-color: #e2e8f0; }
+
+/* Explicit creation entry points share one icon and compact geometry. */
+.button[data-create-action] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 12px;
+  gap: 6px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+}
+.button[data-create-action] > svg { width: 14px; height: 14px; flex: none; }
+
+/* Modal focus restoration is silent; the next keyboard action restores the indicator. */
+.button[data-pointer-restored="true"]:focus-visible { outline: none; }

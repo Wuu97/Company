@@ -157,7 +157,7 @@ export function ChangePasswordForm() {
         </div>
       )}
       <PasswordField label="确认新密码" name="confirmPassword" busy={busy} />
-      <div className={styles.actions}>
+      <div data-page-toolbar className={styles.actions}>
         <Button type="reset" variant="reset" disabled={busy}>
           重置
         </Button>

@@ -37,7 +37,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   margin: 0;
-  padding: 16px 20px;
+  padding: 16px 20px 24px;
   color: #475569;
   font-size: var(--type-body-size);
   font-weight: var(--type-body-weight);
@@ -131,3 +131,15 @@
     min-height: var(--control-height);
   }
 }
+
+.heading { margin: 0; font: inherit; }
+.subtitle { margin: 4px 0 0; font-size: 13px; font-weight: 400; line-height: 1.5; color: #64748b; overflow-wrap: anywhere; }
+
+.backdrop.drawerBackdrop { padding: 0; place-items: stretch end; }
+.dialog.drawer { width: min(520px, 100vw); height: 100dvh; max-height: 100dvh; border-radius: 0; animation: drawerEnter .18s ease-out; }
+.drawer .body { flex: 1; }
+@keyframes drawerEnter { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .dialog.drawer { animation: none; } }
+
+/* Initial focus belongs to the dialog, without drawing a focus frame. */
+.dialog:focus { outline: none; }

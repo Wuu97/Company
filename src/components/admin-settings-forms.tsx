@@ -22,8 +22,8 @@ export function CreateMemberButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button size="toolbar" onClick={() => setOpen(true)}>
-        + 新增成员
+      <Button create size="toolbar" onClick={() => setOpen(true)}>
+        新增成员
       </Button>
       {open && (
         <UserCreateForm

@@ -1,0 +1,40 @@
+.header{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:20px}.back{font-size:13px;color:#64748b;text-decoration:none}.back:hover{color:#2563eb}.title{margin:8px 0 0;font-size:26px;line-height:1.3;letter-spacing:-.5px;color:#0f172a;overflow-wrap:anywhere}.actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px}.banner{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;display:flex;align-items:center;gap:32px;margin-bottom:14px}.amount{min-width:220px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}.amount>span:first-child{width:100%;font-size:13px;color:#64748b}.amount strong{font-size:28px;line-height:36px;color:#0f172a;font-variant-numeric:tabular-nums}.metadata{margin:0;flex:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;border-left:1px solid #e2e8f0;padding-left:32px}.metadata dt{font-size:13px;color:#64748b;margin-bottom:8px}.metadata dd{margin:0;color:#334155;font-size:14px;font-weight:500;overflow-wrap:anywhere}.alert{display:flex;align-items:flex-start;gap:9px;padding:12px 16px;border:1px solid #dbeafe;background:#eff6ff;border-radius:8px;color:#475569;font-size:13px;line-height:20px;margin-bottom:20px}.alert>span:first-child{color:#2563eb}@media(max-width:1100px){.header{align-items:flex-start;flex-direction:column}.actions{justify-content:flex-start}.metadata{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:640px){.banner{align-items:stretch;flex-direction:column;padding:20px;gap:20px}.metadata{border-left:0;border-top:1px solid #e2e8f0;padding:20px 0 0;gap:20px}.title{font-size:22px}.actions{gap:8px}}@media print{.actions,.back,.alert{display:none}.banner{break-inside:avoid;box-shadow:none}.header{margin-bottom:12px}}
+
+.amountValue { display: inline-flex; align-items: center; gap: 8px; }
+
+.drawerForm { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.addError { color: #dc2626; font-size: 13px; margin: 16px 0 0; }
+
+.mainCard { min-width: 0; }
+.mainCard .header { margin: 0; padding-bottom: 24px; border-bottom: 1px solid #f1f5f9; }
+.mainCard .banner { margin: 0; padding: 24px 0; border: 0; border-bottom: 1px solid #f1f5f9; border-radius: 0; background: transparent; }
+.details { min-width: 0; padding-top: 20px; }
+.mainCard .alert { margin-bottom: 20px; }
+.detailsTitle { margin: 0 0 12px; }
+.addSection { padding: 20px; margin-bottom: 24px; border-radius: 6px; background: #f8fafc; animation: expandForm .2s ease-out; }
+.inlineForm { display: grid; grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(120px, 1fr)); gap: 16px; align-items: end; }
+.formActions { display: flex; align-items: center; gap: 8px; grid-column: 1 / -1; }
+.pagination { margin-top: 20px; padding-top: 20px; border-top: 1px solid #f1f5f9; }
+@keyframes expandForm { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+@media(max-width:760px) { .inlineForm { grid-template-columns: minmax(0, 1fr); } }
+@media(prefers-reduced-motion:reduce) { .addSection { animation: none; } }
+@media print { .mainCard { border: 0; box-shadow: none; padding: 0; } .addSection, .pagination { display: none; } }
+
+/* Compact detail header; the table receives the remaining viewport height. */
+.mainCard .header { flex: none; flex-direction: row; align-items: center; gap: 16px; padding-bottom: 12px; }
+.headingGroup { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; min-width: 0; }
+.mainCard .title { margin: 0; font-size: 20px; line-height: 28px; }
+.mainCard .actions { flex-wrap: nowrap; gap: 8px; }
+.mainCard .banner { flex: none; padding: 12px 0; gap: 20px; }
+.mainCard .amount { min-width: 0; flex-wrap: nowrap; gap: 8px; }
+.mainCard .amount > span:first-child { width: auto; white-space: nowrap; }
+.mainCard .amount strong { font-size: 22px; line-height: 28px; }
+.mainCard .metadata { display: flex; flex-wrap: wrap; gap: 12px 20px; padding-left: 20px; }
+.mainCard .metadata > div { display: inline-flex; align-items: center; gap: 6px; }
+.mainCard .metadata dt { margin: 0; }
+.mainCard .metadata dd { font-size: 13px; }
+.mainCard .details { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-top: 8px; }
+.mainCard .alert { flex: none; padding: 6px 10px; margin: 0 0 8px; font-size: 12px; line-height: 18px; }
+.mainCard .detailsTitle { flex: none; margin: 0 0 6px; font-size: 14px; }
+@media(max-width:900px) { .mainCard .header { flex-wrap: wrap; } .mainCard .actions { flex-wrap: wrap; } .mainCard .banner { flex-wrap: wrap; } .mainCard .metadata { border: 0; padding-left: 0; } }
+@media print { .mainCard .details { display: block; } }

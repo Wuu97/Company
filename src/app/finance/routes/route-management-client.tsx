@@ -250,7 +250,7 @@ export function RouteManagementClient({
         description="分别维护司机工资、合作车运价和客户报价模板；三类费用彼此独立。"
 
       />
-<PageContainer pagination={<AppPagination {...pagination.props} />} actions={<><Button size="toolbar" onClick={() => setEditing(blanks)}>新增路线</Button><Button size="toolbar" variant="secondary" onClick={() => setMode("price")}>新增价格版本</Button></>} tabsLabel="路线费用分类" tabs={["driver", "partner", "customer"].map((k) => ({
+<PageContainer pagination={<AppPagination {...pagination.props} />} actions={<><Button create size="toolbar" onClick={() => setEditing(blanks)}>新增路线</Button><Button create size="toolbar" variant="secondary" onClick={() => setMode("price")}>新增价格版本</Button></>} tabsLabel="路线费用分类" tabs={["driver", "partner", "customer"].map((k) => ({
           label: priceLabels[k === "driver" ? "DRIVER" : k === "partner" ? "PARTNER" : "CUSTOMER"],
           active: tab === k,
           onClick: () => setTab(k),
@@ -459,7 +459,7 @@ function RouteForm({ value, onClose, onSubmit }: any) {
 function Prices({ rows, onAdd, onStatus }: any) {
   return (
     <section className={styles.detail}>
-      <Button onClick={onAdd}>
+      <Button onClick={onAdd} create>
         新增价格版本
       </Button>
       {rows.length ? (

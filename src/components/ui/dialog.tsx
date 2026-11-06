@@ -12,6 +12,9 @@ import { Button } from "./button";
 
 type Props = {
   title: ReactNode;
+  subtitle?: ReactNode;
+  placement?: "center" | "drawer";
+  width?: number;
   children: ReactNode;
   actions: ReactNode;
   onClose: () => void;
@@ -33,6 +36,9 @@ const focusableSelector = [
 /** Accessible modal dialog for disruptive actions that require an explicit confirmation. */
 export function Dialog({
   title,
+  subtitle,
+  placement = "center",
+  width,
   children,
   actions,
   onClose,
@@ -57,9 +63,8 @@ export function Dialog({
         ? document.activeElement
         : null;
     const dialog = dialogRef.current;
-    const firstFocusable =
-      dialog?.querySelector<HTMLElement>(focusableSelector);
-    (firstFocusable || dialog)?.focus();
+    // Focus the dialog itself; Tab moves into the controls naturally.
+    dialog?.focus({ preventScroll: true });
 
     function onKeyDown(event: globalThis.KeyboardEvent) {
       if (event.key === "Escape" && !closeDisabledRef.current) {
@@ -68,9 +73,8 @@ export function Dialog({
         return;
       }
       if (event.key !== "Tab" || !dialog) return;
-      const focusable = Array.from(
-        dialog.querySelectorAll<HTMLElement>(focusableSelector),
-      );
+      const portals = Array.from(document.querySelectorAll<HTMLElement>("[data-select-portal]")).filter(portal => portal.dataset.dialogOwner === titleId);
+      const focusable = [...Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector)), ...portals.flatMap(portal => Array.from(portal.querySelectorAll<HTMLElement>(focusableSelector)))];
       if (!focusable.length) {
         event.preventDefault();
         dialog.focus();
@@ -92,7 +96,11 @@ export function Dialog({
       document.removeEventListener("keydown", onKeyDown);
       const opener = openerRef.current;
       if (opener?.isConnected) {
+        opener.dataset.pointerRestored = "true";
         opener.focus({ preventScroll: true });
+        const clear = () => { delete opener.dataset.pointerRestored; };
+        opener.addEventListener("blur", clear, { once: true });
+        opener.addEventListener("keydown", clear, { once: true });
       }
     };
   }, []);
@@ -102,25 +110,28 @@ export function Dialog({
   }
 
   return (
-    <div className={styles.backdrop} onMouseDown={closeFromBackdrop}>
+    <div className={[styles.backdrop, placement === "drawer" ? styles.drawerBackdrop : undefined].filter(Boolean).join(" ")} onMouseDown={closeFromBackdrop}>
       <div
         ref={dialogRef}
         className={[
           styles.dialog,
+          placement === "drawer" ? styles.drawer : undefined,
           tone === "danger" ? styles.danger : undefined,
           variant === "manual" ? styles.manual : undefined,
         ]
           .filter(Boolean)
           .join(" ")}
+        style={width ? { width: `min(${width}px, 100%)` } : undefined}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
         tabIndex={-1}
       >
-        <h4 className={styles.title} id={titleId}>
-          {title}
-        </h4>
+        <header className={styles.title}>
+          <h4 className={styles.heading} id={titleId}>{title}</h4>
+          {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
+        </header>
         {
           <Button
             variant="text"

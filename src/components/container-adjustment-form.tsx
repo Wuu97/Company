@@ -61,7 +61,7 @@ export function ContainerAdjustmentForm({
       <h3>柜位与柜型</h3>
       <form className={businessStyles["container-adjustment-form"]} onSubmit={submit}>
         <div className={businessStyles["container-adjustment-form__actions"]}>
-          <Button
+          <Button create
             variant="secondary"
             disabled={busy}
             type="button"

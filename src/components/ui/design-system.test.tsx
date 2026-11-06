@@ -157,14 +157,15 @@ describe("standard business controls", () => {
     expect(html).toContain("查看");
     expect(html).not.toContain("expandButton");
   });
-  it("keeps search as a named submit button beside its input", async () => {
+  it("renders the shared left prefix search input", async () => {
     const { FilterTextField } = await import("./list");
     const html = renderToStaticMarkup(
       <FilterTextField name="q" defaultValue="SO123" />,
     );
     expect(html).toContain('name="q"');
-    expect(html).toContain('type="submit"');
-    expect(html).toContain('aria-label="按关键词查找"');
+    expect(html).toContain('type="search"');
+    expect(html).toContain('width="16"');
+    expect(html.indexOf("<svg")).toBeLessThan(html.indexOf("<input"));
     expect(html).not.toContain("searchButton");
   });
 });

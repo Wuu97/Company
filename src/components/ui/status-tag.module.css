@@ -1,0 +1,6 @@
+.tag { display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; height:24px; padding:2px 10px; border-radius:9999px; font-size:12px; font-weight:500; line-height:20px; white-space:nowrap; }
+.default { background:#f1f5f9; color:#64748b; }
+.danger { background:#fee2e2; color:#dc2626; }
+.warning { background:#fef3c7; color:#d97706; }
+.success { background:#dcfce7; color:#15803d; }
+.info { background:#e0f2fe; color:#0284c7; }

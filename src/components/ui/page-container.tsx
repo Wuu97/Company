@@ -11,6 +11,8 @@ export type PageTab = {
   count?: number;
 };
 export type PageContainerProps = {
+  className?: string;
+  workspace?: boolean;
   tabs?: PageTab[];
   activeTab?: string;
   tabsLabel?: string;
@@ -20,19 +22,19 @@ export type PageContainerProps = {
   children: ReactNode;
 };
 /** The single content surface beneath PageHeader on business pages. */
-export function PageContainer({ tabs, activeTab, tabsLabel = "页面分类", actions, filter, pagination, children }: PageContainerProps) {
-  return <div data-page-card className={[styles.card, tabs?.length ? styles.hasTabs : undefined].filter(Boolean).join(" ")}>
+export function PageContainer({ className, workspace = false, tabs, activeTab, tabsLabel = "页面分类", actions, filter, pagination, children }: PageContainerProps) {
+  return <div data-page-card className={[styles.card, tabs?.length ? styles.hasTabs : undefined, className].filter(Boolean).join(" ")}>
     {tabs?.length ? <>
       <div className={styles.header}>
         <NavTabs label={tabsLabel} items={tabs.map(tab => ({ ...tab, active: activeTab === undefined ? tab.active : tab.value === activeTab }))} />
-        {actions && <div className={styles.actions}>{actions}</div>}
+        {actions && <div data-page-toolbar className={styles.actions}>{actions}</div>}
       </div>
-      {filter && <div className={styles.filter}>{filter}</div>}
-    </> : (filter || actions) ? <div className={styles.inlineToolbar}>
+      {filter && <div data-page-toolbar className={styles.filter}>{filter}</div>}
+    </> : (filter || actions) ? <div data-page-toolbar className={styles.inlineToolbar}>
       {filter && <div className={styles.inlineFilter}>{filter}</div>}
       {actions && <div className={styles.inlineActions}>{actions}</div>}
     </div> : null}
-    <div className={styles.content}>{children}</div>
+    <div className={[styles.content, workspace ? styles.workspaceContent : undefined].filter(Boolean).join(" ")}>{children}</div>
     {pagination && <div className={styles.pagination}>{pagination}</div>}
   </div>;
 }

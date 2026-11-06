@@ -111,9 +111,9 @@ export default async function Logs({
   const input = await searchParams;
   const pageSize = [10, 20, 50, 100].includes(Number(input.pageSize)) ? Number(input.pageSize) : 10;
   const q = input.q?.trim() || "";
-  const month = /^\d{4}-\d{2}$/.test(input.month || "") ? input.month! : "";
-  const monthStart = month ? new Date(`${month}-01T00:00:00.000Z`) : undefined;
-  const monthEnd = monthStart ? new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1) : undefined;
+  const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(input.month || "") ? input.month! : "";
+  const monthStart = month ? new Date(`${month}-01T00:00:00+08:00`) : undefined;
+  const monthEnd = monthStart ? new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 1) - 8 * 60 * 60 * 1000) : undefined;
   const page = Math.max(1, Number(input.page) || 1);
   // Resolve empty edits in SQL before both COUNT and pagination. JSON scalar
   // text comparison treats null, missing and empty strings as equivalent,

@@ -337,7 +337,6 @@
 }
 .filter.filter > a { flex: none; }
 .dangerAction { margin-left: auto; flex: none; }
-.dangerAction > button { background: #fff; border-color: #fecaca; color: #b42318; box-shadow: none; }
 @media(max-width: 1200px) {
   .filter.filter { overflow-x: auto; padding-bottom: 4px; }
 }

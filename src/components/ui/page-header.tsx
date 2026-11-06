@@ -15,7 +15,7 @@ export function PageHeader({ title, actions, className }: PageHeaderProps) {
       <div className={styles.copy}>
         <h1 className={styles.title}>{title}</h1>
       </div>
-      {actions ? <div className={styles.actions}>{actions}</div> : null}
+      {actions ? <div data-page-toolbar className={styles.actions}>{actions}</div> : null}
     </header>
   );
 }

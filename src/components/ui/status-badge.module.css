@@ -1,4 +1,4 @@
-.badge{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;height:24px;min-height:24px;padding:2px 10px;border-radius:9999px;background:#e8f3ff;color:#165dff;font-size:12px;font-weight:var(--type-status-weight);line-height:20px;white-space:nowrap}.small{height:24px;min-height:24px;padding:2px 10px;font-size:12px;line-height:20px}.success{background:#e8ffea;color:#00b42a}.warning{background:#fef3c7;color:#92400e}.critical{background:#fee2e2;color:#b91c1c}.muted{background:#e2e8f0;color:#475569}.unread{background:#e8f3ff;color:#165dff}
+.badge{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;height:24px;min-height:24px;padding:2px 10px;border-radius:9999px;background:#e0f2fe;color:#0284c7;font-size:12px;font-weight:var(--type-status-weight);line-height:20px;white-space:nowrap}.small{height:24px;min-height:24px;padding:2px 10px;font-size:12px;line-height:20px}.success{background:#dcfce7;color:#15803d}.warning{background:#fef3c7;color:#d97706}.critical{background:#fee2e2;color:#dc2626}.muted{background:#e2e8f0;color:#475569}.unread{background:#e0f2fe;color:#0284c7}
 .interactive{cursor:pointer}.interactive:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
 
 /* Keep selectable statuses visually consistent with static status badges. */
@@ -15,7 +15,7 @@
   font-weight: var(--type-status-weight);
   line-height: 20px;
 }
-.selectTrigger.success { background: #e8ffea; color: #00b42a; }
-.selectTrigger.critical { background: #fee2e2; color: #b91c1c; }
+.selectTrigger.success { background: #dcfce7; color: #15803d; }
+.selectTrigger.critical { background: #fee2e2; color: #dc2626; }
 .selectTrigger:hover { filter: brightness(.97); }
 .selectTrigger:disabled { opacity: .65; }

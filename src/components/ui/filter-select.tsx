@@ -1,6 +1,7 @@
 "use client";
 
 import { Children, isValidElement, useEffect, useId, useMemo, useRef, useState, type ChangeEvent, type FocusEvent, type ReactNode, type SelectHTMLAttributes } from "react";
+import { createPortal } from "react-dom";
 import { pinyin } from "pinyin-pro";
 import styles from "./list.module.css";
 
@@ -39,6 +40,8 @@ export function FilterSelect({ children, className, triggerClassName, optionsCla
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [placement, setPlacement] = useState({ left: 0, top: 0, width: 0, maxHeight: 200 });
   const searchRef = useRef<HTMLInputElement>(null);
   const selected = options.find(option => option.value === value) || options[0];
   const isControlled = controlledValue !== undefined;
@@ -58,7 +61,7 @@ export function FilterSelect({ children, className, triggerClassName, optionsCla
   useEffect(() => {
     if (!open) return;
     const closeWhenOutside = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      if (!rootRef.current?.contains(event.target as Node) && !menuRef.current?.contains(event.target as Node)) setOpen(false);
     };
     document.addEventListener("pointerdown", closeWhenOutside);
     return () => document.removeEventListener("pointerdown", closeWhenOutside);
@@ -68,12 +71,30 @@ export function FilterSelect({ children, className, triggerClassName, optionsCla
     if (open && searchable) requestAnimationFrame(() => searchRef.current?.focus());
   }, [open, searchable]);
 
+  useEffect(() => {
+    if (!open) return;
+    const position = () => {
+      const rect = rootRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const below = window.innerHeight - rect.bottom - 14;
+      const above = rect.top - 14;
+      const upwards = below < 200 && above > below;
+      const maxHeight = Math.max(0, Math.min(200, upwards ? above : below));
+      const width = Math.min(rect.width, window.innerWidth - 16);
+      setPlacement({ left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)), top: upwards ? rect.top - 6 - maxHeight : rect.bottom + 6, width, maxHeight });
+    };
+    position();
+    window.addEventListener("resize", position);
+    window.addEventListener("scroll", position, true);
+    return () => { window.removeEventListener("resize", position); window.removeEventListener("scroll", position, true); };
+  }, [open]);
+
   const choose = (nextValue: string) => {
     if (!isControlled) setValue(nextValue);
     if (inputRef.current) {
       inputRef.current.value = nextValue;
       // Let the ListFilter shell apply this discrete condition immediately.
-      inputRef.current.dispatchEvent(new Event("change", { bubbles: true }));
+      inputRef.current.dispatchEvent(new Event("list-filter-change", { bubbles: true }));
     }
     setOpen(false);
     setQuery("");
@@ -85,10 +106,10 @@ export function FilterSelect({ children, className, triggerClassName, optionsCla
     <button type="button" className={[styles.selectTrigger, triggerClassName].filter(Boolean).join(" ")} disabled={disabled} autoFocus={autoFocus} aria-label={ariaLabel} aria-invalid={ariaInvalid} aria-haspopup="listbox" aria-expanded={open} aria-controls={listId} onClick={() => { setOpen(current => !current); setQuery(""); }} onBlur={event => onBlur?.(event as unknown as FocusEvent<HTMLSelectElement>)}>
       <span>{open && query ? query : selected?.label}</span><span className={styles.selectChevron} aria-hidden="true" />
     </button>
-    {open && <div id={listId} className={[styles.selectOptions, optionsClassName].filter(Boolean).join(" ")} role="listbox" aria-label={ariaLabel}>
+    {open && createPortal(<div ref={menuRef} data-select-portal data-dialog-owner={rootRef.current?.closest('[role="dialog"]')?.getAttribute("aria-labelledby") || undefined} style={{ position: "fixed", zIndex: 2000, ...placement }} onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); setOpen(false); rootRef.current?.querySelector("button")?.focus(); } }} id={listId} className={[styles.selectOptions, optionsClassName].filter(Boolean).join(" ")} role="listbox" aria-label={ariaLabel}>
       {searchable && <input ref={searchRef} className={styles.selectSearch} value={query} onChange={event => setQuery(event.target.value)} onKeyDown={event => { if (event.key === "Escape") setOpen(false); }} aria-label="输入筛选" />}
-      {visibleOptions.map(option => <button key={option.value} type="button" role="option" aria-selected={option.value === value} className={[styles.selectOption, optionClassName].filter(Boolean).join(" ")} disabled={option.disabled} onMouseDown={event => event.preventDefault()} onClick={() => choose(option.value)}>{option.label}</button>)}
+      {visibleOptions.map(option => <button key={option.value} type="button" role="option" aria-selected={option.value === value} className={[styles.selectOption, optionClassName].filter(Boolean).join(" ")} disabled={option.disabled} onMouseDown={event => event.preventDefault()} onClick={() => choose(option.value)}><span>{option.label}</span>{option.value === value && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>}</button>)}
       {!visibleOptions.length && <span className={styles.selectEmpty}>未找到匹配项</span>}
-    </div>}
+    </div>, document.body)}
   </div>;
 }

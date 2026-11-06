@@ -25,6 +25,8 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   size?: ButtonSize;
   wide?: ButtonWide;
   iconOnly?: boolean;
+  /** Creation entry point; use outside dialog confirmation actions. */
+  create?: boolean;
 };
 type LinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   children: ReactNode;
@@ -32,6 +34,8 @@ type LinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   size?: ButtonSize;
   wide?: ButtonWide;
   iconOnly?: boolean;
+  /** Creation entry point; use outside dialog confirmation actions. */
+  create?: boolean;
 };
 
 export function buttonClassNames(
@@ -52,6 +56,10 @@ export function buttonClassNames(
   ]
     .filter(Boolean)
     .join(" ");
+}
+
+function PlusIcon() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>;
 }
 
 function ResetIcon() {
@@ -78,6 +86,7 @@ export function Button({
   size = "default",
   wide = false,
   iconOnly = false,
+  create = false,
   className,
   type = "button",
   children,
@@ -86,10 +95,15 @@ export function Button({
   return (
     <button
       type={type}
+      data-create-action={create || undefined}
+      data-action-button
+      data-icon-only={iconOnly || undefined}
+      data-variant={variant}
       className={buttonClassNames(variant, size, wide, className, iconOnly)}
       {...props}
     >
-      {variant === "reset" && <ResetIcon />}
+      {create && <PlusIcon />}
+      {variant === "reset" && !create && <ResetIcon />}
       {children}
     </button>
   );
@@ -101,16 +115,22 @@ export function ButtonLink({
   size = "default",
   wide = false,
   iconOnly = false,
+  create = false,
   className,
   children,
   ...props
 }: LinkProps) {
   return (
     <a
+      data-create-action={create || undefined}
+      data-action-button
+      data-icon-only={iconOnly || undefined}
+      data-variant={variant}
       className={buttonClassNames(variant, size, wide, className, iconOnly)}
       {...props}
     >
-      {variant === "reset" && <ResetIcon />}
+      {create && <PlusIcon />}
+      {variant === "reset" && !create && <ResetIcon />}
       {children}
     </a>
   );

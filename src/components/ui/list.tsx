@@ -14,6 +14,7 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import styles from "./list.module.css";
 import { Button, ButtonLink, type ButtonSize } from "./button";
+import { FilterSearchInput } from "./filter-search-input";
 import { FilterSelect } from "./filter-select";
 
 type ListFilterProps = FormHTMLAttributes<HTMLFormElement> & {
@@ -62,6 +63,7 @@ export const ListFilter = forwardRef<HTMLFormElement, ListFilterProps>(
           const value = String(raw).trim();
           if (value) params.set(key, value);
         }
+        params.delete("page");
         const search = params.toString();
         startTransition(() =>
           router.replace(search ? `${pathname}?${search}` : pathname, {
@@ -70,6 +72,14 @@ export const ListFilter = forwardRef<HTMLFormElement, ListFilterProps>(
         );
       });
     }, [pathname, router]);
+    // Custom selects use hidden fields, whose native change events do not
+    // participate in React's synthetic onChange handling.
+    useEffect(() => {
+      const form = formRef.current;
+      if (!form) return;
+      form.addEventListener("list-filter-change", apply);
+      return () => form.removeEventListener("list-filter-change", apply);
+    }, [apply]);
     const submit: FormHTMLAttributes<HTMLFormElement>["onSubmit"] = (event) => {
       event.preventDefault();
       onSubmit?.(event);
@@ -84,6 +94,8 @@ export const ListFilter = forwardRef<HTMLFormElement, ListFilterProps>(
         control.type === "checkbox" ||
         control.type === "radio" ||
         control.type === "date" ||
+        control.type === "month" ||
+        control.type === "datetime-local" ||
         control.type === "hidden"
       )
         apply();
@@ -93,7 +105,7 @@ export const ListFilter = forwardRef<HTMLFormElement, ListFilterProps>(
       const control = event.target as unknown as HTMLInputElement;
       if (
         control.tagName === "INPUT" &&
-        !["checkbox", "radio", "hidden", "date"].includes(control.type)
+        !["checkbox", "radio", "hidden", "date", "month", "datetime-local"].includes(control.type)
       )
         apply();
     };
@@ -152,39 +164,7 @@ export function FilterTextField({
   ...props
 }: InputHTMLAttributes<HTMLInputElement> & { compact?: boolean }) {
   if (props.type === "hidden") return <input {...props} />;
-  return (
-    <span className={styles.textSearch}>
-      <input
-        className={[
-          styles.control,
-          compact ? styles.controlCompact : undefined,
-          className,
-        ]
-          .filter(Boolean)
-          .join(" ")}
-        {...props}
-      />
-      <Button
-        type="submit"
-        variant="text"
-        size="toolbar"
-        iconOnly
-        aria-label="按关键词查找"
-        title="按关键词查找"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          aria-hidden="true"
-        >
-          <circle cx="10.5" cy="10.5" r="6.5" />
-          <path d="m16 16 5 5" />
-        </svg>
-      </Button>
-    </span>
-  );
+  return <FilterSearchInput className={[compact ? styles.controlCompact : undefined, className].filter(Boolean).join(" ")} {...props} />;
 }
 
 /** Compact select control for list filters; use inside FilterField for its accessible label. */

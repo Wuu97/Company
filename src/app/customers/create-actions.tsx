@@ -65,25 +65,25 @@ export function CreateActions({
   return (
     <div className={styles.createActions}>
       {customerId ? (
-        <Button
+        <Button create
           variant="secondary"
           size="small"
           onClick={() => open("factory")}
         >
-          + 新增工厂
+          新增工厂
         </Button>
       ) : (
         <>
-          <Button
+          <Button create
             onClick={() => open("customer")}
           >
-            + 新增客户
+            新增客户
           </Button>
-          <Button
+          <Button create
             variant="secondary"
             onClick={() => open("factory")}
           >
-            + 新增工厂
+            新增工厂
           </Button>
         </>
       )}

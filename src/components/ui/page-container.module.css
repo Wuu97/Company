@@ -79,12 +79,13 @@
   justify-content: space-between;
   flex-wrap: nowrap;
   gap: 16px;
-  height: 52px;
+  min-height: 52px;
+  padding-block: 12px;
   flex-shrink: 0;
-  border-bottom: 1px solid #f0f2f5;
+  border-bottom: 1px solid #e2e8f0;
 }
-.header > nav { height: 52px; align-self: flex-start; flex: 1; }
-.header > nav > :global([data-navigation-tab]) { height: 52px; padding-block: 0; box-sizing: border-box; }
+.header > nav { min-width: 0; min-height: 32px; flex: 1; }
+.header > nav > :global([data-navigation-tab]) { height: 32px; padding-block: 0; box-sizing: border-box; }
 .actions { display: flex; align-items: center; gap: 8px; flex: none; padding: 0; }
 .filter, .content { min-width: 0; }
 .filter > :first-child, .content > :first-child { margin-top: 0; }
@@ -130,3 +131,6 @@
 .content { flex: 1 1 0; min-height: 0; overflow: auto; overscroll-behavior: contain; }
 .pagination { flex-shrink: 0; margin-top: auto; padding-top: 16px; border-top: 1px solid #f0f2f5; background: #fff; }
 .pagination > nav { margin-top: 0; }
+
+/* Detail workspaces may let their table own both scroll axes. */
+.workspaceContent { display: flex; flex-direction: column; overflow: hidden; }

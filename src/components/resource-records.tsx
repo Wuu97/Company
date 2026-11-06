@@ -145,7 +145,7 @@ export function ResourceRecords({
 
       />
 <PageContainer actions={
-          <Button size="toolbar" onClick={() => open(null)}>+ 新增{label.singular}</Button>
+          <Button create size="toolbar" onClick={() => open(null)}>新增{label.singular}</Button>
         }  filter={<ListFilter className={styles.filter} key={`${q}-${status}`}>
           <FilterField label="查找档案" search>
             <FilterTextField

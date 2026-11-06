@@ -94,11 +94,8 @@
   line-height: var(--type-control-line-height);
   cursor: pointer;
 }
-.selectOption:hover,
-.selectOption[aria-selected="true"] {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
+.selectOption:hover { background: #f8fafc; }
+.selectOption[aria-selected="true"] { color: #2563eb; }
 .selectOption:focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 1px;
@@ -205,11 +202,11 @@
   display: grid;
   gap: 3px;
   padding: 4px;
-  border: 1px solid #bfdbfe;
+  border: 1px solid #e2e8f0;
   border-radius: 6px;
   background: #fff;
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.14);
-  max-height: 260px;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -2px rgba(0,0,0,.05);
+  max-height: 200px;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -358,7 +355,7 @@
   align-items: center;
   gap: 9px;
   padding: 10px 14px;
-  border: 1px solid #bfdbfe;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
@@ -381,3 +378,9 @@
 }
 
 /* All filter actions use the same toolbar dimensions as CSV export. */
+
+/* Shared filter trigger geometry: audit logs and CommonFilterBar use this rule. */
+.selectTrigger { box-sizing: border-box; height: var(--control-height, 36px); min-height: var(--control-height, 36px); padding-block: 0; }
+
+.selectOption { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; }
+.selectOption > svg { flex-shrink: 0; }
