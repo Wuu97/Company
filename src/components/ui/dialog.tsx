@@ -22,6 +22,7 @@ type Props = {
   message?: ReactNode;
   closeDisabled?: boolean;
   variant?: "manual";
+  closing?: boolean;
 };
 
 const focusableSelector = [
@@ -46,6 +47,7 @@ export function Dialog({
   message,
   closeDisabled = false,
   variant,
+  closing = false,
 }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
@@ -110,7 +112,7 @@ export function Dialog({
   }
 
   return (
-    <div className={[styles.backdrop, placement === "drawer" ? styles.drawerBackdrop : undefined].filter(Boolean).join(" ")} onMouseDown={closeFromBackdrop}>
+    <div data-closing={closing || undefined} className={[styles.backdrop, placement === "drawer" ? styles.drawerBackdrop : undefined].filter(Boolean).join(" ")} onMouseDown={closeFromBackdrop}>
       <div
         ref={dialogRef}
         className={[

@@ -1,0 +1,40 @@
+.backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: rgb(15 23 42 / 48%); animation: enter 160ms ease-out; }
+.modal { width: 90vw; max-width: 1280px; height: 86vh; display: flex; flex-direction: column; overflow: hidden; background: #f1f5f9; border-radius: 12px; box-shadow: 0 24px 64px rgb(0 0 0 / 24%); outline: none; }
+.header, .footer { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 24px; background: white; }
+.header { border-bottom: 1px solid #e2e8f0; }
+.header h2 { margin: 0; font-size: 18px; }
+.body { flex: 1; min-height: 0; overflow: auto; scroll-behavior: smooth; padding: 0 20px; }
+.footer { border-top: 1px solid #e2e8f0; }
+.footer > div { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.paper { box-sizing: border-box; width: 1050px; min-height: 720px; background: #fff; padding: 30px 38px; box-shadow: 0 10px 25px -5px rgba(0,0,0,.1); margin: 20px auto; color: black; font-family: Arial, SimSun, 'Songti SC', serif; }
+.paper h1 { margin: 0; text-align: center; font-family: LiSu, '隶书', SimSun, serif; font-size: 19.2pt; font-weight: 400; line-height: 26.4pt; }
+.paper table { width: 100%; max-width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 7.2pt; line-height: 1; }
+.paper th, .paper td { border: 0; padding: 0 2px; height: 12.8pt; text-align: center; vertical-align: middle; overflow-wrap: normal; font-weight: 400; line-height: 1; }
+.paper .titleRow td { height: 26.4pt; }
+.paper .subtitle td { height: 14.4pt; }
+.paper .subtitle td:first-child { font-size: 8pt; font-weight: 700; }
+.paper .subtitle td:nth-child(2) { text-align: left; }
+.paper .subtitle td:nth-child(4) { text-align: right; white-space: nowrap; }
+.paper .gridRow > * { border: 1px solid black; }
+.paper .gridRow th { white-space: nowrap; padding: 0; }
+.paper .gridRow td { overflow-wrap: anywhere; }
+.paper .summary td { height: 17.56pt; }
+.paper .summary td:first-child, .paper .uppercase td:first-child, .paper .uppercase td:nth-child(3) { text-align: left; }
+.paper .label { text-align: right; white-space: nowrap; overflow: visible; }
+.paper .total td { height: 12pt; }
+.paper .totalAmount { border: 1px solid black; }
+.paper .uppercase td { height: 16.8pt; }
+.paper .accountCompany td { height: 13.68pt; text-align: left; font-family: SimSun, 'Songti SC', serif; }
+.paper .account td { height: 9pt; text-align: left; font-family: SimSun, 'Songti SC', serif; }
+.paper .accountCompany .pageNumber { text-align: right; font-family: Arial, sans-serif; }
+.printFrame { position: fixed; left: -10000px; top: 0; width: 1122px; height: 794px; border: 0; }
+@keyframes enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .backdrop { animation: none; } .body { scroll-behavior: auto; } }
+@media print {
+  @page { size: A4 landscape; margin: 8mm 10mm; }
+  :global(html), :global(body) { margin: 0 !important; padding: 0 !important; height: auto !important; overflow: visible !important; background: white !important; }
+  .paper { width: 100%; min-height: 0; margin: 0; padding: 8px 0; box-shadow: none; break-after: page; }
+  .paper:last-child { break-after: auto; }
+  .paper thead { display: table-header-group; }
+  .paper tr { break-inside: avoid; }
+}

@@ -1,4 +1,5 @@
 "use client";
+import { useConfirm } from "@/components/ui/use-confirm";
 import { Dialog } from "@/components/ui/dialog";
 import styles from "./admin-settings-forms.module.css";
 import { useId, useState } from "react";
@@ -22,6 +23,7 @@ export function UserAdminActions({
   email: string;
   role: string;
 }) {
+  const { showConfirm, confirmationDialog } = useConfirm();
   const editFormId = useId();
   const resetFormId = useId();
   const [editing, setEditing] = useState(false);
@@ -71,15 +73,16 @@ export function UserAdminActions({
         styles.memberActions,
       ].join(" ")}
     >
+      {confirmationDialog}
       <div className={styles.memberCardActions}>
         <Button
           size="small"
           variant={active ? "danger" : "outline"}
           disabled={busy}
-          onClick={() => {
+          onClick={async () => {
             if (
               !active ||
-              window.confirm("确定停用此账号？该成员将无法登录系统。")
+              await showConfirm({ title: "停用账号", description: `确定停用 ${name} 的账号？该成员将无法登录系统。`, danger: true, confirmLabel: "确认停用" })
             )
               void update({ action: "set-active", active: !active });
           }}

@@ -177,3 +177,11 @@
 
 /* Modal focus restoration is silent; the next keyboard action restores the indicator. */
 .button[data-pointer-restored="true"]:focus-visible { outline: none; }
+
+/* Product-wide button contract: no focus/active halo, including modal return focus. */
+.button:focus,
+.button:focus-visible,
+.button:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
