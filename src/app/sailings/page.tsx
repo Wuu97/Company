@@ -1,3 +1,4 @@
+import { PageContainer } from "@/components/ui/page-container";
 import { prisma } from "@/lib/prisma";
 import { BulkEtbQueryForm } from "@/components/bulk-etb-query-form";
 import { formatChinaDateTime, formatOperationalTimeText, resolveOpeningTime } from "@/lib/time";
@@ -8,11 +9,11 @@ import { EtbConfirmationTag } from "@/components/etb-confirmation-tag";
 import { Pagination } from "@/components/ui/pagination";
 import styles from "./page.module.css";
 
-const pageSize = 5;
-type Search = { page?: string };
+
+type Search = { pageSize?: string; page?: string };
 
 export default async function Sailings({ searchParams }: { searchParams: Promise<Search> }) {
-  const input = await searchParams;
+  const input = await searchParams; const pageSize = [10,20,50,100].includes(Number(input.pageSize)) ? Number(input.pageSize) : 10;
   const requestedPage = Math.max(1, Number(input.page) || 1);
   const found = await prisma.sailing.findMany({ where: { orders: { some: {} } }, include: { _count: { select: { orders: true, observations: true } }, observations: { select: { id: true, observedAt: true, status: true }, orderBy: { observedAt: "desc" } }, orders: { select: { id: true, soNumber: true, carrier: true, vesselName: true, voyage: true, loadPort: true, etbText: true, openingText: true, siCutoffText: true, portCutoffText: true }, orderBy: { soNumber: "asc" } } }, orderBy: { carrier: "asc" } });
   const totalPages = Math.max(1, Math.ceil(found.length / pageSize));
@@ -23,9 +24,10 @@ export default async function Sailings({ searchParams }: { searchParams: Promise
 
   return <>
     <PageHeader title="船期管理" />
+<PageContainer pagination={<Pagination pageSize={pageSize} currentPage={currentPage} totalPages={totalPages} total={found.length} href={page => `/sailings?page=${page}`} label="船期分页" />}>
+
     <BulkEtbQueryForm orders={etbOrders} />
     {hasDachanBaySailing ? <p className={styles.resultSummary}>大铲湾船期不自动查询 ETB；如客户通知变更，请进入对应船期后人工录入并确认。</p> : null}
-    <p className={styles.resultSummary}>共 <b>{found.length}</b> 条结果，第 {currentPage} / {totalPages} 页。</p>
     <RecordCardList className={styles.list} density="compact">{sailings.length ? sailings.map(s => <RecordCard density="compact" key={s.id} className={[styles.card, s.etbNeedsReview ? styles.cardReview : undefined].filter(Boolean).join(" ")}>
       {s.orders.map((order, index) => <section key={order.id} className={styles.orderDetails}>
         <div className={styles.orderHeader}><div className={styles.orderTopLeft}><div className={styles.orderIdentity}><span>SO 编号</span><a href={`/orders/${order.id}`}>{order.soNumber}</a></div>{index === 0 ? <small className={styles.orderMeta}>关联 {s._count.orders} 个 SO · 共记录 {s._count.observations} 次时间更新 · 最后成功更新时间：{s.observations[0] ? formatChinaDateTime(s.observations[0].observedAt) : "尚无成功更新记录"}</small> : null}</div>{index === 0 ? <EtbConfirmationTag sailingId={s.id} pendingObservationId={s.observations.find(observation => observation.status === "PENDING")?.id} status={s.etbNeedsReview ? "PENDING" : s.adoptedEtbAt ? "CONFIRMED" : "WAITING"} /> : null}</div>
@@ -39,6 +41,8 @@ export default async function Sailings({ searchParams }: { searchParams: Promise
         </RecordCardFields>
       </section>)}
     </RecordCard>) : <EmptyState title="暂无自动归集的船期">请先完成 SO 核对；船名、航次和装货港齐全后，系统会自动创建或关联船期。</EmptyState>}</RecordCardList>
-    <Pagination currentPage={currentPage} totalPages={totalPages} total={found.length} href={page => `/sailings?page=${page}`} label="船期分页" />
-  </>;
+
+
+</PageContainer>
+</>;
 }

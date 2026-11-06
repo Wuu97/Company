@@ -1,17 +1,18 @@
+import { PageContainer } from "@/components/ui/page-container";
 import type { ContactTaskStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ContactTaskActions } from "@/components/contact-task-actions";
 import { formatChinaDateTime } from "@/lib/time";
 import { statusLabel, statusTone } from "@/lib/status-labels";
 import { EmptyState } from "@/components/ui/empty-state";
-import { FilterActions, FilterClearLink, FilterField, FilterSelectField, FilterTextField, ListFilter, ResultSummary } from "@/components/ui/list";
+import { FilterActions, FilterClearLink, FilterField, FilterSelectField, FilterTextField, ListFilter } from "@/components/ui/list";
 import { Pagination } from "@/components/ui/pagination";
 import { RecordCard, RecordCardHeader } from "@/components/ui/record-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PageHeader } from "@/components/ui/page-header";
 import styles from "./page.module.css";
-const pageSize = 50;
-type Search = { q?: string; status?: string; page?: string };
+
+type Search = { pageSize?: string; q?: string; status?: string; page?: string };
 const href = (input: Search, page: number) => {
   const params = new URLSearchParams();
   if (input.q) params.set("q", input.q);
@@ -24,7 +25,7 @@ export default async function ContactTasks({
 }: {
   searchParams: Promise<Search>;
 }) {
-  const input = await searchParams;
+  const input = await searchParams; const pageSize = [10,20,50,100].includes(Number(input.pageSize)) ? Number(input.pageSize) : 10;
   const q = input.q?.trim() || "";
   const status: ContactTaskStatus | undefined =
     input.status === "COMPLETED"
@@ -61,7 +62,7 @@ export default async function ContactTasks({
   return (
     <>
       <PageHeader title="客户联系待办" description="在开仓后联系客户确认柜量。可分批确认，再按已确认柜量安排装柜。" />
-      <ListFilter>
+<PageContainer filter={<ListFilter>
         <FilterField label="查找订单" search>
           <FilterTextField name="q" defaultValue={q} placeholder="输入 SO 编号" />
         </FilterField>
@@ -75,10 +76,10 @@ export default async function ContactTasks({
         <FilterActions>
           <FilterClearLink href="/contact-tasks" />
         </FilterActions>
-      </ListFilter>
-      <ResultSummary>
-        共 {total} 条，第 {currentPage} / {totalPages} 页。
-      </ResultSummary>
+      </ListFilter>} pagination={<Pagination pageSize={pageSize} currentPage={currentPage} totalPages={totalPages} total={total} href={page => href(input, page)} label="客户联系待办分页"/>}>
+
+
+
       <div className={styles.list}>
         {tasks.length ? (
           tasks.map((task) => {
@@ -129,7 +130,9 @@ export default async function ContactTasks({
           <EmptyState title="暂无符合条件的待办">客户确认事项会在开仓后显示在这里。</EmptyState>
         )}
       </div>
-      <Pagination currentPage={currentPage} totalPages={totalPages} total={total} href={page => href(input, page)} label="客户联系待办分页"/>
-    </>
+
+
+</PageContainer>
+</>
   );
 }

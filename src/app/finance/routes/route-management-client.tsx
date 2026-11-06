@@ -1,4 +1,8 @@
 "use client";
+import { AppPagination } from "@/components/ui/app-pagination";
+import { useListPagination } from "@/components/ui/use-list-pagination";
+
+import { PageContainer } from "@/components/ui/page-container";
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { NavTabs } from "@/components/ui/nav-tabs";
@@ -238,22 +242,19 @@ export function RouteManagementClient({
           !p.fleetOwnerId ||
           p.fleetOwnerId === fleetOwnerId),
     ) || [];
+  const pagination = useListPagination(filtered,JSON.stringify([tab,q,customerId,driverId,fleetOwnerId]));
   return (
     <main>
       <PageHeader
         title="路线费用管理"
         description="分别维护司机工资、合作车运价和客户报价模板；三类费用彼此独立。"
-        actions={<><Button size="toolbar" onClick={() => setEditing(blanks)}>新增路线</Button><Button size="toolbar" variant="secondary" onClick={() => setMode("price")}>新增价格版本</Button></>}
+
       />
-      <NavTabs
-        label="路线费用分类"
-        items={["driver", "partner", "customer"].map((k) => ({
+<PageContainer pagination={<AppPagination {...pagination.props} />} actions={<><Button size="toolbar" onClick={() => setEditing(blanks)}>新增路线</Button><Button size="toolbar" variant="secondary" onClick={() => setMode("price")}>新增价格版本</Button></>} tabsLabel="路线费用分类" tabs={["driver", "partner", "customer"].map((k) => ({
           label: priceLabels[k === "driver" ? "DRIVER" : k === "partner" ? "PARTNER" : "CUSTOMER"],
           active: tab === k,
           onClick: () => setTab(k),
-        }))}
-      />
-      <div className={styles.toolbar}>
+        }))} filter={<div data-list-filter className={styles.toolbar}>
         <TextField
           label="搜索路线"
           className={styles.routeSearch}
@@ -307,14 +308,17 @@ export function RouteManagementClient({
           </SelectField>
         )}
         {notice && <span className={styles.notice} role="status">{notice}</span>}
-      </div>
+      </div>}>
+
+
+
       {filtered.length ? (
         <DataTable>
           <thead>
             <tr>{tab === "driver" ? <><th>行驶路线</th><th>工厂名称</th><th>柜型</th><th>付运费</th></> : tab === "customer" ? <><th>行驶路线</th><th>工厂名称</th><th>柜型</th><th>运费</th></> : <><th>装卸地点</th><th>柜型</th><th>公里数</th><th>路桥费</th><th>油费</th></>}<th>状态</th></tr>
           </thead>
           <tbody>
-            {filtered.map((r) => { const price = r.prices.find((p: any) => p.billType === type && (type !== "CUSTOMER" || !customerId || (p.scope === "OBJECT" && p.customerId === customerId)) && (type !== "DRIVER" || !driverId || !p.driverId || p.driverId === driverId) && (type !== "PARTNER" || !fleetOwnerId || !p.fleetOwnerId || p.fleetOwnerId === fleetOwnerId)); const factoryName = price?.factory?.name || price?.customer?.factories?.[0]?.name || "—"; return <tr key={r.id}>{tab === "driver" || tab === "customer" ? <><td><span className={styles.name}>{r.name}</span></td><td><span className={styles.name}>{factoryName}</span></td><td>{price?.applicableContainerTypes?.join("、") || "—"}</td><td>{price?.unitPrice ?? "—"}</td></> : <><td><span className={styles.name}>{r.name}</span></td><td>{r.applicableContainerTypes?.join("、") || "—"}</td><td>{r.standardKilometers || "—"}</td><td>{r.standardToll || "—"}</td><td>{r.standardFuel || "—"}</td></>}<td><CompactSelect aria-label="修改路线状态" value={r.active ? "ACTIVE" : "INACTIVE"} onChange={event => toggleRoute(r, event.target.value === "ACTIVE")}><option value="ACTIVE">启用</option><option value="INACTIVE">停用</option></CompactSelect></td></tr>; })}
+            {pagination.items.map((r) => { const price = r.prices.find((p: any) => p.billType === type && (type !== "CUSTOMER" || !customerId || (p.scope === "OBJECT" && p.customerId === customerId)) && (type !== "DRIVER" || !driverId || !p.driverId || p.driverId === driverId) && (type !== "PARTNER" || !fleetOwnerId || !p.fleetOwnerId || p.fleetOwnerId === fleetOwnerId)); const factoryName = price?.factory?.name || price?.customer?.factories?.[0]?.name || "—"; return <tr key={r.id}>{tab === "driver" || tab === "customer" ? <><td><span className={styles.name}>{r.name}</span></td><td><span className={styles.name}>{factoryName}</span></td><td>{price?.applicableContainerTypes?.join("、") || "—"}</td><td>{price?.unitPrice ?? "—"}</td></> : <><td><span className={styles.name}>{r.name}</span></td><td>{r.applicableContainerTypes?.join("、") || "—"}</td><td>{r.standardKilometers || "—"}</td><td>{r.standardToll || "—"}</td><td>{r.standardFuel || "—"}</td></>}<td><CompactSelect aria-label="修改路线状态" value={r.active ? "ACTIVE" : "INACTIVE"} onChange={event => toggleRoute(r, event.target.value === "ACTIVE")}><option value="ACTIVE">启用</option><option value="INACTIVE">停用</option></CompactSelect></td></tr>; })}
           </tbody>
         </DataTable>
       ) : (
@@ -379,7 +383,9 @@ export function RouteManagementClient({
       {mode === "alias" && (
         <AliasForm onClose={() => setMode(null)} onSubmit={saveAlias} />
       )}
-    </main>
+
+</PageContainer>
+</main>
   );
 }
 function RouteForm({ value, onClose, onSubmit }: any) {
@@ -398,7 +404,7 @@ function RouteForm({ value, onClose, onSubmit }: any) {
         </>
       }
     >
-      <form id="route-form" className={styles.form} onSubmit={onSubmit}>
+      <form id="route-form" className={styles.dialogForm} onSubmit={onSubmit}>
         <TextField
           label="路线名称"
           name="name"
@@ -543,7 +549,7 @@ function PriceForm({
         </>
       }
     >
-      <form id="price-form" className={styles.form} onSubmit={onSubmit}>
+      <form id="price-form" className={styles.dialogForm} onSubmit={onSubmit}>
         <SelectField label="路线" name="routeId" required><option value="">请选择路线</option>{routes.map((route: Route) => <option key={route.id} value={route.id}>{route.name}</option>)}</SelectField>
         {type === "CUSTOMER" && <SelectField label="客户" name="customerId" defaultValue={selectedObjectId || ""} required><option value="">请选择客户</option>{options.map((option: { id: string; name: string }) => <option key={option.id} value={option.id}>{option.name}</option>)}</SelectField>}
         {needsFactory && <SelectField label="工厂名称" name="factoryId" required><option value="">请选择工厂</option>{factories.map((factory: { id: string; name: string }) => <option key={factory.id} value={factory.id}>{factory.name}</option>)}</SelectField>}
@@ -587,7 +593,7 @@ function AliasForm({ onClose, onSubmit }: any) {
         </>
       }
     >
-      <form id="alias-form" className={styles.form} onSubmit={onSubmit}>
+      <form id="alias-form" className={styles.dialogForm} onSubmit={onSubmit}>
         <TextField label="原始路线文本" name="rawText" required />
         <TextField label="规范化文本" name="normalizedText" required />
         <TextField label="来源" name="source" />

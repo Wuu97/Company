@@ -31,3 +31,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ ter
     return NextResponse.json({ terminal: credential.terminal, username: credential.username, updatedAt: credential.updatedAt });
   } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "保存失败" }, { status: 503 }); }
 }
+
+export async function PATCH(request: Request, { params }: { params: Promise<{ terminal: string }> }) {
+  let admin; try { admin = await requireAdmin(); } catch (error) { return authErrorResponse(error); }
+  const input = z.object({ active: z.boolean() }).safeParse(await request.json().catch(() => null));
+  if (!input.success) return NextResponse.json({ error: "启停状态无效" }, { status: 400 });
+  const terminal = decodeURIComponent((await params).terminal);
+  const existing = await prisma.dataSourceCredential.findUnique({ where: { terminal } });
+  if (!existing) return NextResponse.json({ error: "请先配置平台账号" }, { status: 404 });
+  const changed = await prisma.$transaction(async tx => {
+    const item = await tx.dataSourceCredential.update({ where: { terminal }, data: { active: input.data.active, changedById: admin.id } });
+    await tx.operationLog.create({ data: { action: item.active ? "PLATFORM_ENABLED" : "PLATFORM_DISABLED", entityType: "DataSourceCredential", entityId: item.id, ...actorFields(admin), before: { active: existing.active }, after: { terminal, active: item.active } } });
+    return item;
+  });
+  return NextResponse.json({ active: changed.active });
+}

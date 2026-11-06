@@ -11,7 +11,7 @@ function classes(...values: Array<string | undefined | false>) {
 
 /** Reusable record surface with explicit density instead of page-level card overrides. */
 export function RecordCard({ className, children, density = "default", ...props }: Props & { density?: Density }) {
-  return <article className={classes(styles.card, styles[`card${density}`], className)} {...props}>{children}</article>;
+  return <article data-record-card className={classes(styles.card, styles[`card${density}`], className)} {...props}>{children}</article>;
 }
 
 export function RecordCardHeader({ className, children, density = "default", ...props }: Props & { density?: Density }) {

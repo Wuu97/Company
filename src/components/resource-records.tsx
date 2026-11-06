@@ -1,5 +1,7 @@
 "use client";
 
+import { PageContainer } from "@/components/ui/page-container";
+
 import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -140,13 +142,11 @@ export function ResourceRecords({
               : "临时车资料"
         }
         description={label.description}
-        actions={
-          <Button size="toolbar" onClick={() => open(null)}>+ 新增{label.singular}</Button>
-        }
+
       />
-      {message && <FeedbackMessage tone="success">{message}</FeedbackMessage>}
-      <ArchiveSection title="筛选条件">
-        <ListFilter className={styles.filter} key={`${q}-${status}`}>
+<PageContainer actions={
+          <Button size="toolbar" onClick={() => open(null)}>+ 新增{label.singular}</Button>
+        }  filter={<ListFilter className={styles.filter} key={`${q}-${status}`}>
           <FilterField label="查找档案" search>
             <FilterTextField
               name="q"
@@ -164,9 +164,11 @@ export function ResourceRecords({
           <FilterActions>
             <FilterClearLink href={`/${kind}`} />
           </FilterActions>
-        </ListFilter>
-      </ArchiveSection>
-      <ArchiveSection title={`${label.singular}档案`} count={rows.length}>
+        </ListFilter>}>
+
+      {message && <FeedbackMessage tone="success">{message}</FeedbackMessage>}
+
+
         <RecordCardList className={styles.records} density="compact">
           {rows.length ? (
             rows.map((item) => (
@@ -205,7 +207,7 @@ export function ResourceRecords({
             </ArchiveEmptyState>
           )}
         </RecordCardList>
-      </ArchiveSection>
+
       {editing !== undefined && (
         <Dialog
           title={`${row ? "编辑" : "新增"}${label.singular}`}
@@ -278,6 +280,8 @@ export function ResourceRecords({
           </form>
         </Dialog>
       )}
-    </>
+
+</PageContainer>
+</>
   );
 }

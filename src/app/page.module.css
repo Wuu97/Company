@@ -118,7 +118,7 @@
 .summary {
   padding: 4px 10px;
   border-radius: 20px;
-  background: #f5f7fb;
+  background: #f5f7fa;
   color: #64748b;
   white-space: nowrap;
   font-size: var(--type-caption-size);
@@ -246,15 +246,11 @@
 .dashboard header h1 {
   color: #182230;
 }
-.dashboard header h1::before {
-  background: #88acff;
-  display: none;
-}
 .dashboard header p {
   color: #64748b;
 }
 :global(body):has(.dashboard) {
-  background: #f5f7fb;
+  background: #f5f7fa;
 }
 
 /* Match the compact overview and single task surface in the approved design. */

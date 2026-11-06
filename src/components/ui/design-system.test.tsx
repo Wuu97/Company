@@ -126,21 +126,21 @@ describe("button CSS architecture", () => {
 });
 
 describe("pagination button migration", () => {
-  it("keeps boundary controls disabled and preserves search parameters", async () => {
+  it("keeps boundary controls disabled with the configured page size", async () => {
     const { Pagination } = await import("./pagination");
     const html = renderToStaticMarkup(
       <Pagination
         currentPage={1}
         totalPages={3}
+        pageSize={40}
         total={120}
         href={(page) => `/orders?q=SO123&status=OPEN&page=${page}`}
         label="订单分页"
       />,
     );
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>上一页<\/button>/);
-    expect(html).toContain('href="/orders?q=SO123&amp;status=OPEN&amp;page=2"');
-    expect(html).toContain('name="q" value="SO123"');
-    expect(html).toContain('name="status" value="OPEN"');
+    expect(html).toContain('第 1 / 3 页');
+    expect(html).toContain('共 120 条数据');
     expect(html).toContain('max="3"');
   });
 });

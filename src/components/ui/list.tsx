@@ -100,6 +100,7 @@ export const ListFilter = forwardRef<HTMLFormElement, ListFilterProps>(
     return (
       <>
         <form
+          data-list-filter
           ref={setRef}
           className={[styles.filter, className].filter(Boolean).join(" ")}
           onSubmit={submit}
@@ -216,7 +217,7 @@ export function FilterActions({
   children: ReactNode;
 }) {
   return (
-    <div className={[styles.actions, className].filter(Boolean).join(" ")}>
+    <div data-filter-actions className={[styles.actions, className].filter(Boolean).join(" ")}>
       {children}
     </div>
   );

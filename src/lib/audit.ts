@@ -2,6 +2,7 @@ export type AuditActor = { id: string; name: string; role: "ADMIN" | "OPERATOR" 
 export function actorFields(actor?: AuditActor) { return actor ? { actorUserId: actor.id, actorName: actor.name, actorRole: actor.role } : {}; }
 
 const actionLabels: Record<string, string> = {
+  PLATFORM_ENABLED: "启用平台账号", PLATFORM_DISABLED: "停用平台账号",
   SO_FILE_UPLOADED: "上传 SO 文件", SO_FILE_VERSION_UPLOADED: "上传 SO 新版本", SO_REVIEWED: "人工核对 SO", SO_FIELD_UPDATED: "更新 SO 字段", SO_STATUS_CHANGED: "变更 SO 状态", SO_VERSION_CHANGE_APPLIED: "应用 SO 版本差异", SO_DELETED: "删除 SO", SO_FILE_DELETE_PENDING: "SO 文件待人工删除", SO_CONTAINERS_ADJUSTED: "调整 SO 柜量",
   CONTAINER_CREATED: "创建内部柜子", CONTAINER_NUMBER_UPDATED: "更新实际柜号", CONTAINER_LOADING_COMPLETED: "登记装柜完成与实际柜号", CARGO_ITEM_CREATED: "新增货物明细", CARGO_ITEM_UPDATED: "更新货物明细", CARGO_ITEM_DELETED: "删除货物明细", CUSTOMER_CREATED: "创建客户", CUSTOMER_UPDATED: "更新客户", FACTORY_CREATED: "创建工厂", FACTORY_UPDATED: "更新工厂",
   CUSTOMER_CONFIRMATION_CREATED: "记录客户上柜确认", CUSTOMER_CONFIRMATION_CANCELLED: "取消客户确认", CUSTOMER_CONTACT_TASK_RESOLVED: "处理客户联系待办", ORDER_MILESTONE_UPDATED: "更新单证/执行节点",

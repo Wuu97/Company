@@ -1,3 +1,4 @@
+import { PageContainer } from "@/components/ui/page-container";
 import { prisma } from "@/lib/prisma";
 import businessStyles from "@/components/business.module.css";
 import { notFound } from "next/navigation";
@@ -31,7 +32,7 @@ export default async function OrderDetail({params}:{params:Promise<{id:string}>}
   const aiSuggestions = Object.entries(latestExtraction?.ai?.values ?? {}).filter(([field, value]) => value && orderValues[field] !== value);
   const initialContainers = order.containers.filter(container => container.active).sort((a, b) => a.internalCode.localeCompare(b.internalCode)).map(container => ({ id: container.id, internalCode: container.internalCode, containerType: container.containerType, note: container.note, containerNo: container.containerNo }));
   return <>
-    <PageHeader title={<>SO 详情：{order.soNumber}</>} actions={<DeleteOrderButton orderId={id} returnToOrders/>}/>
+    <PageHeader title={<>SO 详情：{order.soNumber}</>} actions={<DeleteOrderButton orderId={id} returnToOrders/>}/><PageContainer>
     <section className={styles.summary}>
       <div className={styles.field}><span className={styles.fieldLabel}>客户</span><div className={styles.fieldValue}><b className={styles.name}>{order.customer?.name || <InlineOrderValue orderId={id} field="customerId" display="待匹配" placeholder="选择客户" options={customers}/>}</b></div></div>
       <div className={styles.field}><span className={styles.fieldLabel}>船公司</span><div className={styles.fieldValue}><b>{pending(order.carrier) ? <InlineOrderValue orderId={id} field="carrier" display="待解析" placeholder="输入船公司"/> : order.carrier}</b></div></div>
@@ -47,5 +48,5 @@ export default async function OrderDetail({params}:{params:Promise<{id:string}>}
     <ContainerAdjustmentForm orderId={id} initialContainers={initialContainers.length ? initialContainers : parsedContainers.flatMap(({ containerType, quantity }) => Array.from({ length: quantity }, () => ({ containerType })) )}/>
     <SoVersionUpload orderId={id}/>
     <section><h3>装柜计划</h3>{order.plans.length?<div className={styles.planList}>{order.plans.map(p=><article className={styles.planItem} key={p.id}><div><b>{formatChinaDateTime(p.scheduledAt)} · <span className={styles.name}>{p.factory.name}</span></b><span>{statusLabel(p.status)} · 已安排 {p.items.length} 柜</span></div>{["DRAFT","CONFIRMED"].includes(p.status)&&<CancelActionButton url={`/api/plans/${p.id}/cancel`} label="取消计划"/>}</article>)}</div>:"暂无计划"}</section>
-  </>;
+  </PageContainer></>;
 }

@@ -1,7 +1,9 @@
+import { formatChinaDateTime } from "@/lib/time";
+import { PageContainer } from "@/components/ui/page-container";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auditActionLabel, auditEntityLabel, auditFieldLabel, auditFieldValue } from "@/lib/audit";
-import { FilterActions, FilterClearLink, FilterField, FilterSelectField, FilterTextField, ListFilter, ResultSummary } from "@/components/ui/list";
+import { FilterClearLink, FilterField, FilterSelectField, FilterTextField, ListFilter } from "@/components/ui/list";
 import { Pagination } from "@/components/ui/pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PageHeader } from "@/components/ui/page-header";
@@ -107,15 +109,12 @@ export default async function Logs({
   searchParams: Promise<Search>;
 }) {
   const input = await searchParams;
-  const pageSize = [10, 20, 50].includes(Number(input.pageSize)) ? Number(input.pageSize) : 10;
+  const pageSize = [10, 20, 50, 100].includes(Number(input.pageSize)) ? Number(input.pageSize) : 10;
   const q = input.q?.trim() || "";
   const month = /^\d{4}-\d{2}$/.test(input.month || "") ? input.month! : "";
   const monthStart = month ? new Date(`${month}-01T00:00:00.000Z`) : undefined;
   const monthEnd = monthStart ? new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1) : undefined;
   const page = Math.max(1, Number(input.page) || 1);
-  const activeFilterCount = [q, input.action, input.entityType, month, input.showSystem].filter(
-    Boolean,
-  ).length;
   // Resolve empty edits in SQL before both COUNT and pagination. JSON scalar
   // text comparison treats null, missing and empty strings as equivalent,
   // matching the detail view's comparison rules.
@@ -186,13 +185,13 @@ export default async function Logs({
   return (
     <>
       <PageHeader title="操作日志" />
-      <ListFilter className={styles.filter}>
+<PageContainer filter={<ListFilter data-filter-layout="logs" className={styles.filter}>
         <FilterField label="操作人 / 业务单号" search>
-          <FilterTextField name="q" defaultValue={q} placeholder="输入姓名、SO 单号等" />
+          <FilterTextField aria-label="操作人 / 业务单号" name="q" defaultValue={q} placeholder="操作人 / 业务单号" />
         </FilterField>
         <FilterField label="操作类型">
-          <FilterSelectField name="action" defaultValue={input.action || ""}>
-            <option value="">全部操作</option>
+          <FilterSelectField aria-label="操作类型" name="action" defaultValue={input.action || ""}>
+            <option value="">操作类型</option>
             {actionRows.map((item) => (
               <option key={item.action} value={item.action}>
                 {auditActionLabel(item.action)}
@@ -201,8 +200,8 @@ export default async function Logs({
           </FilterSelectField>
         </FilterField>
         <FilterField label="业务对象">
-          <FilterSelectField name="entityType" defaultValue={input.entityType || ""}>
-            <option value="">全部对象</option>
+          <FilterSelectField aria-label="业务对象" name="entityType" defaultValue={input.entityType || ""}>
+            <option value="">业务对象</option>
             {entityRows.map((item) => (
               <option key={item.entityType} value={item.entityType}>
                 {auditEntityLabel(item.entityType)}
@@ -211,35 +210,33 @@ export default async function Logs({
           </FilterSelectField>
         </FilterField>
         <FilterField label="操作月份">
-          <FilterSelectField name="month" defaultValue={month}>
-            <option value="">全部月份</option>
+          <FilterSelectField aria-label="操作月份" name="month" defaultValue={month}>
+            <option value="">操作月份</option>
             {monthRows.map(item => <option key={item.month} value={item.month}>{monthLabel(item.month)}</option>)}
           </FilterSelectField>
         </FilterField>
-        <label className={styles.systemLogToggle}><input type="checkbox" name="showSystem" value="1" defaultChecked={input.showSystem === "1"} /><span>包含系统自动日志</span></label>
-        <FilterActions className={styles.filterActions}>
-          <FilterClearLink href="/logs" />
-          {user?.role === "ADMIN" && <ClearLogsButton total={allLogTotal} />}
-        </FilterActions>
-      </ListFilter>
-      <ResultSummary className={styles.resultSummary}>
-        {activeFilterCount ? `已使用 ${activeFilterCount} 个筛选条件，` : ""}共{" "}
-        {total} 条，第 {currentPage} / {totalPages} 页。
-      </ResultSummary>
+        <label data-filter-toggle className={styles.systemLogToggle}><input type="checkbox" name="showSystem" value="1" defaultChecked={input.showSystem === "1"} /><span>包含系统自动日志</span></label>
+        <FilterClearLink href="/logs" />
+        {user?.role === "ADMIN" && <div className={styles.dangerAction}><ClearLogsButton total={allLogTotal} /></div>}
+      </ListFilter>} pagination={<Pagination currentPage={currentPage} totalPages={totalPages} total={total} pageSize={pageSize} href={page => href(input, page)} label="操作日志分页"/>}>
+
+
       {visibleLogs.length ? <section className={styles.auditList} aria-label="操作记录">
         <div className={styles.tableHeader}><span>操作时间</span><span>操作人</span><span>操作内容</span><span>业务对象 / 标识</span><span>字段变化</span></div>
         {visibleLogs.map((log) => <AuditExpandedRow key={log.id} detail={hasChangeDetail(log.before, log.after) ? changeDetail(log.before, log.after) : null}>
-          <time className={styles.time}><span>{log.createdAt.toLocaleDateString("zh-CN")}</span><b>{log.createdAt.toLocaleTimeString("zh-CN", { hour12: false })}</b></time>
+          <time className={styles.time} dateTime={log.createdAt.toISOString()}>{formatChinaDateTime(log.createdAt)}:{String(log.createdAt.getUTCSeconds()).padStart(2, "0")}</time>
           <div className={styles.actor}>
             <b>{log.actorName || "系统处理"}</b>
           </div>
           <div className={styles.action}>
-            <StatusBadge tone="muted" size="small">{auditActionLabel(log.action)}</StatusBadge>
+            {log.action.endsWith("_DELETED") ? <StatusBadge tone="critical" size="small">{auditActionLabel(log.action)}</StatusBadge> : <span>{auditActionLabel(log.action)}</span>}
           </div>
           <div className={styles.objectTags}>{objectRows(log.entityType, log.before, log.after, log.entityId, businessById.get(`${log.entityType}:${log.entityId}`)).map(item => <span key={item.label} data-missing={item.value === "(未关联单号)" || !item.value || undefined} title={item.value ? `${item.label}：${item.value}` : item.label}><b>{item.label}</b>{item.value}</span>)}</div>
         </AuditExpandedRow>)}
       </section> : <section className={styles.empty}>暂无符合条件的操作记录。请调整筛选条件后重试。</section>}
-      <Pagination currentPage={currentPage} totalPages={totalPages} total={total} pageSize={pageSize} href={page => href(input, page)} label="操作日志分页"/>
-    </>
+
+
+</PageContainer>
+</>
   );
 }

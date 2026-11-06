@@ -1,3 +1,4 @@
+import { PageContainer } from "@/components/ui/page-container";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -14,6 +15,8 @@ export default async function Notifications() {
   const unreadCount = notifications.filter(item => !item.readAt).length;
   return <>
     <PageHeader title="通知中心" description="未读消息排在前面。处理完成后，可将它标记为已读。" />
+<PageContainer >
+
     {notifications.length ? <>
       <p className={styles.summary}>有 <b>{unreadCount}</b> 条未读消息。</p>
       <div className={styles.list}>
@@ -24,5 +27,7 @@ export default async function Notifications() {
         </article>)}
       </div>
     </> : <EmptyState title="暂无新消息">业务提醒和处理结果会显示在这里。</EmptyState>}
-  </>;
+
+</PageContainer>
+</>;
 }

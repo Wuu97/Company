@@ -11,7 +11,7 @@ export function ArchiveSection({
   children: ReactNode;
 }) {
   return (
-    <section className={styles.panel}>
+    <section data-list-section={title} aria-label={title} className={styles.panel}>
       <h2 className={styles.title}>
         {title}
         {count !== undefined && <span>共 {count} 条</span>}

@@ -559,3 +559,21 @@ export function AddPlatformButton() {
     </>
   );
 }
+
+export function TogglePlatformButton({ terminal, active }: { terminal: string; active: boolean }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+  async function toggle() {
+    if (busy) return;
+    setBusy(true); setError("");
+    try {
+      const response = await fetch(`/api/admin/data-sources/${encodeURIComponent(terminal)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ active: !active }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "更新状态失败");
+      router.refresh();
+    } catch (error) { setError(error instanceof Error ? error.message : "更新状态失败"); }
+    finally { setBusy(false); }
+  }
+  return <><Button size="small" variant={active ? "danger" : "outline"} disabled={busy} onClick={toggle}>{busy ? "处理中…" : active ? "停用" : "启用"}</Button>{error && <span role="alert">{error}</span>}</>;
+}

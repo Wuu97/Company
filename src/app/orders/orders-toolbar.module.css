@@ -1,14 +1,8 @@
 .toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  align-items: start;
-  gap: 10px;
-  margin: 16px 0;
-  padding: 16px 18px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, .03);
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .upload {

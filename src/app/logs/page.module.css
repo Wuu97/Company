@@ -1,16 +1,16 @@
 .filter {
-  margin-bottom: 6px;
+  margin-bottom: 16px;
 }
 .auditList {
   overflow: hidden;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border: none;
+  border-radius: 0;
   background: #fff;
 }
 .tableHeader,
 .logRow {
   display: grid;
-  grid-template-columns: 150px 120px 140px minmax(0, 1fr) 90px;
+  grid-template-columns: 180px 110px 170px minmax(0, 1fr) 72px;
   gap: 16px;
   padding: 11px 16px;
   text-align: left;
@@ -19,11 +19,11 @@
   position: sticky;
   top: 0;
   z-index: 2;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #f0f2f5;
   background: #f8fafc;
   color: #64748b;
-  font-size: var(--type-table-header-size);
-  font-weight: var(--type-table-header-weight);
+  font-size: 13px;
+  font-weight: 600;
   line-height: var(--type-table-header-line-height);
 }
 .tableHeader > span:last-child {
@@ -39,14 +39,16 @@
   line-height: var(--type-body-line-height);
 }
 .auditList > article {
-  border-bottom: 1px solid #eef2f7;
+  border-bottom: 1px solid #f7f8fa;
 }
 .auditList > article:last-child {
   border-bottom: 0;
 }
 .time {
-  display: grid;
-  gap: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  gap: 6px;
   color: #94a3b8;
   font-size: var(--type-caption-size);
   font-variant-numeric: tabular-nums;
@@ -93,9 +95,8 @@
   display: inline-flex;
   max-width: 100%;
   gap: 3px;
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: #eff6ff;
+  padding: 0;
+  background: transparent;
   color: #475569;
   font-size: var(--type-status-size);
   font-weight: var(--type-status-weight);
@@ -104,7 +105,7 @@
   overflow-wrap: anywhere;
 }
 .objectTags b {
-  color: #2563eb;
+  color: #64748b;
   font-weight: inherit;
 }
 .objectTags span[data-missing],
@@ -241,7 +242,7 @@
   }
   .filter .systemLogToggle {
     padding: 0;
-    min-height: 40px;
+    min-height: var(--control-height);
   }
   .filter .filterActions > a,
   .filter .filterActions > button {
@@ -252,7 +253,7 @@
 @media (min-width: 761px) and (max-width: 1050px) {
   .tableHeader,
   .logRow {
-    grid-template-columns: 130px 100px 120px minmax(0, 1fr) 80px;
+    grid-template-columns: 172px 90px 140px minmax(0, 1fr) 64px;
     gap: 10px;
     padding-left: 12px;
     padding-right: 12px;
@@ -260,7 +261,7 @@
 }
 @media (max-width: 760px) {
   .auditList {
-    border-radius: 8px;
+    border-radius: 0;
   }
   .tableHeader,
   .diffHeader {
@@ -304,3 +305,51 @@
     min-height: 44px;
   }
 }
+
+/* A single compact row; visible labels are replaced by accessible placeholders. */
+.filter.filter {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  --control-height: 36px;
+  --btn-height-toolbar: 36px;
+}
+.filter.filter > label:not(.systemLogToggle) {
+  display: block;
+  flex: 0 0 140px;
+  width: 140px;
+  min-width: 0;
+  border: 0;
+}
+.filter.filter > label:first-child { flex-basis: 220px; width: 220px; }
+.filter.filter > label:not(.systemLogToggle) > span:first-child { display: none; }
+.filter.filter .systemLogToggle {
+  flex: none;
+  align-self: center;
+  min-height: 36px;
+  padding: 0;
+}
+.filter.filter > a { flex: none; }
+.dangerAction { margin-left: auto; flex: none; }
+.dangerAction > button { background: #fff; border-color: #fecaca; color: #b42318; box-shadow: none; }
+@media(max-width: 1200px) {
+  .filter.filter { overflow-x: auto; padding-bottom: 4px; }
+}
+.tableHeader, .logRow { grid-template-columns: 180px 100px 170px minmax(160px, 1fr) 120px; }
+.logRow { align-items: center; }
+.time { white-space: nowrap; font-variant-numeric: tabular-nums; }
+@media (min-width: 761px) {
+  .auditList { overflow-x: auto; }
+  .tableHeader, .logRow { min-width: 826px; }
+}
+@media (max-width: 760px) {
+  .logRow { grid-template-columns: minmax(0, 1fr) auto; }
+}
+
+.logRow:hover { background-color: #f7f8fa; }

@@ -326,10 +326,28 @@
   text-align: center;
 }
 .textSearch {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  position: relative;
+  display: block;
+  width: 100%;
   min-width: 0;
+}
+.textSearch > input {
+  padding-right: 44px;
+}
+.textSearch > button {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  min-height: 0;
+  height: calc(100% - 4px);
+  padding: 0;
+  color: #8c8c8c;
+}
+.textSearch > button:hover:not(:disabled) {
+  color: #64748b;
+  text-decoration: none;
 }
 .loadingMask {
   position: fixed;

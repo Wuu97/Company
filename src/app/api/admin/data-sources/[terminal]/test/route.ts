@@ -23,8 +23,9 @@ export async function POST(_: Request, { params }: { params: Promise<{ terminal:
   let admin; try { admin = await requireAdmin(); } catch (error) { return authErrorResponse(error); }
   const terminal = decodeURIComponent((await params).terminal);
   try { getEtbSourceConfig(terminal); } catch { return NextResponse.json({ error: "不支持的 ETB 平台" }, { status: 400 }); }
-  const credential = await prisma.dataSourceCredential.findUnique({ where: { terminal }, select: { id: true } });
+  const credential = await prisma.dataSourceCredential.findUnique({ where: { terminal }, select: { id: true, active: true } });
   if (!credential) return NextResponse.json({ error: "请先保存平台账号" }, { status: 409 });
+  if (!credential.active) return NextResponse.json({ error: "该平台账号已停用，请先启用" }, { status: 409 });
   await prisma.etbCredentialTestRun.updateMany({ where: { terminal, status: { in: ["RUNNING", "AWAITING_MANUAL"] }, startedAt: { lt: new Date(Date.now() - 10 * 60_000) } }, data: { status: "FAILED", errorMessage: "验证超时，请重新测试连接", finishedAt: new Date() } });
   const existing = await prisma.etbCredentialTestRun.findFirst({ where: { terminal, status: { in: ["PENDING", "RUNNING", "AWAITING_MANUAL"] }, }, select: { id: true, status: true } });
   if (existing?.status === "PENDING") { await dispatch(existing.id); return NextResponse.json(existing, { status: 202 }); }

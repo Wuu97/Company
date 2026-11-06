@@ -1,13 +1,20 @@
-.settingsHeading {
-  align-items: center;
-  flex-direction: row;
+.settingsPanel {
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+.settingsContent {
+  min-width: 0;
+  padding: 16px;
 }
 .settingsTabBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 12px;
+  padding: 12px 16px 0;
   border-bottom: 1px solid #e2e8f0;
 }
 .tabs {
@@ -40,7 +47,7 @@
 .sourceCard {
   display: flex;
   flex-direction: column;
-  min-height: 220px;
+
   border: 1px solid #e8edf3;
   border-radius: 10px;
   background: #fff;
@@ -79,12 +86,13 @@
 }
 .portIcon,
 .memberAvatar {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50% !important;
   background: #f1f5f9;
   color: #475569;
   font-size: var(--font-title-sm);
@@ -105,14 +113,16 @@
 .roleTag {
   display: inline-flex;
   align-items: center;
-  padding: 2px 7px;
-  border: 1px solid #dbeafe;
-  border-radius: 4px;
-  background: #eff6ff;
-  color: #1677ff;
-  font-size: var(--font-caption);
-  font-weight: var(--font-weight-regular);
-  line-height: var(--line-height-caption);
+  justify-content: center;
+  box-sizing: border-box;
+  height: 24px;
+  padding: 2px 10px;
+  border: 0;
+  border-radius: 9999px;
+  background: #e8f3ff;
+  color: #165dff;
+  font-size: 12px;
+  line-height: 20px;
   white-space: nowrap;
 }
 .cardBody {
@@ -123,9 +133,9 @@
   gap: 8px;
   margin: 0;
   padding: 10px 12px;
-  border: 1px solid #edf2f7;
-  border-radius: 8px;
-  background: #f8fafc;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   font-size: var(--font-body);
   line-height: var(--line-height-body);
 }
@@ -253,3 +263,76 @@
     margin: 0 0 8px auto;
   }
 }
+
+/* Both settings tabs use the same bounded three-column entity grid. */
+.entityGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  align-items: stretch;
+}
+.entityCard .sourceHeader { padding: 0; align-items: center; }
+.entityCard .cardBody { padding: 16px 0; }
+.entityCard .credentials { gap: 10px; padding: 0; font-size: 13px; line-height: 20px; }
+.entityCard .credentials > div { align-items: baseline; }
+.entityCard .credentials dt, .entityCard .credentials dd { font-size: 13px; line-height: 20px; }
+.entityCard .credentials dd { color: #334155; }
+.entityCard .credentials .updatedAt { padding-top: 0; border-top: 0; }
+.entityCard .sourceActions, .entityCard .peopleFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: nowrap;
+  margin-top: auto;
+  padding: 12px 0 0;
+  border-top: 1px solid #f2f3f5;
+  --btn-height-default: 32px;
+  --btn-height-toolbar: 32px;
+  --btn-height-small: 32px;
+  --btn-height-compact: 32px;
+}
+.entityCard .sourceStatus { flex: 1; min-width: 0; flex-basis: auto; }
+.entityCard .activityHint { flex: 1; min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.entityCard .footerAction { margin-left: auto; flex: none; flex-wrap: nowrap; }
+@media (max-width: 1100px) { .entityGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .entityGrid { grid-template-columns: minmax(0, 1fr); } }
+
+.entityCard .peopleFooter > div { flex: none; }
+.entityCard .sourceStatus { flex-wrap: nowrap; }
+.entityCard .sourceStatus > span { min-width: 0; }
+.entityCard .sourceStatus > a { flex: none; }
+
+/* Time belongs to the attributes, leaving the footer exclusively for actions. */
+.entityCard .credentials > div { gap: 8px; }
+.entityCard .credentials dt { flex: none; white-space: nowrap; }
+.entityCard .credentials .updatedAt dd,
+.entityCard .timestamp { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.entityCard .cardBody { overflow-x: auto; }
+.entityCard .testResult[data-status="SUCCEEDED"] { color: #00b42a; }
+.entityCard .testResult[data-status="FAILED"] { color: #b91c1c; }
+.entityCard .sourceActions, .entityCard .peopleFooter {
+  justify-content: flex-end;
+  --btn-height-default: 28px;
+  --btn-height-toolbar: 28px;
+  --btn-height-small: 28px;
+  --btn-height-compact: 28px;
+  --btn-padding-small: 8px;
+  --font-body-sm: 12px;
+}
+.entityCard .footerAction { gap: 8px; }
+.entityCard .footerAction > :is(button, a),
+.entityCard .peopleFooter > div > div > button {
+  height: 28px;
+  min-height: 28px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+.platformCard .cardBody { padding: 12px 0; }
+.platformCard .credentials { gap: 8px; }
+.platformCard .credentials > div:last-child { align-items: baseline; }
+.platformCard .connectionStatus { white-space: nowrap; }
+.platformCard .sourceActions { padding-top: 10px; }
+.platformCard { min-height: 0; }

@@ -1,3 +1,4 @@
+import { PageContainer } from "@/components/ui/page-container";
 import { prisma } from "@/lib/prisma";
 import { DashboardTasks } from "./dashboard-tasks";
 import { evaluateRiskAlerts } from "@/lib/risk-alerts";
@@ -177,7 +178,7 @@ export default async function Dashboard() {
         description={
           <span className={styles.intro}>先处理待办，再安排装柜与运输。</span>
         }
-      />
+      /><PageContainer>
       <div className={styles.cards}>
         {cards.map(([title, count, href, detail]) => (
           <a
@@ -443,6 +444,6 @@ export default async function Dashboard() {
           )}
         </div>
       </details>
-    </div>
+    </PageContainer></div>
   );
 }

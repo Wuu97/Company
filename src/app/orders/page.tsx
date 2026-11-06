@@ -1,3 +1,5 @@
+import { ButtonLink } from "@/components/ui/button";
+import { PageContainer } from "@/components/ui/page-container";
 import { Prisma } from "@prisma/client";
 import businessStyles from "@/components/business.module.css";
 import { DeleteOrderButton } from "@/components/delete-order-button";
@@ -20,8 +22,8 @@ import { Pagination } from "@/components/ui/pagination";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 
-const pageSize = 5;
-type Search = {
+
+type Search = { pageSize?: string;
   review?: string;
   q?: string;
   status?: string;
@@ -56,7 +58,7 @@ export default async function Orders({
 }: {
   searchParams: Promise<Search>;
 }) {
-  const input = await searchParams;
+  const input = await searchParams; const pageSize = [10,20,50,100].includes(Number(input.pageSize)) ? Number(input.pageSize) : 10;
   const reviewOnly = input.review === "1";
   const q = input.q?.trim() || "";
   const page = Math.max(1, Number(input.page) || 1);
@@ -144,7 +146,6 @@ export default async function Orders({
       customerId={input.customerId}
       customers={customers}
       reviewOnly={reviewOnly}
-      exportHref={`/api/orders/export?${exportParams}`}
       className={styles.filter}
     />
   );
@@ -155,19 +156,10 @@ export default async function Orders({
         title={reviewOnly ? "待复核 SO" : "SO 订单"}
         description={reviewOnly ? <><a href="/orders">查看全部 SO</a> · 仅显示解析有冲突或缺少核心字段的订单。</> : undefined}
       />
-      {reviewOnly ? (
-        <>
-          {filter}
-        </>
-      ) : (
-        <div className={styles.toolbar}>
-          <SoUploadForm className={styles.upload} />
-          {filter}
-        </div>
-      )}
-      <p className={[businessStyles.muted, orderStyles.resultSummary].join(" ")}>
-        共 <b>{total}</b> 条结果，第 {currentPage} / {totalPages} 页。
-      </p>
+<PageContainer filter={filter} actions={<ButtonLink size="toolbar" variant="outline" href={`/api/orders/export?${exportParams}`}>导出 CSV</ButtonLink>} pagination={<Pagination pageSize={pageSize} currentPage={currentPage} totalPages={totalPages} total={total} href={page => href(input, page)} label="订单分页"/>}>
+
+      {!reviewOnly && <div className={styles.toolbar}><SoUploadForm className={styles.upload} /></div>}
+
       {orders.length ? (
         <div className={orderStyles.list}>
           {orders.map((order) => {
@@ -285,7 +277,9 @@ export default async function Orders({
       ) : (
         <EmptyState title={reviewOnly ? "暂无待复核 SO" : "未找到符合条件的订单"}>{reviewOnly ? "当前没有识别冲突或缺少核心字段的订单。" : "可尝试调整关键词或筛选条件。"}</EmptyState>
       )}
-      <Pagination currentPage={currentPage} totalPages={totalPages} total={total} href={page => href(input, page)} label="订单分页"/>
-    </>
+
+
+</PageContainer>
+</>
   );
 }

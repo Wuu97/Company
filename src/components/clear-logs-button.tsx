@@ -3,20 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
+import { TextField } from "@/components/ui/form-controls";
 import { FeedbackMessage } from "@/components/ui/feedback-message";
 
 export function ClearLogsButton({ total }: { total: number }) {
+  const [open, setOpen] = useState(false);
+  const [confirmation, setConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const router = useRouter();
   async function clear() {
-    if (
-      busy ||
-      !window.confirm(
-        `确定永久清空全部操作日志吗？当前共有 ${total} 条记录，此操作无法恢复。`,
-      )
-    )
-      return;
+    if (busy || confirmation !== "清空日志") return;
     setBusy(true);
     setMessage("");
     try {
@@ -24,6 +22,8 @@ export function ClearLogsButton({ total }: { total: number }) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "清空操作日志失败");
       setMessage(`已清空 ${data.count} 条操作日志。`);
+      setOpen(false);
+      setConfirmation("");
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "清空操作日志失败");
@@ -37,7 +37,7 @@ export function ClearLogsButton({ total }: { total: number }) {
         variant="danger"
         type="button"
         size="toolbar"
-        onClick={clear}
+        onClick={() => { setConfirmation(""); setMessage(""); setOpen(true); }}
         disabled={busy || !total}
       >
         <svg
@@ -55,7 +55,11 @@ export function ClearLogsButton({ total }: { total: number }) {
         </svg>
         {busy ? "清空中…" : "清空日志"}
       </Button>
-      {message && (
+      {open && <Dialog title="确认清空全部日志？" tone="danger" closeDisabled={busy} onClose={() => setOpen(false)} message={message} actions={<>
+        <Button size="toolbar" variant="neutral" disabled={busy} onClick={() => setOpen(false)}>取消</Button>
+        <Button size="toolbar" variant="danger" disabled={busy || confirmation !== "清空日志"} onClick={clear}>{busy ? "清空中…" : "确认清空"}</Button>
+      </>}><p>将永久删除全部 {total} 条日志，此操作无法恢复。</p><TextField label="请输入“清空日志”以确认" value={confirmation} onChange={event => setConfirmation(event.target.value)} disabled={busy} autoComplete="off" /></Dialog>}
+      {!open && message && (
         <FeedbackMessage
           tone={message.startsWith("已清空") ? "success" : "error"}
           as="small"

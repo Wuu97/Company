@@ -1,3 +1,4 @@
+import { PageContainer } from "@/components/ui/page-container";
 import { prisma } from "@/lib/prisma";
 import businessStyles from "@/components/business.module.css";
 import { currentUser } from "@/lib/auth";
@@ -80,7 +81,7 @@ export default async function Plans() {
       <PageHeader
         title="装柜与运输"
         description="从装柜计划、派车、换车到实际还柜在同一条执行链路中管理；每个计划对应一项运输任务。"
-      />
+      /><PageContainer>
       <PlanForm
         orders={orders.map((o) => ({ id: o.id, label: o.soNumber }))}
         factories={factories.map((f) => ({ id: f.id, label: f.name }))}
@@ -225,6 +226,6 @@ export default async function Plans() {
           </EmptyState>
         )}
       </RecordCardList>
-    </>
+    </PageContainer></>
   );
 }

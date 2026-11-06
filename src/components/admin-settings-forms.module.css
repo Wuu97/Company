@@ -1,6 +1,6 @@
+/* Field spacing is provided by Dialog. */
 .form {
   display: grid;
-  gap: 14px;
 }
 .form > small {
   color: #64748b;
@@ -75,6 +75,7 @@
   outline-offset: 2px;
 }
 .passwordInput > button {
+  color: #8c8c8c;
   position: absolute;
   right: 4px;
   top: 50%;
@@ -84,7 +85,7 @@
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  margin-top: 2px;
+  margin-top: 0;
   color: #8c8c8c;
   font-size: var(--font-caption);
   line-height: var(--line-height-caption);
@@ -132,7 +133,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 @keyframes credentialSpin {
   to {
@@ -157,4 +158,9 @@
   .passwordInput input {
     min-height: var(--control-height);
   }
+}
+
+.passwordInput > button:hover:not(:disabled) {
+  color: #64748b;
+  text-decoration: none;
 }

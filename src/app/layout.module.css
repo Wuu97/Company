@@ -1,7 +1,8 @@
 .main {
   width: calc(100% - 220px);
   min-width: 0;
-  padding: 32px;
+  --page-padding: 32px;
+  padding: var(--page-padding);
 }
 :global(body.unauthenticated) .main {
   width: 100%;
@@ -68,7 +69,8 @@
 @media (min-width: 761px) and (max-width: 1200px) {
   .main {
     width: calc(100% - 196px);
-    padding: 24px;
+    --page-padding: 24px;
+    padding: var(--page-padding);
   }
   :global(body.unauthenticated) .main {
     width: 100%;
@@ -78,7 +80,8 @@
 @media (max-width: 760px) {
   .main {
     width: 100%;
-    padding: 16px;
+    --page-padding: 16px;
+    padding: var(--page-padding);
     overflow-x: hidden;
   }
   :global(body.unauthenticated) .main {
@@ -90,4 +93,29 @@
     margin-bottom: 10px;
     padding-bottom: 10px;
   }
+}
+
+/* Locked application viewport; the page card owns its scrolling body. */
+:global(body:not(.unauthenticated)) { height: 100dvh; min-height: 0; overflow: hidden; }
+:global(body:not(.unauthenticated)) > .main {
+  height: 100dvh;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+.content { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+.content > :global(:is(div, main):has(> [data-page-card])) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.content :global([data-page-card]) { flex: 1; min-height: 0; }
+.content :global(header:has(> div > h1)) { flex-shrink: 0; }
+@media(max-width:760px) {
+  :global(body:has(> aside)) { display: flex; flex-direction: column; }
+  :global(body:has(> aside)) > aside { flex: none; max-height: 25dvh; overflow: auto; }
+  :global(body:has(> aside)) > .main { height: 0; flex: 1; min-height: 0; }
 }

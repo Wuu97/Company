@@ -1,3 +1,4 @@
+import { PageContainer } from "@/components/ui/page-container";
 import { Prisma } from "@prisma/client";
 import businessStyles from "@/components/business.module.css";
 import { prisma } from "@/lib/prisma";
@@ -15,7 +16,6 @@ import {
   FilterSelectField,
   FilterTextField,
   ListFilter,
-  ResultSummary,
 } from "@/components/ui/list";
 import { Pagination } from "@/components/ui/pagination";
 import {
@@ -27,8 +27,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { PageHeader } from "@/components/ui/page-header";
 import styles from "./page.module.css";
 
-const pageSize = 50;
-type Search = { q?: string; status?: string; page?: string };
+
+type Search = { pageSize?: string; q?: string; status?: string; page?: string };
 const href = (input: Search, page: number) => {
   const params = new URLSearchParams();
   if (input.q) params.set("q", input.q);
@@ -42,7 +42,7 @@ export default async function Customers({
 }: {
   searchParams: Promise<Search>;
 }) {
-  const input = await searchParams;
+  const input = await searchParams; const pageSize = [10,20,50,100].includes(Number(input.pageSize)) ? Number(input.pageSize) : 10;
   const q = input.q?.trim() || "";
   const status =
     input.status === "INACTIVE"
@@ -90,10 +90,14 @@ export default async function Customers({
       <PageHeader
         title="客户与工厂"
         description="维护客户与装柜工厂档案，供订单、装柜计划和运输任务直接选择。"
-        actions={<CreateActions customers={allActive} />}
+
       />
-      <ArchiveSection title="筛选条件">
-        <ListFilter className={styles.filter}>
+<PageContainer actions={<CreateActions customers={allActive} />} pagination={<Pagination pageSize={pageSize}
+          currentPage={currentPage}
+          totalPages={totalPages} total={total}
+          href={(page) => href(input, page)}
+          label="客户档案分页"
+        />} filter={<ListFilter className={styles.filter}>
           <FilterField label="查找档案" search>
             <FilterTextField
               name="q"
@@ -111,9 +115,10 @@ export default async function Customers({
           <FilterActions className={styles.filterActions}>
             <FilterClearLink href="/customers" />
           </FilterActions>
-        </ListFilter>
-      </ArchiveSection>
-      <ArchiveSection title="客户与工厂" count={total}>
+        </ListFilter>}>
+
+
+
 
         <RecordCardList className={styles.list} density="compact">
           {customers.length ? (
@@ -172,13 +177,10 @@ export default async function Customers({
             </ArchiveEmptyState>
           )}
         </RecordCardList>
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages} total={total}
-          href={(page) => href(input, page)}
-          label="客户档案分页"
-        />
-      </ArchiveSection>
-    </>
+
+
+
+</PageContainer>
+</>
   );
 }

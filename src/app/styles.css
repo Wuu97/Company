@@ -111,7 +111,7 @@ body {
   line-height: var(--type-body-line-height);
   margin: 0;
   font-family: Arial, "Microsoft YaHei", sans-serif;
-  background: #f5f7fb;
+  background: #f5f7fa;
   color: #182230;
   display: flex;
   --content-sidebar-width: 0px;
