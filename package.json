@@ -24,6 +24,7 @@
     "@prisma/client": "^6.0.0",
     "es-abstract": "^1.24.2",
     "exceljs": "^4.4.0",
+    "lucide-react": "^1.70.0",
     "next": "^15.1.0",
     "pdf-parse": "^2.4.5",
     "pinyin-pro": "^3.29.5",

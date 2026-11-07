@@ -1,0 +1,22 @@
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px solid; border-radius: 999px; font: inherit; font-size: 12px; line-height: 20px; white-space: nowrap; cursor: pointer; }
+.active { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+.active:hover { background: #d1fae5; }
+.inactive { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
+.inactive:hover { background: #f1f5f9; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: #94a3b8; flex: none; }
+.active .dot { background: #10b981; }
+.badge:disabled { opacity: .6; cursor: not-allowed; }
+.badge:focus-visible, .panel button:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+.panel { position: fixed; z-index: 2000; box-sizing: border-box; width: 288px; max-width: calc(100vw - 16px); max-height: calc(100dvh - 16px); overflow: auto; padding: 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 8px 28px #0f172a26; font-size: 13px; text-align: left; }
+.message { display: flex; gap: 8px; align-items: flex-start; }
+.message > svg { color: #d97706; flex: none; margin-top: 2px; }
+.message strong { color: #1e293b; font-weight: 500; }
+.message p { margin: 6px 0 0; color: #64748b; line-height: 1.6; }
+.actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.actions button { padding: 4px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: white; color: #475569; cursor: pointer; }
+.actions .confirm { background: #2563eb; border-color: #2563eb; color: white; }
+.actions button:disabled { opacity: .6; cursor: not-allowed; }
+.error { color: #b91c1c; overflow-wrap: anywhere; }
+.spinner { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }

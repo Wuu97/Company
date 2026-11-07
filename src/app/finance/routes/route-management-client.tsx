@@ -1,4 +1,5 @@
 "use client";
+import { ContainerTags, CountedNote, UnitInput, RouteNodes } from "./rate-form-fields";
 import { AppPagination } from "@/components/ui/app-pagination";
 import { useListPagination } from "@/components/ui/use-list-pagination";
 
@@ -6,10 +7,11 @@ import { PageContainer } from "@/components/ui/page-container";
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { NavTabs } from "@/components/ui/nav-tabs";
-import { DataTable } from "@/components/ui/data-table";
+import { CommonFilterBar } from "@/components/ui/common-filter-bar";
+import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { CompactSelect } from "@/components/ui/compact-select";
+import { StatusBadgeSwitch } from "@/components/ui/status-badge-switch";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import {
@@ -140,9 +142,9 @@ export function RouteManagementClient({
       .filter(Boolean);
     const body = {
       name: f.get("name"),
-      origin: routeParts[0] || "未填写",
-      destination: routeParts.at(-1) || "未填写",
-      viaPoints: routeParts.slice(1, -1).join("-") || null,
+      origin: String(f.get("origin") || ""),
+      destination: String(f.get("destination") || ""),
+      viaPoints: f.getAll("viaPoint").map(String).join("-") || null,
       routeType: f.get("routeType"),
       standardKilometers: f.get("standardKilometers") || null,
       standardToll: f.get("standardToll") || null,
@@ -163,6 +165,7 @@ export function RouteManagementClient({
       await refresh(r.id);
     } catch (x) {
       setNotice(x instanceof Error ? x.message : "保存失败");
+      throw x;
     }
   }
   async function savePrice(e: React.FormEvent<HTMLFormElement>) {
@@ -181,25 +184,28 @@ export function RouteManagementClient({
       applicableContainerTypes: list(f.get("containerTypes")),
       unitPrice: f.get("unitPrice"),
       factoryId: f.get("factoryId") || null,
-      effectiveFrom: new Date().toISOString().slice(0, 10),
+      effectiveFrom: String(f.get("effectiveFrom")),
       effectiveTo: null,
+      status: "CONFIRMED",
       note: f.get("note") || null,
       fees: [],
     };
     try {
       await request("/api/finance/route-prices", "POST", body);
       setMode(null);
-      setNotice("新版本已保存为草稿；确认后才能用于结算");
+      setNotice(body.status === "CONFIRMED" ? "版本已确认，将按有效期生效" : "版本已保存为草稿");
       await refresh(String(body.routeId));
     } catch (x) {
       setNotice(x instanceof Error ? x.message : "保存失败");
+      throw x;
     }
   }
   async function toggleRoute(route: Route, active = !route.active) {
     try {
       const updated = await request(`/api/finance/routes/${route.id}`, "PATCH", { name: route.name, origin: route.origin, destination: route.destination, viaPoints: route.viaPoints || null, routeType: route.routeType, standardKilometers: route.standardKilometers || null, standardToll: route.standardToll || null, standardFuel: route.standardFuel || null, applicableVehicleTypes: route.applicableVehicleTypes || [], applicableContainerTypes: route.applicableContainerTypes || [], note: route.note || null, active });
       setRoutes(all => all.map(item => item.id === route.id ? { ...item, ...updated } : item));
-    } catch (error) { setNotice(error instanceof Error ? error.message : "状态更新失败"); }
+    } catch (error) { setNotice(error instanceof Error ? error.message : "状态更新失败");
+      throw error; }
   }
   async function saveAlias(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -243,6 +249,18 @@ export function RouteManagementClient({
           p.fleetOwnerId === fleetOwnerId),
     ) || [];
   const pagination = useListPagination(filtered,JSON.stringify([tab,q,customerId,driverId,fleetOwnerId]));
+  const priceFor = (r: Route) => r.prices.find((p: any) => p.billType === type && (type !== "CUSTOMER" || !customerId || (p.scope === "OBJECT" && p.customerId === customerId)) && (type !== "DRIVER" || !driverId || !p.driverId || p.driverId === driverId) && (type !== "PARTNER" || !fleetOwnerId || !p.fleetOwnerId || p.fleetOwnerId === fleetOwnerId));
+  const columns: DataTableColumn<Route>[] = [
+    { key: "name", minWidth: 205, align: "left", title: tab === "partner" ? "装卸地点" : "行驶路线", dataIndex: "name", render: (_, r) => <span className={styles.cellText} title={r.name}>{r.name}</span> },
+    ...(tab !== "partner" ? [{ key: "factory", minWidth: 205, align: "left" as const, title: "工厂名称", render: (_: unknown, r: Route) => { const price = priceFor(r); const name = price?.factory?.name || price?.customer?.factories?.[0]?.name || "—"; return <span className={styles.cellText} title={name}>{name}</span>; } }] : []),
+    { key: "container", width: 120, align: "center", title: "柜型", render: (_, r) => (tab === "partner" ? r.applicableContainerTypes : priceFor(r)?.applicableContainerTypes)?.join("、") || "—" },
+    ...(tab === "partner" ? [
+      { key: "kilometers", title: "公里数", width: 110, dataIndex: "standardKilometers", type: "number" as const },
+      { key: "toll", title: "路桥费", width: 150, dataIndex: "standardToll", type: "money" as const },
+      { key: "fuel", title: "油费", width: 150, dataIndex: "standardFuel", type: "money" as const },
+    ] : [{ key: "price", width: 150, align: "right" as const, title: tab === "driver" ? "付运费" : "运费", type: "money" as const, render: (_: unknown, r: Route) => { const value = priceFor(r)?.unitPrice; return value == null ? "—" : new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY" }).format(Number(value)); } }]),
+    { key: "status", title: "状态", width: 120, align: "center", render: (_, r) => <StatusBadgeSwitch active={r.active} label="路线状态" confirmation="both" onChange={active => toggleRoute(r, active)} /> },
+  ];
   return (
     <main>
       <PageHeader
@@ -254,86 +272,17 @@ export function RouteManagementClient({
           label: priceLabels[k === "driver" ? "DRIVER" : k === "partner" ? "PARTNER" : "CUSTOMER"],
           active: tab === k,
           onClick: () => setTab(k),
-        }))} filter={<div data-list-filter className={styles.toolbar}>
-        <TextField
-          label="搜索路线"
-          className={styles.routeSearch}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="搜索路线名称"
-        />
-        {tab === "customer" && (
-          <SelectField
-            label="客户报价模板"
-            className={styles.customerSelect}
-            value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-          >
-            <option value="">全部客户</option>
-            {settlementOptions.customers.map((customer) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.name}
-              </option>
-            ))}
-          </SelectField>
-        )}
-        {tab === "driver" && (
-          <SelectField
-            label="司机工资模板"
-            className={styles.customerSelect}
-            value={driverId}
-            onChange={(e) => setDriverId(e.target.value)}
-          >
-            <option value="">全部司机</option>
-            {settlementOptions.drivers.map((driver) => (
-              <option key={driver.id} value={driver.id}>
-                {driver.name}
-              </option>
-            ))}
-          </SelectField>
-        )}
-        {tab === "partner" && (
-          <SelectField
-            label="合作车运价模板"
-            className={styles.customerSelect}
-            value={fleetOwnerId}
-            onChange={(e) => setFleetOwnerId(e.target.value)}
-          >
-            <option value="">全部合作车</option>
-            {settlementOptions.fleetOwners.map((owner) => (
-              <option key={owner.id} value={owner.id}>
-                {owner.name}
-              </option>
-            ))}
-          </SelectField>
-        )}
-        {notice && <span className={styles.notice} role="status">{notice}</span>}
-      </div>}>
+        }))} filter={<CommonFilterBar
+        values={{ search: q, object: tab === "driver" ? driverId : tab === "customer" ? customerId : fleetOwnerId }}
+        items={[
+          { type: "input", key: "search", label: "搜索路线", placeholder: "搜索路线名称/编号" },
+          { type: "select", key: "object", label: tab === "driver" ? "全部司机" : tab === "customer" ? "全部客户" : "全部合作车", options: (tab === "driver" ? settlementOptions.drivers : tab === "customer" ? settlementOptions.customers : settlementOptions.fleetOwners).map(item => ({ value: item.id, label: item.name })) },
+        ]}
+        onSearch={values => { setQ(String(values.search || "")); const object = String(values.object || ""); if (tab === "driver") setDriverId(object); else if (tab === "customer") setCustomerId(object); else setFleetOwnerId(object); }}
+      />}>
+      {notice && <p className={styles.notice} role="status">{notice}</p>}
 
-
-
-      {filtered.length ? (
-        <DataTable>
-          <thead>
-            <tr>{tab === "driver" ? <><th>行驶路线</th><th>工厂名称</th><th>柜型</th><th>付运费</th></> : tab === "customer" ? <><th>行驶路线</th><th>工厂名称</th><th>柜型</th><th>运费</th></> : <><th>装卸地点</th><th>柜型</th><th>公里数</th><th>路桥费</th><th>油费</th></>}<th>状态</th></tr>
-          </thead>
-          <tbody>
-            {pagination.items.map((r) => { const price = r.prices.find((p: any) => p.billType === type && (type !== "CUSTOMER" || !customerId || (p.scope === "OBJECT" && p.customerId === customerId)) && (type !== "DRIVER" || !driverId || !p.driverId || p.driverId === driverId) && (type !== "PARTNER" || !fleetOwnerId || !p.fleetOwnerId || p.fleetOwnerId === fleetOwnerId)); const factoryName = price?.factory?.name || price?.customer?.factories?.[0]?.name || "—"; return <tr key={r.id}>{tab === "driver" || tab === "customer" ? <><td><span className={styles.name}>{r.name}</span></td><td><span className={styles.name}>{factoryName}</span></td><td>{price?.applicableContainerTypes?.join("、") || "—"}</td><td>{price?.unitPrice ?? "—"}</td></> : <><td><span className={styles.name}>{r.name}</span></td><td>{r.applicableContainerTypes?.join("、") || "—"}</td><td>{r.standardKilometers || "—"}</td><td>{r.standardToll || "—"}</td><td>{r.standardFuel || "—"}</td></>}<td><CompactSelect aria-label="修改路线状态" value={r.active ? "ACTIVE" : "INACTIVE"} onChange={event => toggleRoute(r, event.target.value === "ACTIVE")}><option value="ACTIVE">启用</option><option value="INACTIVE">停用</option></CompactSelect></td></tr>; })}
-          </tbody>
-        </DataTable>
-      ) : (
-        <EmptyState
-          title={
-            tab === "customer" && customerId
-              ? "该客户尚无报价模板"
-              : "未找到路线"
-          }
-        >
-          {tab === "customer" && customerId
-            ? "可从候选标准创建该客户的专属报价。"
-            : "可新增路线或调整搜索条件。"}
-        </EmptyState>
-      )}
+      <div className={tab === "partner" ? styles.partnerTableFrame : styles.rateTableFrame}><DataTable fitContainer className={styles.routeTable} mobileHint={null} columns={columns} dataSource={pagination.items} rowKey="id" empty={{ title: tab === "customer" && customerId ? "该客户尚无报价模板" : "未找到路线", description: "可新增路线或调整筛选条件。" }} /></div>
       {editing && (
         <RouteForm
           value={editing}
@@ -389,69 +338,45 @@ export function RouteManagementClient({
   );
 }
 function RouteForm({ value, onClose, onSubmit }: any) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   return (
     <Dialog
+      width={580}
       title={value.id ? "编辑路线" : "新增路线"}
       onClose={onClose}
+      closeDisabled={saving}
+      message={error || undefined}
       actions={
         <>
-          <Button size="toolbar" variant="secondary" onClick={onClose}>
+          <CheckboxField className={styles.routeFooterToggle} form="route-form" name="active" defaultChecked={value.active !== false}>启用路线</CheckboxField>
+          <Button disabled={saving} size="toolbar" variant="secondary" onClick={onClose}>
             取消
           </Button>
-          <Button size="toolbar" type="submit" form="route-form">
+          <Button disabled={saving} size="toolbar" type="submit" form="route-form">
             保存
           </Button>
         </>
       }
     >
-      <form id="route-form" className={styles.dialogForm} onSubmit={onSubmit}>
-        <TextField
-          label="路线名称"
-          name="name"
-          required
-          defaultValue={value.name}
-          hint="按“起点-途经点-终点”填写，例如：盐田-新兴-盐田；系统会自动识别。"
-        />
+      <form id="route-form" className={styles.compactForm} onSubmit={async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); if (saving) return; setSaving(true); setError(""); try { await onSubmit(event); } catch (failure) { setError(failure instanceof Error ? failure.message : "保存失败"); } finally { setSaving(false); } }}>
+        <RouteNodes value={value} />
+        <UnitInput label="标准公里数" name="standardKilometers" unit="km" initial={String(value.standardKilometers || "")} />
         <SelectField
           label="路线类型"
           name="routeType"
+          required
           defaultValue={value.routeType}
         >
           <option value="ONE_WAY">单程</option>
           <option value="ROUND_TRIP">往返</option>
           <option value="MULTI_LEG">多运输段</option>
         </SelectField>
-        <TextField
-          label="标准公里数"
-          name="standardKilometers"
-          inputMode="decimal"
-          defaultValue={value.standardKilometers || ""}
-        />
-        <TextField
-          label="标准路桥费"
-          name="standardToll"
-          inputMode="decimal"
-          defaultValue={value.standardToll || ""}
-        />
-        <TextField
-          label="标准油费"
-          name="standardFuel"
-          inputMode="decimal"
-          defaultValue={value.standardFuel || ""}
-        />
-        <TextField
-          label="适用柜型（逗号分隔）"
-          name="applicableContainerTypes"
-          defaultValue={(value.applicableContainerTypes || []).join(",")}
-        />
-        <TextareaField
-          label="备注"
-          name="note"
-          defaultValue={value.note || ""}
-        />
-        <CheckboxField name="active" defaultChecked={value.active}>
-          启用路线
-        </CheckboxField>
+        <UnitInput label="标准路桥费" name="standardToll" unit="元" initial={String(value.standardToll || "")} />
+        <UnitInput label="标准油费" name="standardFuel" unit="元" initial={String(value.standardFuel || "")} />
+        <ContainerTags name="applicableContainerTypes" initial={value.applicableContainerTypes || []} />
+        <CountedNote initial={value.note || ""} />
+
       </form>
     </Dialog>
   );
@@ -533,27 +458,32 @@ function PriceForm({
   onClose,
   onSubmit,
 }: any) {
+  const [basis, setBasis] = useState("TRIP");
+  const [from, setFrom] = useState(new Date().toLocaleDateString("sv-SE"));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const needsFactory = type === "DRIVER" || type === "CUSTOMER";
   return (
     <Dialog
+      width={580}
       title={`新增${priceLabels[type]}版本`}
       onClose={onClose}
+      closeDisabled={saving}
+      message={error || undefined}
       actions={
         <>
-          <Button size="toolbar" variant="secondary" onClick={onClose}>
+          <Button disabled={saving} size="toolbar" variant="secondary" onClick={onClose}>
             取消
           </Button>
-          <Button size="toolbar" type="submit" form="price-form">
-            保存草稿
-          </Button>
+          <Button disabled={saving} size="toolbar" type="submit" form="price-form" name="saveStatus" value="CONFIRMED">保存</Button>
         </>
       }
     >
-      <form id="price-form" className={styles.dialogForm} onSubmit={onSubmit}>
+      <form id="price-form" className={styles.compactForm} onSubmit={async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); if (saving) return; setSaving(true); setError(""); try { await onSubmit(event); } catch (failure) { setError(failure instanceof Error ? failure.message : "保存失败"); } finally { setSaving(false); } }}>
         <SelectField label="路线" name="routeId" required><option value="">请选择路线</option>{routes.map((route: Route) => <option key={route.id} value={route.id}>{route.name}</option>)}</SelectField>
         {type === "CUSTOMER" && <SelectField label="客户" name="customerId" defaultValue={selectedObjectId || ""} required><option value="">请选择客户</option>{options.map((option: { id: string; name: string }) => <option key={option.id} value={option.id}>{option.name}</option>)}</SelectField>}
         {needsFactory && <SelectField label="工厂名称" name="factoryId" required><option value="">请选择工厂</option>{factories.map((factory: { id: string; name: string }) => <option key={factory.id} value={factory.id}>{factory.name}</option>)}</SelectField>}
-        <SelectField label="计费单位" name="billingBasis" defaultValue="TRIP">
+        <SelectField label="计费单位" name="billingBasis" value={basis} onChange={e => setBasis(e.target.value)}>
           <option value="CONTAINER">按柜</option>
           <option value="TRIP">按趟</option>
           <option value="LEG">按运输段</option>
@@ -565,14 +495,10 @@ function PriceForm({
           <option value="DOUBLE_TRAILER">孖拖</option>
           <option value="SHARED_TRAILER">拼孖拖</option>
         </SelectField>
-        <TextField
-          label="基础单价"
-          name="unitPrice"
-          required
-          inputMode="decimal"
-        />
-        <TextField label="适用柜型（逗号分隔）" name="containerTypes" />
-        <TextField label="备注" name="note" />
+        <UnitInput label="基础单价" name="unitPrice" required prefix="¥" unit={basis === "TRIP" ? "/ 趟" : basis === "CONTAINER" ? "/ 柜" : basis === "LEG" ? "/ 运输段" : basis === "COMBINATION" ? "/ 组合" : "/ 项"} />
+        <TextField label="生效日期" name="effectiveFrom" type="date" required value={from} onChange={e => setFrom(e.target.value)} />
+        <ContainerTags name="containerTypes" />
+        <CountedNote />
       </form>
     </Dialog>
   );

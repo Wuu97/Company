@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { authErrorResponse, requireFinancialAccess } from "@/lib/auth";
 
 const optionalMoney = z.string().regex(/^\d+(?:\.\d{1,2})?$/).optional().nullable();
-const schema = z.object({ name: z.string().trim().min(1).max(160), origin: z.string().trim().min(1).max(120), destination: z.string().trim().min(1).max(120), viaPoints: z.string().trim().max(500).optional().nullable(), routeType: z.enum(["ONE_WAY", "ROUND_TRIP", "MULTI_LEG"]), standardKilometers: optionalMoney, standardToll: optionalMoney, standardFuel: optionalMoney, applicableVehicleTypes: z.array(z.string().trim().min(1).max(40)).default([]), applicableContainerTypes: z.array(z.string().trim().min(1).max(40)).default([]), note: z.string().trim().max(1000).optional().nullable() });
+const schema = z.object({ active: z.boolean().default(true), name: z.string().trim().min(1).max(160), origin: z.string().trim().min(1).max(120), destination: z.string().trim().min(1).max(120), viaPoints: z.string().trim().max(500).optional().nullable(), routeType: z.enum(["ONE_WAY", "ROUND_TRIP", "MULTI_LEG"]), standardKilometers: optionalMoney, standardToll: optionalMoney, standardFuel: optionalMoney, applicableVehicleTypes: z.array(z.string().trim().min(1).max(40)).default([]), applicableContainerTypes: z.array(z.string().trim().min(1).max(40)).default([]), note: z.string().trim().max(1000).optional().nullable() });
 
 export async function GET(request: Request) {
   try { await requireFinancialAccess(); } catch (error) { return authErrorResponse(error); }

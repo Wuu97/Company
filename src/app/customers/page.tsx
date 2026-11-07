@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { CreateActions } from "./create-actions";
 import {
   CustomerRecordForm,
-  CustomerStatusSelect,
+  CustomerStatusSwitch,
   FactoryRecordForm,
 } from "@/components/customer-record-forms";
 import { ArchiveSection, ArchiveEmptyState } from "@/components/ui/archive";
@@ -159,7 +159,7 @@ export default async function Customers({
                   </div>
                 </div>
                 <div className={styles.footer}>
-                  <CustomerStatusSelect customer={c} />
+                  <CustomerStatusSwitch customer={c} />
                   {c.factories.map((factory) => (
                     <FactoryRecordForm key={factory.id} customerId={c.id} factory={factory} />
                   ))}

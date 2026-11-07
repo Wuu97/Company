@@ -38,10 +38,10 @@
   font-weight: var(--type-body-weight);
   line-height: var(--type-body-line-height);
 }
-.auditList > article {
+.logTable > article {
   border-bottom: 1px solid #f7f8fa;
 }
-.auditList > article:last-child {
+.logTable > article:last-child {
   border-bottom: 0;
 }
 .time {
@@ -250,75 +250,19 @@
     padding-inline: 9px;
   }
 }
-@media (min-width: 761px) and (max-width: 1050px) {
-  .tableHeader,
-  .logRow {
-    grid-template-columns: 172px 90px 140px minmax(0, 1fr) 64px;
-    gap: 10px;
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-}
-@media (max-width: 760px) {
-  .auditList {
-    border-radius: 0;
-  }
-  .tableHeader,
-  .diffHeader {
-    display: none;
-  }
-  .logRow {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 8px;
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-  .time,
-  .action,
-  .objectTags {
-    grid-column: 1 / -1;
-  }
-  .detail {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  .expandedPanel {
-    padding: 4px 12px;
-  }
-  .diffRow {
-    grid-template-columns: 1fr;
-    padding: 3px 0;
-    gap: 3px;
-  }
-  .diffRow > b::before {
-    content: "字段：";
-    color: #64748b;
-  }
-  .beforeValue::before {
-    content: "变更前：";
-  }
-  .afterValue::before {
-    content: "变更后：";
-  }
-  .systemLogToggle {
-    align-self: auto;
-    min-height: 44px;
-  }
-}
-
 /* A single compact row; visible labels are replaced by accessible placeholders. */
 .filter.filter {
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 12px;
   margin: 0;
   padding: 0;
   border: 0;
   background: transparent;
   box-shadow: none;
-  --control-height: 36px;
-  --btn-height-toolbar: 36px;
+  --control-height: var(--filter-control-height, 32px);
+  --btn-height-toolbar: var(--filter-control-height, 32px);
 }
 .filter.filter > label:not(.systemLogToggle) {
   display: block;
@@ -327,7 +271,7 @@
   min-width: 0;
   border: 0;
 }
-.filter.filter > label:first-child { flex-basis: 220px; width: 220px; }
+.filter.filter > label:first-child { flex-basis: auto; width: var(--filter-input-width, 200px); }
 .filter.filter > label:not(.systemLogToggle) > span:first-child { display: none; }
 .filter.filter .systemLogToggle {
   flex: none;
@@ -336,19 +280,54 @@
   padding: 0;
 }
 .filter.filter > a { flex: none; }
-.dangerAction { margin-left: auto; flex: none; }
+.dangerAction { margin-left: 0; flex: 0 0 auto; white-space: nowrap; }
 @media(max-width: 1200px) {
-  .filter.filter { overflow-x: auto; padding-bottom: 4px; }
+  .filter.filter { flex-wrap: wrap; overflow: visible; }
 }
-.tableHeader, .logRow { grid-template-columns: 180px 100px 170px minmax(160px, 1fr) 120px; }
-.logRow { align-items: center; }
-.time { white-space: nowrap; font-variant-numeric: tabular-nums; }
-@media (min-width: 761px) {
-  .auditList { overflow-x: auto; }
-  .tableHeader, .logRow { min-width: 826px; }
-}
-@media (max-width: 760px) {
-  .logRow { grid-template-columns: minmax(0, 1fr) auto; }
-}
-
 .logRow:hover { background-color: #f7f8fa; }
+
+/* One grid definition for the header and every audit row, at every breakpoint. */
+.auditList {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.logTable { width: 100%; min-width: 900px; }
+.tableHeader, .logRow {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 180px 120px 140px minmax(140px, 1fr) 320px;
+  gap: 0;
+  padding-inline: 0;
+  text-align: left;
+}
+.tableHeader > span:last-child { text-align: left; }
+.detail { justify-content: flex-start; text-align: left; overflow-wrap: anywhere; }
+.action { overflow-wrap: anywhere; }
+.action > :global(*) { flex-shrink: 1; min-width: 0; }
+.time { white-space: nowrap; }
+.filter.filter { flex-wrap: wrap; gap: 12px; overflow: visible; }
+.filter.filter .systemLogToggle { min-height: var(--filter-control-height, 32px); }
+
+/* Full-width log workspace with independent filter and danger-action groups. */
+.logCard.logCard { width: 100%; max-width: none; box-sizing: border-box; min-width: 0; }
+.filter.filter { width: 100%; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+.filterControls { display: flex; flex: 1 1 0; min-width: 0; flex-wrap: wrap; align-items: center; gap: 12px; }
+.filterControls > label:not(.systemLogToggle) { display: block; flex: 0 0 auto; width: var(--filter-select-width, 140px); max-width: 100%; min-width: 0; }
+.filterControls > label:first-child { width: var(--filter-input-width, 200px); }
+.filterControls > label:not(.systemLogToggle) > span:first-child { display: none; }
+.filterControls > label:not(.systemLogToggle) > :last-child { width: 100%; min-width: 0; }
+.filterControls > a, .filterControls > .systemLogToggle { flex: none; }
+.dangerAction { flex: 0 0 auto; margin-left: auto; }
+@media (max-width: 760px) {
+  .filterControls { flex-basis: 100%; }
+  .dangerAction { margin-left: auto; }
+}
+.logCard.logCard :global([data-list-filter]) { align-items: center; justify-content: space-between; }
+
+/* Cell padding is included in the fixed track widths; 900px remains sufficient. */
+.tableHeader > *, .logRow > * { box-sizing: border-box; min-width: 0; padding-inline: 12px; text-align: left; }
+.tableHeader > :last-child, .logRow > :last-child { width: 320px; }
+.detail { justify-content: flex-start; white-space: normal; overflow-wrap: anywhere; }

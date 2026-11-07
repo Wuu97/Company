@@ -134,3 +134,66 @@
 
 /* Detail workspaces may let their table own both scroll axes. */
 .workspaceContent { display: flex; flex-direction: column; overflow: hidden; }
+
+/* Match bill-management filter widths; never stretch controls across a wide row. */
+.card.card :global([data-list-filter]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  overflow: visible;
+  gap: 12px;
+}
+.card.card :global([data-list-filter] > label:not([data-filter-toggle])) {
+  display: grid;
+  flex: 0 0 auto;
+  width: var(--filter-input-width, 200px);
+  max-width: 100%;
+  min-width: 0;
+  gap: 6px;
+}
+.card.card :global([data-list-filter] > label:has(select):not([data-filter-toggle])),
+.card.card :global([data-list-filter] > label:has([aria-haspopup="listbox"]):not([data-filter-toggle])),
+.card.card :global([data-list-filter] > label:has(input[type="date"]):not([data-filter-toggle])) {
+  width: var(--filter-select-width, 140px);
+}
+.card.card :global([data-list-filter] > label:not([data-filter-toggle]) > :last-child) {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+@media (max-width: 760px) {
+  .card.card :global([data-list-filter] > label:not([data-filter-toggle])) {
+    width: 100%;
+    flex: 0 1 100%;
+  }
+}
+
+/* Higher specificity also covers inline filters and former log-page overrides. */
+.card.card [data-page-toolbar] :global([data-list-filter]),
+.card.card :global([data-list-filter]) {
+  --control-height: var(--filter-control-height, 32px);
+  --btn-height-toolbar: var(--filter-control-height, 32px);
+}
+.card.card .filter :global([data-list-filter] > label:not([data-filter-toggle])),
+.card.card .inlineFilter :global([data-list-filter] > label:not([data-filter-toggle])) {
+  flex: 0 0 auto;
+  width: var(--filter-input-width, 200px);
+}
+.card.card .filter :global([data-list-filter] > label:has([aria-haspopup="listbox"]):not([data-filter-toggle])),
+.card.card .inlineFilter :global([data-list-filter] > label:has([aria-haspopup="listbox"]):not([data-filter-toggle])) {
+  width: var(--filter-select-width, 140px);
+}
+.card.card :global([data-list-filter] input:not([type="checkbox"]):not([type="hidden"])),
+.card.card :global([data-list-filter] button[aria-haspopup="listbox"]),
+.card.card :global([data-list-filter] select) {
+  box-sizing: border-box;
+  height: var(--filter-control-height, 32px);
+  min-height: var(--filter-control-height, 32px);
+  padding-block: 0;
+}
+@media (max-width: 760px) {
+  .card.card .filter :global([data-list-filter] > label:not([data-filter-toggle])),
+  .card.card .inlineFilter :global([data-list-filter] > label:not([data-filter-toggle])) {
+    flex: 0 1 100%; width: 100%;
+  }
+}

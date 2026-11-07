@@ -264,11 +264,11 @@
   }
 }
 
-/* Both settings tabs use the same bounded three-column entity grid. */
+/* Shared entity grid keeps sparse result sets at the same card width. */
 .entityGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(var(--entity-grid-columns), minmax(0, 1fr));
+  gap: 20px;
   width: 100%;
   align-items: stretch;
 }
@@ -296,8 +296,8 @@
 .entityCard .sourceStatus { flex: 1; min-width: 0; flex-basis: auto; }
 .entityCard .activityHint { flex: 1; min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .entityCard .footerAction { margin-left: auto; flex: none; flex-wrap: nowrap; }
-@media (max-width: 1100px) { .entityGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 760px) { .entityGrid { grid-template-columns: minmax(0, 1fr); } }
+
+
 
 .entityCard .peopleFooter > div { flex: none; }
 .entityCard .sourceStatus { flex-wrap: nowrap; }
@@ -336,3 +336,11 @@
 .platformCard .connectionStatus { white-space: nowrap; }
 .platformCard .sourceActions { padding-top: 10px; }
 .platformCard { min-height: 0; }
+
+.entityCard .sourceActions, .entityCard .peopleFooter, .entityCard .footerAction { flex-wrap: wrap; }
+.entityCard .sourceActions, .entityCard .peopleFooter {
+  --btn-height-default: 36px;
+  --btn-height-toolbar: 36px;
+  --btn-height-small: 36px;
+  --btn-height-compact: 36px;
+}

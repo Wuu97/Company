@@ -3,8 +3,7 @@ import { useId, useState } from "react";
 import businessStyles from "@/components/business.module.css";
 import { useRouter } from "next/navigation";
 import { userFeedback } from "@/lib/user-feedback";
-import statusStyles from "@/components/ui/status-badge.module.css";
-import { FilterSelect } from "@/components/ui/filter-select";
+import { StatusBadgeSwitch } from "@/components/ui/status-badge-switch";
 import { Button } from "@/components/ui/button";
 import { CheckboxField, TextField } from "@/components/ui/form-controls";
 import { Dialog } from "@/components/ui/dialog";
@@ -234,33 +233,23 @@ export function FactoryRecordForm({
   );
 }
 
-export function CustomerStatusSelect({ customer }: { customer: Customer }) {
+export function CustomerStatusSwitch({ customer }: { customer: Customer }) {
   const router = useRouter();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
   async function update(active: boolean) {
-    if (busy || active === customer.active) return;
-    setBusy(true);
-    setError("");
-    try {
-      const response = await fetch(`/api/customers/${customer.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ active }),
-      });
-      if (!response.ok) throw new Error("保存失败");
-      router.refresh();
-    } catch {
-      setError(userFeedback.retry("更新客户状态"));
-    } finally {
-      setBusy(false);
-    }
+    if (active === customer.active) return;
+    const response = await fetch(`/api/customers/${customer.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ active }),
+    });
+    if (!response.ok) throw new Error(userFeedback.retry("更新客户状态"));
+    router.refresh();
   }
-  return <div>
-    <FilterSelect triggerClassName={`${statusStyles.badge} ${statusStyles.selectTrigger} ${customer.active ? statusStyles.success : statusStyles.critical}`} aria-label={`${customer.name}的状态`} value={String(customer.active)} disabled={busy} searchable={false} onChange={event => void update(event.target.value === "true")}>
-      <option value="true">启用</option>
-      <option value="false">停用</option>
-    </FilterSelect>
-    {error && <FeedbackMessage tone="error">{error}</FeedbackMessage>}
-  </div>;
+  return <StatusBadgeSwitch
+    active={customer.active}
+    label={`${customer.name}的状态`}
+    confirmation="both"
+    description={next => next ? "启用后，该客户可重新参与业务选择。" : "停用后，该客户将不再用于新的业务选择，已有记录保留。"}
+    onChange={update}
+  />;
 }

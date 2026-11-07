@@ -37,6 +37,7 @@ export function CompactSelect({
       optionsClassName={styles.options}
       optionClassName={styles.option}
       searchable={false}
+      minMenuWidth={120}
       value={value}
       defaultValue={defaultValue}
       {...props}

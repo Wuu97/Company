@@ -40,3 +40,32 @@ describe("bill statement", () => {
   });
   it("has no inverted ranges for empty statements", async () => { const wb = await buildBillWorkbook({ ...bill, lines: [] }); expect(wb.worksheets[0].getCell("T4").value).toMatchObject({ formula: "SUM(0)" }); });
 });
+
+it("exports driver columns and embedded title images", async () => {
+  const book = await buildBillWorkbook({ ...bill, billType: "DRIVER", driver: { name: "测试司机" } });
+  const read = new ExcelJS.Workbook();
+  await read.xlsx.load(await book.xlsx.writeBuffer());
+  const sheet = read.worksheets[0];
+  expect(sheet.name).toBe("司机作业明细表");
+  expect(sheet.getRow(5).values).toEqual([undefined, "序号", "工作号", "做柜日期", "工厂名称", "行驶路线", "订舱号", "柜型", "柜号", "公里数", "付运费", "关场费", "压车费", "打单费", "其他费", "小计", "借款", "代收运费", "罚款", "其它"]);
+  expect(sheet.getCell("J6").value).toBe(3000);
+  expect(sheet.getCell("O6").value).toBe(3052);
+  expect(sheet.getCell("P6").value).toBe("—");
+  expect(sheet.getImages()).toHaveLength(2);
+  expect(sheet.pageSetup.orientation).toBe("landscape");
+});
+
+it("exports partner-specific columns, amounts and title images", async () => {
+ const book = await buildBillWorkbook({ ...bill, billType: "PARTNER", fleetOwner: { name: "测试合作车" }, lines: [{ ...bill.lines[0], priceSnapshot: { baseAmount: "3000", fees: [{ label: "路桥费", amount: "52" }] } }] });
+ const read = new ExcelJS.Workbook(); await read.xlsx.load(await book.xlsx.writeBuffer());
+ const sheet = read.worksheets[0];
+ expect(sheet.name).toBe("车辆作业明细表");
+ expect(sheet.getCell("C5").value).toBe("装卸地点");
+ expect(sheet.getCell("G5").value).toBe("司机运费");
+ expect(sheet.getCell("H5").value).toBe("路桥费");
+ expect(sheet.getCell("S5").value).toBe("小计");
+ expect(sheet.getCell("H6").value).toBe(52);
+ expect(sheet.getCell("S6").value).toBe(3052);
+ expect(sheet.getCell("S7").value).toEqual({ formula: "SUM(S6:S6)", result: 3052 });
+ expect(sheet.getImages()).toHaveLength(2);
+});

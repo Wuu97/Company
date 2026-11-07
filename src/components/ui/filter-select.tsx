@@ -12,6 +12,7 @@ type FilterSelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "children
   optionsClassName?: string;
   optionClassName?: string;
   searchable?: boolean;
+  minMenuWidth?: number;
 };
 
 function optionsFrom(children: ReactNode): Option[] {
@@ -31,7 +32,7 @@ function optionSearchTerms(label: ReactNode): string[] {
  * A layout-safe select for list filters. Its choices expand beneath the trigger
  * instead of opening the browser's native dropdown over surrounding content.
  */
-export function FilterSelect({ children, className, triggerClassName, optionsClassName, optionClassName, searchable = true, defaultValue, value: controlledValue, name, disabled, onChange, onBlur, required, autoFocus, "aria-label": ariaLabel, "aria-invalid": ariaInvalid }: FilterSelectProps) {
+export function FilterSelect({ children, className, triggerClassName, optionsClassName, optionClassName, searchable = true, minMenuWidth = 0, defaultValue, value: controlledValue, name, disabled, onChange, onBlur, required, autoFocus, "aria-label": ariaLabel, "aria-invalid": ariaInvalid }: FilterSelectProps) {
   const options = optionsFrom(children);
   const initialValue = String(controlledValue ?? defaultValue ?? options[0]?.value ?? "");
   const [value, setValue] = useState(initialValue);
@@ -80,14 +81,14 @@ export function FilterSelect({ children, className, triggerClassName, optionsCla
       const above = rect.top - 14;
       const upwards = below < 200 && above > below;
       const maxHeight = Math.max(0, Math.min(200, upwards ? above : below));
-      const width = Math.min(rect.width, window.innerWidth - 16);
+      const width = Math.min(Math.max(rect.width, minMenuWidth), window.innerWidth - 16);
       setPlacement({ left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)), top: upwards ? rect.top - 6 - maxHeight : rect.bottom + 6, width, maxHeight });
     };
     position();
     window.addEventListener("resize", position);
     window.addEventListener("scroll", position, true);
     return () => { window.removeEventListener("resize", position); window.removeEventListener("scroll", position, true); };
-  }, [open]);
+  }, [open, minMenuWidth]);
 
   const choose = (nextValue: string) => {
     if (!isControlled) setValue(nextValue);

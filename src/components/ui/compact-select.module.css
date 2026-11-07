@@ -44,3 +44,9 @@
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-caption);
 }
+
+/* Status pills may be narrow; their menu still reserves space for text and a check. */
+.options { box-sizing: border-box; }
+.options .option { width: 100%; box-sizing: border-box; padding: 7px 10px; gap: 12px; white-space: nowrap; }
+.options .option > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.options .option > svg { flex: 0 0 14px; }

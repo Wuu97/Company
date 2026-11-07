@@ -148,3 +148,21 @@ body {
     margin-bottom: 20px;
   }
 }
+
+/* Global viewport rules belong outside CSS Modules. */
+body:not(.unauthenticated) { height: 100dvh; min-height: 0; overflow: hidden; }
+@media (max-width: 760px) {
+  body:has(> aside) { display: flex; flex-direction: column; }
+  body:has(> aside) > aside { flex: none; max-height: 25dvh; overflow: auto; }
+}
+@media print {
+  html, body { margin: 0 !important; padding: 0 !important; height: auto !important; overflow: visible !important; background: white !important; }
+}
+
+/* Shared responsive columns for entity card directories. */
+:root { --entity-grid-columns: 2; }
+@media (min-width: 1200px) { :root { --entity-grid-columns: 3; } }
+@media (min-width: 1600px) { :root { --entity-grid-columns: 4; } }
+@media (max-width: 760px) { :root { --entity-grid-columns: 1; } }
+
+:root { --filter-input-width: 200px; --filter-select-width: 140px; --filter-control-height: 32px; }

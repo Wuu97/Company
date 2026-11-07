@@ -96,7 +96,6 @@
 }
 
 /* Locked application viewport; the page card owns its scrolling body. */
-:global(body:not(.unauthenticated)) { height: 100dvh; min-height: 0; overflow: hidden; }
 :global(body:not(.unauthenticated)) > .main {
   height: 100dvh;
   min-height: 0;
@@ -115,7 +114,5 @@
 .content :global([data-page-card]) { flex: 1; min-height: 0; }
 .content :global(header:has(> div > h1)) { flex-shrink: 0; }
 @media(max-width:760px) {
-  :global(body:has(> aside)) { display: flex; flex-direction: column; }
-  :global(body:has(> aside)) > aside { flex: none; max-height: 25dvh; overflow: auto; }
   :global(body:has(> aside)) > .main { height: 0; flex: 1; min-height: 0; }
 }

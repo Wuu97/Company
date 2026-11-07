@@ -1,8 +1,13 @@
+import { partnerStatementHeaders, partnerMoneyColumns, partnerStatementCell } from "@/lib/settlement/partner-statement";
 import ExcelJS from "exceljs";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { driverStatementCell, driverStatementHeaders, driverMoneyColumns } from "./driver-statement";
 import { chineseMoney, statementAccount, statementBank, statementCompany, statementData, statementColumnWidths, statementHiddenColumns, statementHeaders, yuan } from "./bill-statement";
 
 /** 客户2.xls layout. Coordinates include the deliberately blank A column. */
 export async function buildBillWorkbook(bill: any) {
+  if (["DRIVER", "PARTNER"].includes(bill.billType)) return buildDriverWorkbook(bill);
   const data = statementData(bill);
   const book = new ExcelJS.Workbook();
   book.creator = statementCompany;
@@ -102,5 +107,58 @@ export async function buildBillWorkbook(bill: any) {
   }
   sheet.pageSetup.printArea = `A1:U${lastRow}`;
   sheet.pageSetup.printTitlesRow = "1:3";
+  return book;
+}
+
+/** Driver export shares its exact headers and value mapping with detail and print. */
+async function buildDriverWorkbook(bill: any) {
+  const partner = bill.billType === "PARTNER";
+  const headers = partner ? partnerStatementHeaders : driverStatementHeaders;
+  const moneyColumns = partner ? partnerMoneyColumns : driverMoneyColumns;
+  const valueCell = partner ? partnerStatementCell : driverStatementCell;
+  const book = new ExcelJS.Workbook();
+  book.creator = statementCompany;
+  book.calcProperties.fullCalcOnLoad = true;
+  const sheet = book.addWorksheet(partner ? "车辆作业明细表" : "司机作业明细表", {
+    views: [{ showGridLines: false, state: "frozen", ySplit: 5 }],
+    pageSetup: { paperSize: 9, orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: "1:5", margins: { left: .3, right: .3, top: .3, bottom: .3, header: .1, footer: .1 } },
+  });
+  sheet.columns = (partner ? [6, 14, 24, 10, 20, 10, 13, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 13] : [6, 14, 14, 18, 22, 22, 10, 20, 10, 13, 11, 11, 11, 11, 13, 11, 13, 11, 11]).map(width => ({ width }));
+  sheet.mergeCells("A1:S1"); sheet.getRow(1).height = 34;
+  sheet.mergeCells("A2:S2"); sheet.getRow(2).height = 30;
+  const company = await readFile(path.join(process.cwd(), "public/images/statement-company-title-provided.png"));
+  const title = await readFile(path.join(process.cwd(), partner ? "public/images/partner-statement-title.png" : "public/images/driver-statement-title.png"));
+  sheet.addImage(book.addImage({ buffer: company as any, extension: "png" }), { tl: { col: 6, row: .1 }, ext: { width: 400, height: 400 * 96 / 1452 } });
+  sheet.addImage(book.addImage({ buffer: title as any, extension: "png" }), { tl: { col: 7, row: 1.1 }, ext: { width: 240, height: 240 * 74 / 398 } });
+  sheet.mergeCells("A3:H3"); sheet.getCell("A3").value = `${partner ? "合作车" : "司机姓名"}：${(partner ? bill.fleetOwner?.name : bill.driver?.name) || "—"}`;
+  sheet.mergeCells("I3:S3"); sheet.getCell("I3").value = statementData(bill).period;
+  sheet.mergeCells("A4:S4"); sheet.getCell("A4").value = "金额单位：元；— 表示未记录";
+  sheet.getRow(5).values = [...headers];
+  bill.lines.forEach((line: any, index: number) => {
+    sheet.getRow(index + 6).values = headers.map(label => {
+      const value = valueCell(line, label, index);
+      return typeof value === "bigint" ? yuan(value) : value;
+    });
+  });
+  const last = bill.lines.length + 6;
+  sheet.getCell(last, 1).value = "合计";
+  headers.forEach((label, index) => {
+    if (!moneyColumns.has(label)) return;
+    const values = bill.lines.map((line: any) => valueCell(line, label, 0)).filter((value: unknown): value is bigint => typeof value === "bigint") as bigint[];
+    const column = sheet.getColumn(index + 1).letter;
+    sheet.getCell(last, index + 1).value = values.length ? { formula: `SUM(${column}6:${column}${last - 1})`, result: yuan(values.reduce((sum, value) => sum + value, 0n)) } : "—";
+  });
+  for (let row = 3; row <= last; row++) {
+    sheet.getRow(row).height = row === 5 ? 28 : 24;
+    for (let col = 1; col <= 19; col++) {
+      const cell = sheet.getCell(row, col);
+      cell.font = { name: "宋体", size: 9, bold: row === 5 || row === last };
+      cell.alignment = { vertical: "middle", horizontal: moneyColumns.has(headers[col - 1]) ? "right" : "left", wrapText: true };
+      if (row >= 5) cell.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
+      if (row > 5 && moneyColumns.has(headers[col - 1])) cell.numFmt = "#,##0.00";
+    }
+  }
+  sheet.pageSetup.printArea = `A1:S${last}`;
+  sheet.headerFooter.oddFooter = "Page &P of &N";
   return book;
 }

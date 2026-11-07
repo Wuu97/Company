@@ -185,7 +185,7 @@ export default async function Logs({
   return (
     <>
       <PageHeader title="操作日志" />
-<PageContainer filter={<ListFilter data-filter-layout="logs" className={styles.filter}>
+<PageContainer className={styles.logCard} filter={<ListFilter data-filter-layout="logs" className={styles.filter}><div className={styles.filterControls}>
         <FilterField label="操作人 / 业务单号" search>
           <FilterTextField aria-label="操作人 / 业务单号" name="q" defaultValue={q} placeholder="操作人 / 业务单号" />
         </FilterField>
@@ -217,11 +217,11 @@ export default async function Logs({
         </FilterField>
         <label data-filter-toggle className={styles.systemLogToggle}><input type="checkbox" name="showSystem" value="1" defaultChecked={input.showSystem === "1"} /><span>包含系统自动日志</span></label>
         <FilterClearLink href="/logs" />
-        {user?.role === "ADMIN" && <div className={styles.dangerAction}><ClearLogsButton total={allLogTotal} /></div>}
+        </div>{user?.role === "ADMIN" && <div className={styles.dangerAction}><ClearLogsButton total={allLogTotal} /></div>}
       </ListFilter>} pagination={<Pagination currentPage={currentPage} totalPages={totalPages} total={total} pageSize={pageSize} href={page => href(input, page)} label="操作日志分页"/>}>
 
 
-      {visibleLogs.length ? <section className={styles.auditList} aria-label="操作记录">
+      {visibleLogs.length ? <section className={styles.auditList} aria-label="操作记录" tabIndex={0}><div className={styles.logTable}>
         <div className={styles.tableHeader}><span>操作时间</span><span>操作人</span><span>操作内容</span><span>业务对象 / 标识</span><span>字段变化</span></div>
         {visibleLogs.map((log) => <AuditExpandedRow key={log.id} detail={hasChangeDetail(log.before, log.after) ? changeDetail(log.before, log.after) : null}>
           <time className={styles.time} dateTime={log.createdAt.toISOString()}>{formatChinaDateTime(log.createdAt)}:{String(log.createdAt.getUTCSeconds()).padStart(2, "0")}</time>
@@ -233,7 +233,7 @@ export default async function Logs({
           </div>
           <div className={styles.objectTags}>{objectRows(log.entityType, log.before, log.after, log.entityId, businessById.get(`${log.entityType}:${log.entityId}`)).map(item => <span key={item.label} data-missing={item.value === "(未关联单号)" || !item.value || undefined} title={item.value ? `${item.label}：${item.value}` : item.label}><b>{item.label}</b>{item.value}</span>)}</div>
         </AuditExpandedRow>)}
-      </section> : <section className={styles.empty}>暂无符合条件的操作记录。请调整筛选条件后重试。</section>}
+      </div></section> : <section className={styles.empty}>暂无符合条件的操作记录。请调整筛选条件后重试。</section>}
 
 
 </PageContainer>

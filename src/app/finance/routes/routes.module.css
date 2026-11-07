@@ -108,3 +108,78 @@
     grid-template-columns: 1fr;
   }
 }
+
+.routeTable.routeTable { width: 100%; table-layout: fixed; }
+.routeTable.routeTable th, .routeTable.routeTable td { padding-inline: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* Keep five-column rate tables readable on wide screens, anchored to the left. */
+.rateTableFrame { width: 100%; max-width: none; min-width: 0; }
+.partnerTableFrame { width: 100%; max-width: none; min-width: 0; }
+.cellText { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.routeTable.routeTable th, .routeTable.routeTable td { padding: 12px 14px; }
+
+/* Five-column driver/customer rates fill the card with balanced proportions. */
+.rateTableFrame .routeTable.routeTable { width: 100%; max-width: none; min-width: 800px; table-layout: fixed; }
+.rateTableFrame .routeTable col:nth-child(1),
+.rateTableFrame .routeTable col:nth-child(2) { width: 25% !important; }
+.rateTableFrame .routeTable col:nth-child(3) { width: 20% !important; }
+.rateTableFrame .routeTable col:nth-child(4),
+.rateTableFrame .routeTable col:nth-child(5) { width: 15% !important; }
+.rateTableFrame .routeTable th:nth-child(1), .rateTableFrame .routeTable td:nth-child(1),
+.rateTableFrame .routeTable th:nth-child(2), .rateTableFrame .routeTable td:nth-child(2) { width: 25% !important; text-align: left !important; }
+.rateTableFrame .routeTable th:nth-child(3), .rateTableFrame .routeTable td:nth-child(3) { width: 20% !important; text-align: center !important; }
+.rateTableFrame .routeTable th:nth-child(4), .rateTableFrame .routeTable td:nth-child(4) { width: 15% !important; text-align: right !important; }
+.rateTableFrame .routeTable th:nth-child(5), .rateTableFrame .routeTable td:nth-child(5) { width: 15% !important; text-align: center !important; }
+.rateTableFrame > :global([data-table-surface]),
+.partnerTableFrame > :global([data-table-surface]) { width: 100%; max-width: none; box-sizing: border-box; overflow-x: auto; }
+
+/* Partner rates: proportional columns fill the card without a dominant first column. */
+.partnerTableFrame .routeTable.routeTable {
+  width: 100%;
+  max-width: none;
+  min-width: 900px !important;
+  table-layout: fixed;
+}
+.partnerTableFrame .routeTable col:nth-child(1) { width: 28% !important; }
+.partnerTableFrame .routeTable col:nth-child(2) { width: 22% !important; }
+.partnerTableFrame .routeTable col:nth-child(3) { width: 12% !important; }
+.partnerTableFrame .routeTable col:nth-child(4),
+.partnerTableFrame .routeTable col:nth-child(5) { width: 13% !important; }
+.partnerTableFrame .routeTable col:nth-child(6) { width: 12% !important; }
+.partnerTableFrame .routeTable :is(th, td):nth-child(1) { width: 28% !important; text-align: left !important; }
+.partnerTableFrame .routeTable :is(th, td):nth-child(2) { width: 22% !important; text-align: left !important; white-space: normal; overflow-wrap: anywhere; }
+.partnerTableFrame .routeTable :is(th, td):nth-child(3) { width: 12% !important; text-align: right !important; }
+.partnerTableFrame .routeTable :is(th, td):nth-child(4),
+.partnerTableFrame .routeTable :is(th, td):nth-child(5) { width: 13% !important; text-align: right !important; }
+.partnerTableFrame .routeTable :is(th, td):nth-child(6) { width: 12% !important; text-align: center !important; }
+.tagField { margin: 0; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; min-width: 0; }
+.tagField legend { padding-inline: 4px; font-size: 13px; color: #475569; }
+.tagOptions, .tagTools { display: flex; flex-wrap: wrap; gap: 8px; }
+.tagOptions button { padding: 6px 10px; border: 1px solid #cbd5e1; background: white; border-radius: 6px; color: #475569; cursor: pointer; }
+.tagOptions button[aria-pressed=true] { background: #eff6ff; border-color: #2563eb; color: #2563eb; }
+.customTag { display: flex; gap: 8px; align-items: end; }
+.customTag > label { flex: 1; min-width: 0; }
+.counter { text-align: right; font-size: 12px; color: #64748b; }
+.unitInput { position: relative; }
+.unitInput input { padding-inline: 30px 80px; }
+.unitSuffix, .unitPrefix { position: absolute; bottom: 10px; color: #64748b; font-size: 13px; pointer-events: none; }
+.unitSuffix { right: 12px; } .unitPrefix { left: 12px; }
+.routePreview { padding: 12px; background: #f8fafc; border-radius: 8px; color: #64748b; font-size: 13px; overflow-wrap: anywhere; }
+.routePreview b { display: inline-block; margin-top: 6px; padding: 3px 8px; background: #eaf2ff; border-radius: 4px; color: #2563eb; }
+.routeFooterToggle { margin-right: auto; }
+.compactForm { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.compactForm > * { min-width: 0; }
+.fullField, .tagField, .nodeRow { grid-column: 1 / -1; }
+.tagField { padding: 0; border: 0; }
+.tagField legend { padding: 0; margin-bottom: 6px; }
+.tagOptions { gap: 6px; flex-wrap: wrap; }
+.tagOptions button { height: 28px; padding: 2px 10px; border-radius: 999px; font-size: 12px; }
+.compactForm textarea { min-height: 54px; resize: vertical; }
+.nodeRow { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
+.nodeRow > label, .viaNode { flex: 1 1 130px; min-width: 0; }
+.nodeArrow { align-self: end; line-height: 36px; color: #94a3b8; }
+.addVia { flex: none; height: 36px; padding: 0; border: 0; background: transparent; color: #2563eb; cursor: pointer; font-size: 12px; }
+.viaNode { position: relative; }
+.viaNode input { padding-right: 26px; }
+.viaNode > button { position: absolute; right: 5px; bottom: 7px; border: 0; background: transparent; color: #64748b; cursor: pointer; }
+@media (max-width: 480px) { .compactForm { grid-template-columns: minmax(0, 1fr); } }
