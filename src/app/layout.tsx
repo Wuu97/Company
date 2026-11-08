@@ -25,13 +25,7 @@ export default async function Layout({
       ])
     : [0, 0, 0, 0];
   const items: SidebarItem[] = [
-    { group: "工作台", href: "/", label: "工作台" },
-    {
-      group: "工作台",
-      href: "/notifications",
-      label: "通知中心",
-      count: unread,
-    },
+    { group: "工作台", href: "/", label: "工作台", count: unread },
     { group: "订单与计划", href: "/orders", label: "SO 订单" },
     { group: "订单与计划", href: "/containers", label: "柜子管理" },
     {

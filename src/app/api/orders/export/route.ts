@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { currentUser } from "@/lib/auth";
+import { cutoffOptions, orderCutoffStatus, orderSearchConditions } from "@/lib/so-order-filters";
 import { resolveOpeningTime } from "@/lib/time";
 
 const orderStatuses = ["PENDING_REVIEW", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const;
@@ -12,13 +13,18 @@ export async function GET(request: Request) {
   if (!await currentUser()) return NextResponse.json({ error: "请先登录" }, { status: 401 });
   const url = new URL(request.url); const q = url.searchParams.get("q")?.trim() || "";
   const status = url.searchParams.get("status"); const parseStatus = url.searchParams.get("parseStatus"); const customerId = url.searchParams.get("customerId");
+  const cutoff = cutoffOptions.find(option => option.value === url.searchParams.get("cutoff"))?.value;
   const where: Prisma.SoOrderWhereInput = {
     ...(orderStatuses.includes(status as (typeof orderStatuses)[number]) ? { status: status as (typeof orderStatuses)[number] } : {}),
     ...(parseStatuses.includes(parseStatus as (typeof parseStatuses)[number]) ? { parseStatus: parseStatus as (typeof parseStatuses)[number] } : {}),
     ...(customerId ? { customerId } : {}),
-    ...(q ? { OR: [{ soNumber: { contains: q, mode: "insensitive" } }, { carrier: { contains: q, mode: "insensitive" } }, { vesselName: { contains: q, mode: "insensitive" } }, { voyage: { contains: q, mode: "insensitive" } }] } : {}),
+    ...(q ? { OR: orderSearchConditions(q) } : {}),
   };
-  const orders = await prisma.soOrder.findMany({ where, include: { customer: true, containers: { where: { active: true } }, sailing: true }, orderBy: { createdAt: "desc" }, take: 10_000 });
+  const found = await prisma.soOrder.findMany({ where, include: { customer: true, containers: { where: { active: true } }, sailing: true }, orderBy: { createdAt: "desc" }, take: cutoff ? undefined : 10_000 });
+  const now = new Date();
+  const orders = cutoff
+    ? found.filter(order => orderCutoffStatus(order.portCutoffText, now) === cutoff).slice(0, 10_000)
+    : found;
   const lines = [["SO 编号", "客户", "船公司", "船名", "航次", "装货港", "卸货港", "柜量", "预计开船时间（ETD）", "预计到港时间（ETA）", "补料截止时间（SI）", "预计靠港时间", "业务状态", "解析状态"].map(escape).join(",")];
   lines[0] = lines[0].replace("预计靠泊时间", "预计靠泊时间（ETB）\",\"开仓时间");
   for (const order of orders) {

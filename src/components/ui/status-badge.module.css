@@ -1,2 +1,4 @@
 .interactive { cursor: pointer; }
 .interactive:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+
+.dot { flex: none; width: 6px; height: 6px; margin-inline-end: 6px; border-radius: 50%; background: currentColor; }

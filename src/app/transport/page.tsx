@@ -10,7 +10,7 @@ import { TransportCostForm } from "@/components/transport-cost-form";
 import { currentUser } from "@/lib/auth";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { FilterActions, FilterClearLink, FilterField, FilterSelectField, FilterTextField, ListFilter } from "@/components/ui/list";
+import { UrlFilterBar } from "@/components/ui/url-filter-bar";
 import { Pagination } from "@/components/ui/pagination";
 import { RecordCard, RecordCardField, RecordCardFields, RecordCardHeader, RecordCardList } from "@/components/ui/record-card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -30,7 +30,16 @@ export default async function Transport({ searchParams }: { searchParams: Promis
   const tasks = await prisma.transportTask.findMany({ where, include: { loadingPlan: { include: { soOrder: { include: { sailing: true } }, factory: true } }, legs: { orderBy: { sequence: "asc" } }, costs: { orderBy: { createdAt: "asc" } } }, orderBy: { scheduledAt: "asc" }, skip: (currentPage - 1) * pageSize, take: pageSize });
   return <>
     <PageHeader title="运输任务" description={<>按任务记录派车、换车和实际还柜情况。完成前，请确保每一段运输都已补充实际还柜时间。 {canManageCosts ? <a href="/api/transport-tasks/export">导出运输记录</a> : <span className={businessStyles["muted"]}>费用记录仅管理员可维护。</span>}</>} />
-<PageContainer actions={canManageCosts ? <ButtonLink size="toolbar" variant="outline" href="/api/transport-tasks/export">导出运输记录</ButtonLink> : undefined} tabsLabel="快捷查看" tabs={[{ label: "全部", href: statusHref(input), active: !status }, ...statuses.map(value => ({ label: statusLabel(value), href: statusHref(input, value), active: status === value, count: statusGroups.find(item => item.status === value)?._count._all || 0 }))]} filter={<ListFilter className={styles.filter}><FilterField label="查找任务" search><FilterTextField name="q" defaultValue={q} placeholder="输入 SO 或工厂名称" /></FilterField><FilterField label="运输状态"><FilterSelectField name="status" defaultValue={status || ""}><option value="">全部</option>{statuses.map(value => <option key={value} value={value}>{statusLabel(value)}</option>)}</FilterSelectField></FilterField><FilterActions className={styles.filterActions}><FilterClearLink href="/transport" /></FilterActions></ListFilter>} pagination={<Pagination pageSize={pageSize} currentPage={currentPage} totalPages={totalPages} total={total} href={page => href(input, page)} label="运输任务分页"/>}>
+<PageContainer actions={canManageCosts ? <ButtonLink size="toolbar" variant="outline" href="/api/transport-tasks/export">导出运输记录</ButtonLink> : undefined} tabsLabel="快捷查看" tabs={[{ label: "全部", href: statusHref(input), active: !status }, ...statuses.map(value => ({ label: statusLabel(value), href: statusHref(input, value), active: status === value, count: statusGroups.find(item => item.status === value)?._count._all || 0 }))]} filter={<UrlFilterBar
+  initialValues={{ q, status: status || "" }}
+  items={[
+    { type: "input", key: "q", label: "查找任务", placeholder: "输入 SO 或工厂名称", applyOnBlur: true },
+    {
+      type: "select", key: "status", label: "运输状态", placeholder: "全部运输状态",
+      options: statuses.map(value => ({ value, label: statusLabel(value) })),
+    },
+  ]}
+/>} pagination={<Pagination pageSize={pageSize} currentPage={currentPage} totalPages={totalPages} total={total} href={page => href(input, page)} label="运输任务分页"/>}>
 
 
 

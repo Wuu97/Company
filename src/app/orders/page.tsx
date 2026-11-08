@@ -1,33 +1,45 @@
-import { ButtonLink } from "@/components/ui/button";
-import { PageContainer } from "@/components/ui/page-container";
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
+import { Download, FileText } from "lucide-react";
 import { DeleteOrderButton } from "@/components/delete-order-button";
 import { OrderStatusTag, ParseStatusTag } from "@/components/order-status-form";
 import { ParsePendingButton } from "@/components/parse-pending-button";
 import { OrdersFilter } from "@/components/orders-filter";
-import { SoUploadForm } from "@/components/so-upload-form";
+import { Pagination } from "@/components/ui/pagination";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { prisma } from "@/lib/prisma";
+import { cutoffOptions, orderCutoffStatus, orderSearchConditions } from "@/lib/so-order-filters";
 import { soReviewReasons } from "@/lib/so-review-task";
 import { statusLabel, statusTone } from "@/lib/status-labels";
-import {
-  formatChinaDateTime,
-  formatOperationalTimeText,
-  resolveOpeningTime,
-} from "@/lib/time";
-import styles from "./orders-toolbar.module.css";
-import orderStyles from "./orders.module.css";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Pagination } from "@/components/ui/pagination";
-import { PageHeader } from "@/components/ui/page-header";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { formatOperationalTimeText } from "@/lib/time";
+import { OrderUploadActions, OrderUploadButton } from "./order-upload-actions";
 
+const columns = [
+  "SO 编号 / 提单号",
+  "船公司 / 航次",
+  "箱型箱量",
+  "柜号",
+  "合作客户",
+  "截港时间",
+  "流转状态",
+  "操作",
+];
 
-type Search = { pageSize?: string;
+const cell = "px-4 py-3 align-top";
+const secondary = "mt-0.5 block text-xs text-slate-500";
+
+type OrderExtraction = {
+  containers?: { containerType?: string; quantity?: number }[];
+  parseReview?: Parameters<typeof soReviewReasons>[0];
+};
+
+type Search = {
+  pageSize?: string;
   review?: string;
   q?: string;
   status?: string;
   parseStatus?: string;
   customerId?: string;
+  cutoff?: string;
   page?: string;
 };
 const orderStatuses = [
@@ -57,7 +69,8 @@ export default async function Orders({
 }: {
   searchParams: Promise<Search>;
 }) {
-  const input = await searchParams; const pageSize = [10,20,50,100].includes(Number(input.pageSize)) ? Number(input.pageSize) : 10;
+  const input = await searchParams;
+  const pageSize = [10, 20, 50, 100].includes(Number(input.pageSize)) ? Number(input.pageSize) : 10;
   const reviewOnly = input.review === "1";
   const q = input.q?.trim() || "";
   const page = Math.max(1, Number(input.page) || 1);
@@ -71,30 +84,25 @@ export default async function Orders({
   )
     ? (input.parseStatus as (typeof parseStatuses)[number])
     : undefined;
+  const cutoff = cutoffOptions.find(option => option.value === input.cutoff)?.value;
   const where: Prisma.SoOrderWhereInput = {
     parseStatus: { in: ["PARSED", "VERIFIED"] },
     ...(status ? { status } : {}),
     ...(parseStatus ? { parseStatus } : {}),
     ...(input.customerId ? { customerId: input.customerId } : {}),
-    ...(q
-      ? {
-          OR: [
-            { soNumber: { contains: q, mode: "insensitive" } },
-            { carrier: { contains: q, mode: "insensitive" } },
-            { vesselName: { contains: q, mode: "insensitive" } },
-            { voyage: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : {}),
+    ...(q ? { OR: orderSearchConditions(q) } : {}),
   };
   const include = {
-    customer: true,
-    containers: true,
-    sailing: { select: { terminal: true } },
+    customer: { select: { name: true } },
+    containers: {
+      where: { active: true },
+      select: { containerType: true, containerNo: true, internalCode: true },
+      orderBy: { internalCode: "asc" as const },
+    },
     files: {
       orderBy: { version: "desc" as const },
       take: 1,
-      select: { rawExtraction: true, createdAt: true },
+      select: { rawExtraction: true },
     },
   };
   const [customers, found] = await Promise.all([
@@ -109,24 +117,12 @@ export default async function Orders({
       orderBy: { createdAt: "desc" },
     }),
   ]);
-  const filtered = reviewOnly
-    ? found.filter(
-        (order) =>
-          soReviewReasons(
-            (
-              order.files[0]?.rawExtraction as
-                | {
-                    parseReview?: {
-                      missingCoreFields?: string[];
-                      conflictingFields?: string[];
-                      needsReview?: boolean;
-                    };
-                  }
-                | undefined
-            )?.parseReview,
-          ).length > 0,
-      )
-    : found;
+  const now = new Date();
+  const filtered = found.filter(order => {
+    if (cutoff && orderCutoffStatus(order.portCutoffText, now) !== cutoff) return false;
+    const extraction = order.files[0]?.rawExtraction as OrderExtraction | undefined;
+    return !reviewOnly || soReviewReasons(extraction?.parseReview).length > 0;
+  });
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -135,150 +131,151 @@ export default async function Orders({
     currentPage * pageSize,
   );
   const exportParams = new URLSearchParams();
-  for (const key of ["q", "status", "parseStatus", "customerId"] as const)
+  for (const key of ["q", "status", "parseStatus", "customerId", "cutoff"] as const)
     if (input[key]) exportParams.set(key, input[key]!);
-  const filter = (
-    <OrdersFilter
-      q={q}
-      status={status}
-      parseStatus={parseStatus}
-      customerId={input.customerId}
-      customers={customers}
-      reviewOnly={reviewOnly}
-      className={styles.filter}
-    />
-  );
 
-  return (
+  const content = (
     <>
-      <PageHeader
-        title={reviewOnly ? "待复核 SO" : "SO 订单"}
-        description={reviewOnly ? <><a href="/orders">查看全部 SO</a> · 仅显示解析有冲突或缺少核心字段的订单。</> : undefined}
-      />
-<PageContainer filter={filter} actions={<ButtonLink size="toolbar" variant="outline" href={`/api/orders/export?${exportParams}`}>导出 CSV</ButtonLink>} pagination={<Pagination pageSize={pageSize} currentPage={currentPage} totalPages={totalPages} total={total} href={page => href(input, page)} label="订单分页"/>}>
-
-      {!reviewOnly && <div className={styles.toolbar}><SoUploadForm className={styles.upload} /></div>}
-
-      {orders.length ? (
-        <div className={orderStyles.list}>
-          {orders.map((order) => {
-            const rawExtraction = order.files[0]?.rawExtraction as
-              | {
-                  containers?: Array<{
-                    containerType?: string;
-                    quantity?: number;
-                  }>;
-                  parseReview?: {
-                    missingCoreFields?: string[];
-                    conflictingFields?: string[];
-                    needsReview?: boolean;
-                  };
-                }
-              | undefined;
-            const confirmedContainers = Object.entries(
-              order.containers.reduce<Record<string, number>>(
-                (all, c) => ({
-                  ...all,
-                  [c.containerType]: (all[c.containerType] || 0) + 1,
-                }),
-                {},
-              ),
-            )
-              .map(([type, count]) => `${count} × ${type}`)
-              .join("；");
-            const parsedContainers = (rawExtraction?.containers ?? [])
-              .filter((item) => item.containerType && item.quantity)
-              .map((item) => `${item.quantity} × ${item.containerType}`)
-              .join("；");
-            const containers =
-              confirmedContainers || parsedContainers || "待核对";
-            const shippingLineSi =
-              order.siCutoffSource === "SYSTEM_ESTIMATED"
-                ? <>{formatOperationalTimeText(order.siCutoffText || "待人工核对")}<span className={orderStyles.estimated}>系统推算</span></>
-                : order.siCutoffSource === "NEEDS_REVIEW"
-                  ? "待人工核对"
-                  : order.siCutoffText
-                    ? formatOperationalTimeText(order.siCutoffText)
-                    : "待人工核对";
-            const review = soReviewReasons(rawExtraction?.parseReview);
-            const opening = resolveOpeningTime(order.openingText, order.portCutoffText);
-            return (
-              <article
-                className={`${orderStyles.card}${review.length ? ` ${orderStyles.cardReview}` : ""}`}
-                key={order.id}
-              >
-                <div className={orderStyles.header}>
-                  <div className={orderStyles.identity}>
-                    <span>SO 编号</span>
-                    <a href={`/orders/${order.id}`}>{order.soNumber}</a>
-                    <small>
-                      {order.customer?.name || "待匹配客户"} ·
-                      {order.files[0]?.createdAt
-                        ? formatChinaDateTime(order.files[0].createdAt)
-                        : "记录缺失"}
-                    </small>
-                  </div>
-                  <div className={orderStyles.tags}>
-                    {["PARSED", "VERIFIED"].includes(order.parseStatus) ? <ParseStatusTag orderId={order.id} status={order.parseStatus as "PARSED" | "VERIFIED"} /> : <StatusBadge tone={statusTone(order.parseStatus)}>{statusLabel(order.parseStatus)}</StatusBadge>}
-                    <OrderStatusTag orderId={order.id} status={order.status} />
-                    {order.parseStatus === "PARSED" ? <ParsePendingButton orderId={order.id} reparse compact variant="secondary" size="small" className={orderStyles.tagAction} /> : null}
-                    <DeleteOrderButton orderId={order.id} size="small" className={`${orderStyles.tagAction} ${orderStyles.tagActionDanger}`} />
-                  </div>
-                </div>
-                {review.length ? (
-                  <p className={orderStyles.review}>
-                    <b>需要核对：</b>
-                    {review.join("；")}
-                  </p>
-                ) : null}
-                <div className={orderStyles.details}>
-                  <div>
-                    <span>船名 / 航次</span>
-                    <b>
-                      {order.vesselName
-                        ? `${order.vesselName} / ${order.voyage || "待补充"}`
-                        : "待核对"}
-                    </b>
-                  </div>
-                  <div>
-                    <span>柜量</span>
-                    <b>{containers}</b>
-                  </div>
-                  <div>
-                    <span>开仓时间</span>
-                    <b>{opening?.value || "待核对"}{opening?.source === "SYSTEM_ESTIMATED" && <span className={orderStyles.estimated}>系统推算</span>}</b>
-                  </div>
-                  <div>
-                    <span>预计开船时间（ETD）</span>
-                    <b>
-                      {order.etdText
-                        ? formatOperationalTimeText(order.etdText)
-                        : "待核对"}
-                    </b>
-                  </div>
-                  <div>
-                    <span>补料时间</span>
-                    <b>{shippingLineSi}</b>
-                  </div>
-                  <div>
-                    <span>码头截关时间（CY）</span>
-                    <b>
-                      {order.portCutoffText
-                        ? formatOperationalTimeText(order.portCutoffText)
-                        : "待核对"}
-                    </b>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+      <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="m-0 text-lg font-semibold text-slate-900">
+            {reviewOnly ? "待复核 SO" : "SO 订单"}
+          </h1>
+          <p className="m-0 mt-0.5 text-xs text-slate-400">
+            {reviewOnly
+              ? <><a href="/orders">查看全部 SO</a> · 仅显示解析有冲突或缺少核心字段的订单。</>
+              : "实时管理订舱单流转状态"}
+          </p>
         </div>
-      ) : (
-        <EmptyState title={reviewOnly ? "暂无待复核 SO" : "未找到符合条件的订单"}>{reviewOnly ? "当前没有识别冲突或缺少核心字段的订单。" : "可尝试调整关键词或筛选条件。"}</EmptyState>
-      )}
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href={`/api/orders/export?${exportParams}`}
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-solid border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 no-underline hover:bg-slate-50"
+          >
+            <Download size={16} aria-hidden="true" />
+            导出 CSV
+          </a>
+          {!reviewOnly && <OrderUploadButton />}
+        </div>
+      </header>
 
+      <section aria-label="订单列表" className="min-w-0 rounded-lg border border-solid border-slate-200/90 bg-white shadow-xs">
+        <div className="border-0 border-b border-solid border-slate-100 p-4">
+          <OrdersFilter
+            q={q}
+            status={status}
+            cutoff={cutoff}
+            customerId={input.customerId}
+            customers={customers}
+            reviewOnly={reviewOnly}
+          />
+        </div>
 
-</PageContainer>
-</>
+        <div className="overflow-x-auto [container-type:inline-size]">
+          <table aria-label={reviewOnly ? "待复核 SO" : "SO 订单"} className="w-full min-w-[960px] border-collapse text-[13px] text-slate-700">
+            <thead className="bg-slate-50">
+              <tr>
+                {columns.map(column => (
+                  <th key={column} scope="col" className="px-4 py-3 text-left text-xs font-medium text-slate-500">
+                    {column}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map(order => {
+                const extraction = order.files[0]?.rawExtraction as OrderExtraction | undefined;
+                const review = soReviewReasons(extraction?.parseReview);
+                const counts = new Map<string, number>();
+                for (const { containerType } of order.containers) {
+                  counts.set(containerType, (counts.get(containerType) ?? 0) + 1);
+                }
+                const confirmed = [...counts].map(([type, quantity]) => `${quantity} × ${type}`);
+                const parsed = extraction?.containers
+                  ?.filter(item => item.containerType && item.quantity)
+                  .map(item => `${item.quantity} × ${item.containerType}`);
+                const quantities = confirmed.length ? confirmed : parsed;
+                const cutoffTime = order.portCutoffText && formatOperationalTimeText(order.portCutoffText);
+                return (
+                  <tr key={order.id} className="border-0 border-b border-solid border-slate-100 last:border-b-0 hover:bg-slate-50/70">
+                    <td className={cell}>
+                      <a className="font-medium text-blue-700 no-underline hover:underline" href={`/orders/${order.id}`}>
+                        {order.soNumber}
+                      </a>
+                      {review.length > 0 && <span className="mt-1 block text-xs text-amber-700">需核对：{review.join("；")}</span>}
+                    </td>
+                    <td className={cell}>
+                      {order.carrier || "待核对"}
+                      <span className={secondary}>{[order.vesselName, order.voyage].filter(Boolean).join(" / ") || "待核对"}</span>
+                    </td>
+                    <td className={cell}>{quantities?.join("；") || "待核对"}</td>
+                    <td className={cell}>
+                      {order.containers.length
+                        ? order.containers.map(container => (
+                            <span key={container.internalCode} className="block whitespace-nowrap">
+                              {container.containerNo || container.internalCode}
+                            </span>
+                          ))
+                        : "待补充"}
+                    </td>
+                    <td className={cell}>{order.customer?.name || "待匹配客户"}</td>
+                    <td className={`${cell} whitespace-nowrap`}>{cutoffTime || "待核对"}</td>
+                    <td className={cell}>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <OrderStatusTag orderId={order.id} status={order.status} />
+                        {order.parseStatus === "PARSED" || order.parseStatus === "VERIFIED"
+                          ? <ParseStatusTag orderId={order.id} status={order.parseStatus} />
+                          : <StatusBadge tone={statusTone(order.parseStatus)}>{statusLabel(order.parseStatus)}</StatusBadge>}
+                      </div>
+                    </td>
+                    <td className={cell}>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {order.parseStatus === "PARSED" && (
+                          <ParsePendingButton orderId={order.id} reparse compact variant="secondary" size="small" />
+                        )}
+                        <DeleteOrderButton orderId={order.id} size="small" />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {orders.length === 0 && (
+                <tr>
+                  <td colSpan={columns.length}>
+                    <div className="sticky left-0 box-border flex min-h-[420px] w-[100cqw] flex-col items-center justify-center px-4 py-8 text-center">
+                      <div className="mb-3 flex size-12 items-center justify-center rounded-xl bg-slate-50 text-slate-400">
+                        <FileText size={24} strokeWidth={1.5} aria-hidden="true" />
+                      </div>
+                      <p className="m-0 text-sm font-medium text-slate-700">
+                        {reviewOnly ? "暂无待复核 SO" : "未找到符合条件的订单"}
+                      </p>
+                      <p className="m-0 mt-1 text-xs text-slate-400">
+                        {reviewOnly ? "可尝试清空筛选条件，查看全部待复核订单。" : "您可以尝试清空筛选条件，或直接上传新单据"}
+                      </p>
+                      {!reviewOnly && <OrderUploadButton compact />}
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {total > pageSize && (
+          <div className="border-0 border-t border-solid border-slate-100 px-4">
+            <Pagination
+              pageSize={pageSize}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              total={total}
+              href={page => href(input, page)}
+              label="订单分页"
+            />
+          </div>
+        )}
+      </section>
+    </>
   );
+
+  return reviewOnly ? content : <OrderUploadActions>{content}</OrderUploadActions>;
 }

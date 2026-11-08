@@ -1,14 +1,11 @@
+import { StatusBadge } from "@/components/ui/status-badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageContainer } from "@/components/ui/page-container";
 import Link from "next/link";
 import {
   ArrowUpRight,
-  Clock,
-  ClipboardCheck,
-  FileText,
   Settings2,
   Ship,
-  Truck,
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { currentUser } from "@/lib/auth";
@@ -16,6 +13,7 @@ import {
   chinaLocalDateTimeToDate,
   formatOperationalTimeText,
 } from "@/lib/time";
+import { DashboardNotifications } from "./dashboard-notifications";
 import { DashboardActions } from "./dashboard-actions";
 import {
   DashboardTasks,
@@ -220,25 +218,21 @@ export default async function Dashboard({
   const kpis = [
     {
       label: "今日运行订单",
-      icon: FileText,
       count: rows.filter((row) => row.runningToday).length,
       detail: "今日创建或有运输计划的未结订单",
     },
     {
       label: "待确认流转",
-      icon: ClipboardCheck,
       count: rows.filter((row) => row.steps[0] || row.steps[1]).length,
       detail: "待核对或待匹配的去重订单数",
     },
     {
       label: "待截港还柜",
-      icon: Clock,
       count: riskCounts[0],
       detail: "24 小时内截港的待还柜订单",
     },
     {
       label: "待派车集装箱",
-      icon: Truck,
       count: rows.reduce((sum, row) => sum + row.pendingDispatch, 0),
       detail: "尚未派车的有效集装箱数",
     },
@@ -249,7 +243,7 @@ export default async function Dashboard({
   }).format(now);
 
   return (
-    <div className="mx-auto w-full max-w-[1920px]">
+    <>
       <PageHeader
         title="调度工作台"
         actions={
@@ -265,22 +259,19 @@ export default async function Dashboard({
       <PageContainer className="p-0">
         <div className="dashboard-workspace flex min-h-full w-full flex-col xl:h-full">
           <dl className="m-0 grid w-full shrink-0 grid-cols-2 border-b border-slate-200/80 lg:grid-cols-4">
-            {kpis.map(({ label, count, detail, icon: Icon }, index) => (
+            {kpis.map(({ label, count, detail }, index) => (
               <div
                 key={label}
-                className={`flex min-w-0 items-center justify-between gap-2 p-3.5 xl:p-4 2xl:p-5 ${index % 2 ? "border-l border-slate-100" : ""} ${index >= 2 ? "border-t border-slate-100 lg:border-t-0" : ""} ${index === 2 ? "lg:border-l" : ""}`}
+                className={`min-w-0 p-3.5 xl:p-4 2xl:p-5 ${index % 2 ? "border-l border-slate-100" : ""} ${index >= 2 ? "border-t border-slate-100 lg:border-t-0" : ""} ${index === 2 ? "lg:border-l" : ""}`}
               >
                 <div className="min-w-0" title={detail}>
                   <dt className="text-xs font-medium text-slate-500">
                     {label}
                   </dt>
-                  <dd className="mb-0 ml-0 mt-1 font-mono text-2xl font-bold tabular-nums text-slate-800">
+                  <dd className="mb-0 ml-0 mt-1 font-mono text-2xl font-bold tabular-nums text-slate-800 2xl:text-[28px]">
                     {count}
                   </dd>
                 </div>
-                <span className="grid size-8 shrink-0 place-items-center rounded-md bg-slate-100 text-slate-500">
-                  <Icon size={16} aria-hidden="true" />
-                </span>
               </div>
             ))}
           </dl>
@@ -302,22 +293,19 @@ export default async function Dashboard({
                   >
                     实时风险监控
                   </h2>
-                  <span
-                    className={`inline-flex items-center gap-1.5 text-xs ${riskCounts.some(Boolean) ? "text-amber-700" : "text-emerald-700"}`}
+                  <StatusBadge
+                    tone={riskCounts.some(Boolean) ? "warning" : "success"}
+                    dot
                   >
-                    <span
-                      aria-hidden="true"
-                      className="h-1.5 w-1.5 rounded-full bg-current"
-                    />
                     {riskCounts.some(Boolean) ? "有风险待处理" : "运行正常"}
-                  </span>
+                  </StatusBadge>
                 </header>
-                <ul className="mb-0 mt-2 list-none divide-y divide-slate-100 p-0">
+                <ul className="mb-0 mt-3 list-none divide-y divide-slate-100 p-0">
                   {riskRules.map(({ key, label, detail }, index) => (
                     <li
                       key={key}
                       title={detail}
-                      className="py-1.5 text-xs 2xl:py-2.5"
+                      className="py-1.5 text-sm 2xl:py-2.5"
                     >
                       <Link
                         href={`/?risk=${key}#workflow`}
@@ -347,12 +335,12 @@ export default async function Dashboard({
                   今日动态与快捷外链
                 </h2>
                 {activity.length ? (
-                  <ul className="mb-0 mt-2 list-none space-y-1.5 p-0 text-xs text-slate-600">
+                  <ul className="mb-0 mt-3 list-none space-y-1.5 p-0 text-sm text-slate-600">
                     {activity.map(
                       ({ id, terminal, finishedAt, resultCount }) => (
                         <li key={id} className="flex gap-2">
                           <time
-                            className="shrink-0 font-mono text-slate-500"
+                            className="shrink-0 font-mono text-xs text-slate-400"
                             dateTime={finishedAt?.toISOString()}
                           >
                             {finishedAt?.toLocaleTimeString("zh-CN", {
@@ -369,14 +357,14 @@ export default async function Dashboard({
                     )}
                   </ul>
                 ) : (
-                  <p className="mb-0 mt-2 text-xs text-slate-500">
+                  <p className="mb-0 mt-3 text-xs text-slate-400">
                     今日暂无已完成的 ETB 查询
                   </p>
                 )}
                 <div className="mt-3 divide-y divide-slate-100 border-t border-slate-100">
                   <Link
                     href="/sailings"
-                    className="flex items-center gap-2 py-2 text-xs text-slate-700 no-underline hover:text-blue-700"
+                    className="flex items-center gap-2 py-2 text-sm text-slate-700 no-underline hover:text-blue-700"
                   >
                     <Ship size={15} aria-hidden="true" /> 码头 ETB 实时查询{" "}
                     <ArrowUpRight
@@ -388,7 +376,7 @@ export default async function Dashboard({
                   {viewer?.role === "ADMIN" && (
                     <Link
                       href="/settings?tab=platforms"
-                      className="flex items-center gap-2 py-2 text-xs text-slate-700 no-underline hover:text-blue-700"
+                      className="flex items-center gap-2 py-2 text-sm text-slate-700 no-underline hover:text-blue-700"
                     >
                       <Settings2 size={15} aria-hidden="true" /> 船期监控设置{" "}
                       <ArrowUpRight
@@ -400,10 +388,11 @@ export default async function Dashboard({
                   )}
                 </div>
               </section>
+              {viewer && <DashboardNotifications userId={viewer.id} />}
             </aside>
           </div>
         </div>
       </PageContainer>
-    </div>
+    </>
   );
 }

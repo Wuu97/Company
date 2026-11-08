@@ -335,68 +335,20 @@
     grid-template-columns: 1fr;
   }
 }
-.orders-filter {
-  align-items: end;
-}
-.orders-filter label {
-  display: grid;
-  gap: 5px;
-  color: #475569;
-  font-size: var(--type-field-label-size);
-  font-weight: var(--type-field-label-weight);
-  line-height: var(--type-field-label-line-height);
-}
-.orders-filter label input,
-.orders-filter label select {
-  min-width: 150px;
-  width: 100%;
-}
-.orders-filter__actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 40px;
-}
-@media (max-width: 760px) {
-  .orders-filter {
-    display: grid;
-  }
-  .orders-filter label {
-    width: 100%;
-  }
-  .orders-filter__actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    min-height: auto;
-  }
-}
 .schedule-update > p {
   max-width: 720px;
 }
 .so-upload__actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
-  min-width: 0;
-  gap: 16px;
-  flex-wrap: nowrap;
-  margin-bottom: 0;
+  display: grid;
+  gap: 12px;
 }
 .so-upload__controls,
 .so-upload__status {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   min-width: 0;
-}
-.so-upload__controls {
-  flex: 0 0 auto;
-}
-.so-upload__status {
-  flex: 1 1 0%;
-  justify-content: flex-start;
-  margin-left: 0;
 }
 .so-upload__status-message {
   display: flex;
@@ -408,14 +360,11 @@
   font-size: var(--type-caption-size);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
-  white-space: nowrap;
 }
 .so-upload__status-text {
   flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .so-upload__status-icon {
   flex: none;
@@ -600,18 +549,6 @@
   margin-top: 12px;
 }
 @media (max-width: 760px) {
-  .so-upload__actions {
-    gap: 12px;
-    overflow: hidden;
-  }
-  .so-upload__controls,
-  .so-upload__status {
-    min-width: 0;
-  }
-  .so-upload__status {
-    flex: 1 1 0%;
-    margin-left: 0;
-  }
   .schedule-update__toolbar {
     align-items: flex-start;
     flex-direction: column;

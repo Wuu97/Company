@@ -1,10 +1,15 @@
-/* Opt in only the new dashboard. No Preflight reset for the existing design system. */
+/* Opt in by page. No Preflight reset for the existing design system. */
 @layer theme, utilities;
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities) source(none) important;
 @source "./page.tsx";
 @source "./dashboard-tasks.tsx";
 @source "./dashboard-actions.tsx";
+@source "./dashboard-notifications.tsx";
+@source "./orders/page.tsx";
+@source "./orders/order-upload-actions.tsx";
+@source "../components/orders-filter.tsx";
+@source "../components/notification-read-button.tsx";
 
 .dashboard-workspace,
 .dashboard-workspace *,
@@ -29,13 +34,15 @@
   flex: 1;
   min-height: 0;
   padding: 24px;
+  color: #334155;
 }
 
 @media screen {
   .dashboard-task-table thead > tr > th {
     height: auto !important;
     padding: 10px 12px !important;
-    font-size: 12px !important;
+    font-weight: 500;
+    color: #64748b;
   }
 
   .dashboard-task-table tbody > tr > td {
@@ -46,7 +53,6 @@
 @media screen and (min-width: 96rem) {
   .dashboard-task-table thead > tr > th {
     padding: 12px 16px !important;
-    font-size: 14px !important;
   }
 
   .dashboard-task-table tbody > tr > td {

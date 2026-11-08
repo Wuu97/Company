@@ -75,6 +75,7 @@ export function Dialog({
     dialog?.focus({ preventScroll: true });
 
     function onKeyDown(event: globalThis.KeyboardEvent) {
+      if (dialog !== Array.from(document.querySelectorAll('[role="dialog"][aria-modal="true"]')).at(-1)) return;
       if (event.key === "Escape" && !closeDisabledRef.current) {
         event.preventDefault();
         onCloseRef.current();

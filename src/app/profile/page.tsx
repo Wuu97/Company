@@ -21,7 +21,7 @@ export default async function Profile() {
       </div>
       <dl className={styles.accountMeta}>
         <div><dt>上次使用：</dt><dd>{user.lastActiveAt ? formatChinaDateTime(user.lastActiveAt) : "暂无使用记录"}</dd></div>
-        <div><dt className={styles.statusLabel}>账号状态</dt><dd><StatusBadge tone={user.active ? "success" : "muted"} className={styles.accountStatus}>{user.active && <span className={styles.statusDot} aria-hidden="true" />}{user.active ? "正常使用中" : "已停用"}</StatusBadge></dd></div>
+        <div><dt className={styles.statusLabel}>账号状态</dt><dd><StatusBadge tone={user.active ? "success" : "muted"} className={styles.accountStatus} dot={user.active}>{user.active ? "正常使用中" : "已停用"}</StatusBadge></dd></div>
       </dl>
     </section>
     <section className={styles.passwordSection}>

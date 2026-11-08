@@ -28,6 +28,7 @@ export function NotificationReadButton({ id }: { id: string }) {
     <>
       <Button
         size="small"
+        className="text-xs"
         onClick={read}
         disabled={busy}
       >

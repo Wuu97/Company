@@ -117,7 +117,7 @@ export function DashboardTasks({
                 href={`/?step=${index}#workflow`}
                 scroll={false}
                 aria-current={activeLabel === label ? "true" : undefined}
-                className={`rounded-full px-2.5 py-1 text-xs no-underline ${activeLabel === label ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                className={`rounded-full px-2.5 py-1 text-xs font-medium no-underline ${activeLabel === label ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
               >
                 {label} <span className="font-mono">({counts[index]})</span>
               </Link>

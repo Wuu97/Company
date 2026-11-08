@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ParsePendingButton } from "@/components/parse-pending-button";
 import { userFeedback } from "@/lib/user-feedback";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { FileUploadTrigger } from "@/components/ui/file-upload-trigger";
 
@@ -13,7 +14,7 @@ type ParseState = "PENDING" | "PROCESSING" | "PARSED" | "FAILED" | "VERIFIED";
 type BatchFile = { key: string; id?: string; name: string; source: File; upload: "uploading" | "success" | "error"; parseStatus?: ParseState; error?: string };
 const parseLabel: Record<ParseState, string> = { PENDING: "待识别", PROCESSING: "识别中", PARSED: "识别完成", FAILED: "识别失败", VERIFIED: "已核对" };
 
-export function SoUploadForm({ className }: { className?: string }) {
+export function SoUploadForm({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [fileName, setFileName] = useState("");
@@ -88,8 +89,15 @@ export function SoUploadForm({ className }: { className?: string }) {
     } catch (error) { patchFile(file.key, { parseStatus: "FAILED" }); setParseStatus({ state: "error", message: error instanceof Error ? error.message : "订单信息暂未识别完成，请稍后重试。" }); }
   }
 
-  return <section className={[businessStyles["so-upload"], className].filter(Boolean).join(" ")}>
-    <h3>导入 SO</h3>
+  if (!open) return null;
+  const closeDisabled = busy || parseStatus?.state === "running" || confirmingRemoval !== null;
+  return <Dialog
+    title="导入 SO 单据"
+    subtitle="可同时上传多份 PDF，上传后可识别订单信息。"
+    onClose={onClose}
+    closeDisabled={closeDisabled}
+    actions={<Button variant="secondary" disabled={closeDisabled} onClick={onClose}>关闭</Button>}
+  >
     <div className={businessStyles["so-upload__actions"]}>
       <div className={businessStyles["so-upload__controls"]}>
         <FileUploadTrigger variant="secondary" size="toolbar" className={businessStyles["so-upload__trigger"]} name="file" accept=".pdf,application/pdf" multiple busy={busy} onChange={event => { const files = Array.from(event.target.files || []); event.target.value = ""; if (files.length) void upload(files); }}>{busy ? "正在上传…" : "上传 SO 文件"}</FileUploadTrigger>
@@ -103,7 +111,7 @@ export function SoUploadForm({ className }: { className?: string }) {
     {parseStatus?.state === "running" && parseProgress && <div className={businessStyles["so-upload__progress"]} role="progressbar" aria-valuemin={0} aria-valuemax={parseProgress.total} aria-valuenow={parseProgress.completed}><span>正在识别：{parseProgress.completed} / {parseProgress.total}</span><i><b style={{ width: `${parseProgress.total ? parseProgress.completed / parseProgress.total * 100 : 0}%` }} /></i></div>}
     {expanded && batchFiles.length > 0 && <div className={businessStyles["so-upload__files"]}><ul>{batchFiles.map(file => <li key={file.key}><span title={file.name}>{file.name}</span><em className={file.upload === "error" || file.parseStatus === "FAILED" ? businessStyles["so-upload__file-error"] : undefined}>{file.upload === "uploading" ? "上传中" : file.upload === "error" ? `上传失败：${file.error}` : parseLabel[file.parseStatus || "PENDING"]}</em>{file.upload === "error" ? <><Button type="button" size="small" variant="secondary" onClick={() => void upload([file.source], file.key)}>重试</Button><Button type="button" size="small" variant="danger" className={businessStyles["so-upload__remove"]} onClick={() => dismissFailedUpload(file.key)}>删除</Button></> : file.parseStatus === "FAILED" ? <Button type="button" size="small" variant="text" onClick={() => void retryRecognition(file)}>重试识别</Button> : file.parseStatus === "PENDING" ? <Button type="button" size="small" variant="danger" className={businessStyles["so-upload__remove"]} disabled={removingId !== null} onClick={() => setConfirmingRemoval(file)}>删除</Button> : null}</li>)}</ul></div>}
     {confirmingRemoval && <DeleteConfirmDialog title="确认删除此上传？" busy={removingId === confirmingRemoval.id} onClose={() => setConfirmingRemoval(null)} onConfirm={removeUploaded}><p>将删除“{confirmingRemoval.name}”及其待识别 SO，且无法恢复。</p></DeleteConfirmDialog>}
-  </section>;
+  </Dialog>;
 }
 
 function StatusMessage({ tone, text }: { tone: "loading" | "success" | "error" | "info"; text: string }) {

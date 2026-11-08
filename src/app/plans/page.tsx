@@ -1,3 +1,5 @@
+import { PlanStatus, type Prisma } from "@prisma/client";
+import { UrlFilterBar } from "@/components/ui/url-filter-bar";
 import { PageContainer } from "@/components/ui/page-container";
 import { prisma } from "@/lib/prisma";
 import businessStyles from "@/components/business.module.css";
@@ -23,12 +25,31 @@ import {
 } from "@/components/ui/record-card";
 import styles from "./page.module.css";
 
-export default async function Plans() {
+const planStatuses = Object.values(PlanStatus);
+
+export default async function Plans({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; status?: string }>;
+}) {
+  const input = await searchParams;
+  const q = input.q?.trim() || "";
+  const status = planStatuses.find(value => value === input.status);
+  const where: Prisma.LoadingPlanWhereInput = {
+    ...(status ? { status } : {}),
+    ...(q ? {
+      OR: [
+        { soOrder: { soNumber: { contains: q, mode: "insensitive" } } },
+        { factory: { name: { contains: q, mode: "insensitive" } } },
+      ],
+    } : {}),
+  };
   const user = await currentUser();
   const canManageCosts = user?.role === "ADMIN";
   const [plans, orders, factories, containers, confirmations] =
     await Promise.all([
       prisma.loadingPlan.findMany({
+        where,
         include: {
           soOrder: true,
           factory: true,
@@ -81,7 +102,19 @@ export default async function Plans() {
       <PageHeader
         title="装柜与运输"
         description="从装柜计划、派车、换车到实际还柜在同一条执行链路中管理；每个计划对应一项运输任务。"
-      /><PageContainer>
+      />
+      <PageContainer filter={
+        <UrlFilterBar
+          initialValues={{ q, status: status || "" }}
+          items={[
+            { type: "input", key: "q", label: "查找装柜计划", placeholder: "输入 SO 或工厂名称", applyOnBlur: true },
+            {
+              type: "select", key: "status", label: "计划状态", placeholder: "全部计划状态",
+              options: planStatuses.map(value => ({ value, label: statusLabel(value) })),
+            },
+          ]}
+        />
+      }>
       <PlanForm
         orders={orders.map((o) => ({ id: o.id, label: o.soNumber }))}
         factories={factories.map((f) => ({ id: f.id, label: f.name }))}
@@ -220,6 +253,8 @@ export default async function Plans() {
               </RecordCard>
             );
           })
+        ) : q || status ? (
+          <EmptyState title="未找到符合条件的装柜计划">可尝试调整关键词或计划状态。</EmptyState>
         ) : (
           <EmptyState title="暂无装柜计划">
             客户确认柜量后，即可在上方创建计划并安排运输。
