@@ -75,3 +75,13 @@ export function resolveOpeningTime(openingText?: string | null, portCutoffText?:
 
 /** @deprecated Use estimateOpeningFromPortCutoff. */
 export const estimateEtbFromPortCutoff = estimateOpeningFromPortCutoff;
+
+const timePattern =
+  /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])(?: ([01]\d|2[0-3]):[0-5]\d)?$/;
+
+export function validOperationalDateInput(value: string) {
+  const match = value.match(timePattern);
+  if (!match) return false;
+  const [, year, month, day] = match;
+  return Number(day) <= new Date(Number(year), Number(month), 0).getDate();
+}

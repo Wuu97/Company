@@ -8,8 +8,9 @@ import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { PDFParse } from "pdf-parse";
 import { ParserRegistry } from "../src/lib/so-parser";
+import { formatOperationalTimeText } from "../src/lib/time";
 import { resolveSiCutoff } from "../src/lib/si-cutoff";
-import { extractSoWithDeepSeek } from "../src/lib/deepseek-so-extractor";
+import { extractSoWithDeepSeek, hasContainerEvidence, mergeAiSoFields, needsAiSoExtraction, verifiedAiSiRule } from "../src/lib/deepseek-so-extractor";
 
 const execFile = promisify(execFileCallback);
 
@@ -21,7 +22,7 @@ async function pdfPageImages(path: string) {
   const directory = await mkdtemp(join(tmpdir(), "so-ai-"));
   try {
     const prefix = join(directory, "page");
-    await execFile(process.env.PDFTOPPM_BIN || "pdftoppm", ["-f", "1", "-l", "6", "-r", "180", "-png", path, prefix], { timeout: 45_000 });
+    await execFile(process.env.PDFTOPPM_BIN || "pdftoppm", ["-f", "1", "-l", "6", "-r", "180", "-png", path, prefix], { timeout: 25_000 });
     const images = await Promise.all([1, 2, 3, 4, 5, 6].map(async page => {
       try { return { page, mime: "image/png", base64: (await readFile(`${prefix}-${page}.png`)).toString("base64") }; } catch { return undefined; }
     }));
@@ -35,18 +36,62 @@ async function parseFile(file: { storageKey: string; originalName: string }) {
   const result = await pdf.getText();
   await pdf.destroy();
   const parsed = new ParserRegistry().parse({ fileName: file.originalName, text: result.text });
-  const ai = await extractSoWithDeepSeek({ text: result.text, images: await pdfPageImages(path) }).catch(error => ({ error: error instanceof Error ? error.message : "AI 识别失败" }));
-  const aiValues = ai && !("error" in ai) ? ai.values : {};
-  const aiConflicts = Object.entries(aiValues).filter(([key, value]) => parsed[key as keyof typeof parsed] && parsed[key as keyof typeof parsed] !== value).map(([key]) => key);
-  // AI output is evidence-backed input for the review UI, never an automatic
-  // write. This prevents a plausible but wrong visual read from changing an SO.
-  const merged = { ...parsed };
-  // Printed SI on an SO belongs to the shipping line. When no manual forwarder
-  // deadline is supplied, the forwarder deadline is one day before that SI.
-  const shippingLineSi = resolveSiCutoff({ originalSiText: merged.siCutoffText, latestDeadlineText: merged.cutoffText, otherCutoffTexts: [merged.portCutoffText, merged.vgmCutoffText], fallbackDays: 2 });
+  const text = result.text;
+  const useAi = Boolean(process.env.DEEPSEEK_API_KEY) && needsAiSoExtraction(parsed, text);
+  const runAi = (images: Awaited<ReturnType<typeof pdfPageImages>>, thinking = false) =>
+    extractSoWithDeepSeek({ text, images, thinking, timeoutMs: thinking ? 35_000 : 20_000 })
+      .catch(error => ({ error: error instanceof Error ? error.message : "AI 识别失败" }));
+  let ai = useAi ? await runAi([]) : undefined;
+  let aiResult = ai && !("error" in ai) ? ai : undefined;
+  let merged = mergeAiSoFields(parsed, aiResult, text);
+
+  if (useAi && (!text.trim() || parsed.parseReview?.missingCoreFields.some(field =>
+    field === "containers" ? !merged.containers.length : !merged[field]))) {
+    const images = await pdfPageImages(path);
+    if (images.length) {
+      const visual = await runAi(images);
+      if (visual && !("error" in visual)) {
+        ai = aiResult = visual;
+        merged = mergeAiSoFields(merged, visual, text);
+      }
+    }
+  }
+
+  let aiRule = aiResult && verifiedAiSiRule(aiResult, merged, text);
+  const hasRelativeSi = /(?:補料|补料|shipping instruction|\bSI\b)[^\n]{0,80}(?:截[关關]前|before (?:the )?closing)|截[关關]前[^\n]{0,80}(?:補料|补料)/i.test(text);
+  if (useAi && aiResult && !merged.siCutoffText && (aiRule === "NEEDS_REVIEW" || (!aiRule && !merged.siCutoffRule && hasRelativeSi))) {
+    const reasoning = await runAi([], true);
+    if (reasoning && !("error" in reasoning) && verifiedAiSiRule(reasoning, merged, text) === "PREVIOUS_DAY_NOON") {
+      aiResult = { ...aiResult!, siRule: reasoning.siRule, siRuleInvalid: false };
+      ai = aiResult;
+      aiRule = "PREVIOUS_DAY_NOON";
+    }
+  }
+  const useAiRule = !merged.siCutoffText && aiRule === "PREVIOUS_DAY_NOON";
+  const resolvedSi = resolveSiCutoff({
+    originalSiText: useAiRule ? undefined : merged.siCutoffText,
+    rule: useAiRule ? aiRule : merged.siCutoffRule,
+    latestDeadlineText: aiRule === "NEEDS_REVIEW" && !merged.siCutoffText && !merged.siCutoffRule ? undefined : merged.cutoffText,
+    otherCutoffTexts: [merged.portCutoffText, merged.vgmCutoffText],
+  });
+  const shippingLineSi = useAiRule && resolvedSi.effectiveText
+    ? { ...resolvedSi, source: "AI_RULE" as const }
+    : resolvedSi;
   const values = { ...merged, siCutoffText: shippingLineSi.effectiveText ?? null, siCutoffSource: shippingLineSi.source, siCutoffOriginalText: shippingLineSi.originalText ?? null, siCutoffEstimatedFromText: shippingLineSi.estimatedFromText ?? null };
-  const review = { ...merged.parseReview!, conflictingFields: [...new Set([...(merged.parseReview?.conflictingFields ?? []), ...aiConflicts])], needsReview: Boolean(merged.parseReview?.needsReview || aiConflicts.length) };
-  return { parsed: { ...merged, parseReview: review }, siCutoff: { shippingLine: shippingLineSi }, values, extraction: { ...merged, parseReview: review, siCutoff: { shippingLine: shippingLineSi }, ai: ai && "error" in ai ? ai : ai ? { model: ai.model, evidence: ai.evidence, confidence: ai.confidence, values: ai.values } : { skipped: "DEEPSEEK_API_KEY 未配置" }, raw: { ...merged.raw, extractedText: result.text } } };
+  const requiredRouting = ["dischargePort", "etdText", "etaText"] as const;
+  const missingCoreFields = [...new Set([...parsed.parseReview!.missingCoreFields, ...requiredRouting])]
+    .filter(field => field === "containers" ? !merged.containers.length : !merged[field]);
+  const aiConflicts = fields.filter(field => {
+    const previous = parsed[field as keyof typeof parsed];
+    const current = merged[field as keyof typeof merged];
+    if (typeof previous !== "string" || typeof current !== "string") return false;
+    return field.endsWith("Text")
+      ? formatOperationalTimeText(previous) !== formatOperationalTimeText(current)
+      : previous.trim().toUpperCase() !== current.trim().toUpperCase();
+  });
+  const conflictingFields = [...new Set([...parsed.parseReview!.conflictingFields, ...aiConflicts, ...(aiResult?.containers.length && !hasContainerEvidence(text, aiResult.containers) ? ["containers"] : []), ...((aiRule === "NEEDS_REVIEW" || (useAiRule && shippingLineSi.source === "NEEDS_REVIEW")) ? ["siCutoffText"] : [])])];
+  const review = { missingCoreFields, conflictingFields, needsReview: Boolean(missingCoreFields.length || conflictingFields.length) };
+  return { parsed: { ...merged, parseReview: review }, siCutoff: { shippingLine: shippingLineSi }, values, extraction: { ...merged, parseReview: review, siCutoff: { shippingLine: shippingLineSi }, ai: ai && "error" in ai ? ai : ai ? { model: ai.model, evidence: ai.evidence, confidence: ai.confidence, values: ai.values, containers: ai.containers, siRule: ai.siRule, siRuleStatus: aiRule } : { skipped: process.env.DEEPSEEK_API_KEY ? "已核验规则字段齐全" : "DEEPSEEK_API_KEY 未配置" }, raw: { ...merged.raw, extractedText: result.text } } };
 }
 
 async function main() {
@@ -100,7 +145,7 @@ async function main() {
           // manually, clear it so the card falls back to the newly parsed
           // cutoff-based estimate instead of retaining an old manual time.
           const resetManualEtb = isReparse && currentOrder.etbSource === "MANUAL"
-            ? { etbText: null, etbSource: null, etbObservedAt: null, etbNeedsReview: false }
+            ? { etbSource: null, etbObservedAt: null, etbNeedsReview: false }
             : {};
           await tx.soOrder.update({ where: { id: orderId }, data: { ...data, ...resetManualEtb, parseStatus: "PARSED" } });
           // Cargo data is only synchronized when a PDF contains an explicit

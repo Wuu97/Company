@@ -1,0 +1,21 @@
+.placeholder {
+  display: inline-grid;
+  justify-items: center;
+  white-space: nowrap;
+}
+.measure,
+.marker {
+  grid-area: 1 / 1;
+}
+.measure {
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+  font-size: var(--placeholder-heading-size, 13px);
+  font-weight: var(--type-table-header-weight, 600);
+}
+
+.marker {
+  color: #64748b;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}

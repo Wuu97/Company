@@ -30,7 +30,7 @@ const planStatuses = Object.values(PlanStatus);
 export default async function Plans({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; orderId?: string }>;
 }) {
   const input = await searchParams;
   const q = input.q?.trim() || "";
@@ -116,6 +116,8 @@ export default async function Plans({
         />
       }>
       <PlanForm
+        key={input.orderId || ""}
+        initialOrderId={orders.find(order => order.id === input.orderId)?.id}
         orders={orders.map((o) => ({ id: o.id, label: o.soNumber }))}
         factories={factories.map((f) => ({ id: f.id, label: f.name }))}
         containers={containers.map((c) => ({

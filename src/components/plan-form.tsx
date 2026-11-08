@@ -16,9 +16,9 @@ type Option = { id: string; label: string };
 type Confirmation = Option & { orderId: string; quantity: number };
 type Container = Option & { orderId: string };
 
-export function PlanForm({ orders, factories, containers, confirmations }: { orders: Option[]; factories: Option[]; containers: Container[]; confirmations: Confirmation[] }) {
+export function PlanForm({ orders, factories, containers, confirmations, initialOrderId = "" }: { orders: Option[]; factories: Option[]; containers: Container[]; confirmations: Confirmation[]; initialOrderId?: string }) {
   const [message, setMessage] = useState("");
-  const [orderId, setOrderId] = useState("");
+  const [orderId, setOrderId] = useState(initialOrderId);
   const [confirmationId, setConfirmationId] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -46,7 +46,7 @@ export function PlanForm({ orders, factories, containers, confirmations }: { ord
   }
 
   return (
-    <section>
+    <section id="create-plan">
       <h3>新建装柜计划</h3>
       <p className={businessStyles["muted"]}>依次选择 SO、客户确认批次、工厂和柜子。柜子数量不能超过该确认批次。</p>
       <form onSubmit={submit} className={styles.form}>

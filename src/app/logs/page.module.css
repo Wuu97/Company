@@ -294,19 +294,24 @@
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
 }
-.logTable { width: 100%; min-width: 900px; }
+.logTable { width: 100%; min-width: 980px; }
 .tableHeader, .logRow {
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: 180px 120px 140px minmax(140px, 1fr) 320px;
+  grid-template-columns: 180px 120px 220px minmax(140px, 1fr) 320px;
   gap: 0;
   padding-inline: 0;
   text-align: left;
 }
 .tableHeader > span:last-child { text-align: left; }
 .detail { justify-content: flex-start; text-align: left; overflow-wrap: anywhere; }
-.action { overflow-wrap: anywhere; }
-.action > :global(*) { flex-shrink: 1; min-width: 0; }
+.action > :global(*) {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .time { white-space: nowrap; }
 .filter.filter { flex-wrap: wrap; gap: 12px; overflow: visible; }
 .filter.filter .systemLogToggle { min-height: var(--filter-control-height, 32px); }
@@ -327,7 +332,7 @@
 }
 .logCard.logCard :global([data-list-filter]) { align-items: center; justify-content: space-between; }
 
-/* Cell padding is included in the fixed track widths; 900px remains sufficient. */
+/* Cell padding is included in the fixed track widths. */
 .tableHeader > *, .logRow > * { box-sizing: border-box; min-width: 0; padding-inline: 12px; text-align: left; }
 .tableHeader > :last-child, .logRow > :last-child { width: 320px; }
 .detail { justify-content: flex-start; white-space: normal; overflow-wrap: anywhere; }

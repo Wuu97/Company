@@ -49,7 +49,16 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <div className={styles.cardBody}><dl className={styles.credentials}>
           <div><dt>平台账号</dt><dd title={item ? `更新时间：${fullTime(item.updatedAt)}` : undefined}>{item?.username || "尚未配置"}</dd></div>
           <div><dt>平台密码</dt><dd>{item ? <ViewCredentialButton key={item.updatedAt.toISOString()} terminal={terminal}/> : "—"}</dd></div>
-          <div><dt>连通状态</dt><dd className={styles.connectionStatus} title={test ? `${fullTime(test.createdAt)}${test.errorMessage ? " · " + test.errorMessage : ""}` : undefined}><span className={styles.testResult} data-status={test?.status || "NONE"}>{test ? `${test.status === "SUCCEEDED" ? "✓" : test.status === "FAILED" ? "✕" : "●"} ${statusLabel(test.status)} (${formatChinaDateTime(test.createdAt).slice(5)})` : "尚无验证记录"}</span>{test?.screenshotStorageKey && <><span aria-hidden="true"> · </span><a href={`/api/evidence?key=${encodeURIComponent(test.screenshotStorageKey)}`} target="_blank" rel="noopener noreferrer">查看依据</a></>}</dd></div>
+          <div>
+            <dt>连通状态</dt>
+            <dd className={styles.connectionStatus} title={test ? fullTime(test.createdAt) : undefined}>
+              <span className={styles.testResult} data-status={test?.status || "NONE"}>{test ? `${test.status === "SUCCEEDED" ? "✓" : test.status === "FAILED" ? "✕" : "●"} ${statusLabel(test.status)} (${formatChinaDateTime(test.createdAt).slice(5)})` : "尚无验证记录"}</span>
+              {test?.screenshotStorageKey && <>
+                <span aria-hidden="true"> · </span>
+                <a href={`/api/evidence?key=${encodeURIComponent(test.screenshotStorageKey)}`} target="_blank" rel="noopener noreferrer">查看依据</a>
+              </>}
+            </dd>
+          </div>
         </dl></div>
         <footer className={styles.sourceActions}><div className={styles.footerAction}>{test?.status === "AWAITING_MANUAL" && process.env.ETB_EXECUTION_MODE === "cloud" && <EtbManualControl id={test.id}/>}{item?.loginUrl && <ButtonLink variant="outline" size="small" href={item.loginUrl} target="_blank" rel="noopener noreferrer">打开网站</ButtonLink>}{item && <TogglePlatformButton terminal={terminal} active={item.active} />}{item?.active && supported && <TestCredentialButton terminal={terminal} pending={Boolean(test && ["PENDING", "RUNNING", "AWAITING_MANUAL"].includes(test.status))}/>}<EditCredentialButton terminal={terminal} username={item?.username}/></div></footer>
       </EntityCard>;

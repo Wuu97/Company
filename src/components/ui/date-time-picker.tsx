@@ -10,6 +10,11 @@ type DateTimePickerProps = {
   value: string;
   className?: string;
   disabled?: boolean;
+  allowDateOnly?: boolean;
+  referenceDate?: string;
+  inputLabel?: string;
+  invalid?: boolean;
+  onInputChange?: (value: string) => void;
   onConfirm: (value: string) => void;
   onCancel: () => void;
 };
@@ -38,6 +43,13 @@ function split(value: string) {
   };
 }
 
+function formatDateTimeDigits(value: string) {
+  const digits = value.replace(/[^0-9]/g, "").slice(0, 12);
+  const date = [digits.slice(0, 4), digits.slice(4, 6), digits.slice(6, 8)].filter(Boolean).join("-");
+  const time = [digits.slice(8, 10), digits.slice(10, 12)].filter(Boolean).join(":");
+  return time ? `${date} ${time}` : date;
+}
+
 function CalendarClockIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -51,7 +63,7 @@ function CalendarClockIcon() {
 
 export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
   function DateTimePicker(
-    { value, className, disabled, onConfirm, onCancel },
+    { value, className, disabled, allowDateOnly = false, referenceDate, inputLabel, invalid, onInputChange, onConfirm, onCancel },
     ref,
   ) {
     const [open, setOpen] = useState(false);
@@ -91,7 +103,7 @@ export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
           return;
         }
         const rect = rootRef.current!.getBoundingClientRect();
-        const width = Math.min(216, window.innerWidth - 16);
+        const width = Math.min(252, window.innerWidth - 16);
         const estimatedHeight = panelRef.current?.offsetHeight || 340;
         const left = Math.max(
           8,
@@ -136,12 +148,9 @@ export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
       },
       inputRef.current,
     );
-    const hours = Array.from({ length: 24 }, (_, index) =>
-      String(index).padStart(2, "0"),
-    );
-    const minutes = Array.from({ length: 60 }, (_, index) =>
-      String(index).padStart(2, "0"),
-    );
+    const [hour, minute] = draftTime.split(":");
+    const time = hour && minute ? `${hour.padStart(2, "0")}:${minute.padStart(2, "0")}` : "";
+    const validTime = timePattern.test(time);
 
     function openPicker() {
       if (disabled) return;
@@ -149,7 +158,8 @@ export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
       setDraftDate(next.date);
       setDraftTime(next.time);
       setTypedValue(next.date ? `${next.date} ${next.time}` : "");
-      const base = next.date ? new Date(`${next.date}T00:00:00`) : new Date();
+      const baseDate = next.date || split(referenceDate ?? "").date;
+      const base = baseDate ? new Date(`${baseDate}T00:00:00`) : new Date();
       setMonth(new Date(base.getFullYear(), base.getMonth(), 1));
       setOpen(true);
     }
@@ -157,10 +167,10 @@ export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
       setOpen(false);
       onCancel();
     }
-    function confirm() {
-      if (!isDate(draftDate) || !timePattern.test(draftTime)) return;
+    function confirm(dateOnly = false) {
+      if (!isDate(draftDate) || (!dateOnly && !validTime)) return;
       setOpen(false);
-      onConfirm(`${draftDate}T${draftTime}`);
+      onConfirm(dateOnly ? draftDate : `${draftDate}T${time}`);
     }
     function updateTyped(nextValue: string) {
       setTypedValue(nextValue);
@@ -182,26 +192,49 @@ export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
       onConfirm(`${match[1]}T${match[2]}`);
     }
 
+    function changeInput(input: HTMLInputElement) {
+      if (!onInputChange) {
+        updateTyped(input.value);
+        return;
+      }
+      const typed = input.value;
+      const digitsBeforeCaret = typed.slice(0, input.selectionStart ?? typed.length).replace(/[^0-9]/g, "").length;
+      const formatted = formatDateTimeDigits(typed);
+      onInputChange(formatted);
+      if (formatted === typed) return;
+      let caret = 0;
+      let digits = 0;
+      while (caret < formatted.length && digits < digitsBeforeCaret) {
+        if (/[0-9]/.test(formatted[caret])) digits += 1;
+        caret += 1;
+      }
+      requestAnimationFrame(() => {
+        if (document.activeElement === input && input.value === formatted) input.setSelectionRange(caret, caret);
+      });
+    }
+
     return (
       <div
         ref={rootRef}
         className={[styles.root, className].filter(Boolean).join(" ")}
       >
-        <div className={styles.control} onClick={openPicker}>
+        <div className={styles.control} data-invalid={invalid || undefined} onClick={onInputChange ? undefined : openPicker}>
           <input
             ref={(node) => {
               inputRef.current = node;
               if (typeof ref === "function") ref(node);
               else if (ref) ref.current = node;
             }}
-            value={typedValue}
+            data-composite-input
+            value={onInputChange ? value : typedValue}
             disabled={disabled}
-            aria-label="选择日期时间"
+            aria-label={inputLabel || "选择日期时间"}
+            aria-invalid={invalid || undefined}
             placeholder="YYYY-MM-DD HH:mm"
-            onFocus={(event) => event.currentTarget.select()}
-            onChange={(event) => updateTyped(event.target.value)}
+            onFocus={onInputChange ? undefined : event => event.currentTarget.select()}
+            onChange={event => changeInput(event.currentTarget)}
             onKeyDown={(event) => {
-              if (event.key === "Enter") {
+              if (event.key === "Enter" && !onInputChange) {
                 event.preventDefault();
                 confirmTyped();
               }
@@ -240,46 +273,33 @@ export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
                 />
                 <div className={styles.time}>
                   <span>时间</span>
-                  <select
+                  <input
                     aria-label="小时"
-                    value={draftTime.slice(0, 2)}
-                    onChange={(event) =>
-                      setDraftTime(
-                        `${event.target.value}:${draftTime.slice(3, 5)}`,
-                      )
-                    }
-                  >
-                    {hours.map((hour) => (
-                      <option key={hour} value={hour}>
-                        {hour}
-                      </option>
-                    ))}
-                  </select>
-                  <i>:</i>
-                  <select
+                    inputMode="numeric"
+                    maxLength={2}
+                    value={hour}
+                    onFocus={event => event.currentTarget.select()}
+                    onChange={event => setDraftTime(`${event.currentTarget.value.replace(/\D/g, "")}:${minute}`)}
+                  />
+                  <i aria-hidden="true">:</i>
+                  <input
                     aria-label="分钟"
-                    value={draftTime.slice(3, 5)}
-                    onChange={(event) =>
-                      setDraftTime(
-                        `${draftTime.slice(0, 2)}:${event.target.value}`,
-                      )
-                    }
-                  >
-                    {minutes.map((minute) => (
-                      <option key={minute} value={minute}>
-                        {minute}
-                      </option>
-                    ))}
-                  </select>
+                    inputMode="numeric"
+                    maxLength={2}
+                    value={minute}
+                    onFocus={event => event.currentTarget.select()}
+                    onChange={event => setDraftTime(`${hour}:${event.currentTarget.value.replace(/\D/g, "")}`)}
+                  />
                 </div>
                 <div className={styles.actions}>
                   <button type="button" onClick={cancel}>
                     取消
                   </button>
+                  {allowDateOnly && <button type="button" disabled={!isDate(draftDate)} onClick={() => confirm(true)}>仅日期</button>}
                   <button
                     type="button"
-                    disabled={!isDate(draftDate)}
-                    onClick={confirm}
+                    disabled={!isDate(draftDate) || !validTime}
+                    onClick={() => confirm()}
                   >
                     确定
                   </button>

@@ -32,8 +32,8 @@ async function recoverStaleRunningRuns() {
   if (recovered.count) console.log(JSON.stringify({ event: "stale_etb_runs_requeued", count: recovered.count, leaseMs }));
 }
 
-async function claim(terminal?: string): Promise<Run | undefined> {
-  const run = await prisma.etbQueryRun.findFirst({ where: { status: "PENDING", ...(terminal ? { terminal } : {}) }, select: { id: true, terminal: true, source: true, targetSailingId: true, batchOffset: true }, orderBy: { createdAt: "asc" } });
+async function claim(terminal?: string, runId?: string): Promise<Run | undefined> {
+  const run = await prisma.etbQueryRun.findFirst({ where: { status: "PENDING", ...(runId ? { id: runId } : {}), ...(terminal ? { terminal } : {}) }, select: { id: true, terminal: true, source: true, targetSailingId: true, batchOffset: true }, orderBy: { createdAt: "asc" } });
   if (!run) return undefined;
   const updated = await prisma.etbQueryRun.updateMany({ where: { id: run.id, status: "PENDING" }, data: { status: "RUNNING", startedAt: new Date(), errorMessage: null, handoffReason: null } });
   return updated.count === 1 ? run : undefined;
@@ -307,9 +307,9 @@ async function processShekou(run: Run) {
   } finally { manualSessions.delete(run.id); await context?.close().catch(() => undefined); await release(); }
 }
 
-export async function processNextEtbQuery() {
+export async function processNextEtbQuery(runId?: string) {
   await recoverStaleRunningRuns();
-  const run = await claim(arg("--terminal"));
+  const run = await claim(arg("--terminal"), runId);
   if (!run) return console.log(JSON.stringify({ event: "no_pending_etb_run" }));
   try {
     if (run.terminal === "盐田") await processYantian(run);
@@ -329,4 +329,10 @@ export async function processNextEtbQuery() {
     process.exitCode = 1;
   }
 }
-if (require.main === module) processNextEtbQuery().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => prisma.$disconnect());
+async function main() {
+  const runIds = arg("--runs");
+  if (!runIds) return processNextEtbQuery();
+  for (const id of runIds.split(",")) await processNextEtbQuery(id);
+}
+
+if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => prisma.$disconnect());

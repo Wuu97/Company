@@ -20,7 +20,7 @@ export function ParsePendingButton({
 }: {
   orderId?: string;
   compact?: boolean;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "text";
   size?: "default" | "toolbar" | "small";
   onStatusChange?: (status: { state: "running" | "success" | "error"; message: string }) => void;
   onProgressChange?: (progress: { completed: number; total: number; files?: Array<{ id: string; parseStatus: string }> }) => void;

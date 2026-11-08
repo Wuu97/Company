@@ -26,6 +26,7 @@
   align-items: center;
 }
 .dateInput {
+  font-family: var(--font-family-ui);
   width: 100%;
   min-width: 0;
   height: 100%;

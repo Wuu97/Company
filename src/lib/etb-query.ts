@@ -4,6 +4,7 @@ import { EtbManualHandoffRequiredError, etbQueryFailureState } from "./etb-query
 import { etbCompletionState } from "./etb-query-completion";
 import { uniqueEtbMatch } from "./etb-match";
 import { invalidEtbEvidence, requiresEtbResultEvidence } from "./etb-evidence";
+import type { EtbRunResult } from "./etb-run-report";
 import { activeEtbRunStatuses } from "./etb-query-status";
 
 export { EtbManualHandoffRequiredError, etbQueryFailureState } from "./etb-query-state";
@@ -33,7 +34,7 @@ export { etbCompletionState } from "./etb-query-completion";
  * it starts the controlled browser and submits results through the protected
  * worker endpoint.
  */
-export async function enqueueEtbQueryRun(input: { terminal: string; source: string; scheduledFor: Date; targetSailingId?: string }) {
+export async function enqueueEtbQueryRun(input: { terminal: string; source: string; scheduledFor: Date; targetSailingId?: string; batchOffset?: number }) {
   // Scheduled jobs are batch-wide. Do not stack a second browser run while the
   // previous batch is pending, running, or awaiting a staff CAPTCHA action.
   return prisma.$transaction(async tx => {
@@ -50,7 +51,7 @@ export async function enqueueEtbQueryRun(input: { terminal: string; source: stri
     });
     if (existing) return existing;
     return tx.etbQueryRun.create({
-      data: { terminal: input.terminal, source: input.source, scheduledFor: input.scheduledFor, targetSailingId: input.targetSailingId, status: "PENDING" },
+      data: { terminal: input.terminal, source: input.source, scheduledFor: input.scheduledFor, targetSailingId: input.targetSailingId, batchOffset: input.batchOffset, status: "PENDING" },
     });
   });
 }
@@ -69,6 +70,7 @@ export async function completeEtbQueryRun(input: { runId: string; source: string
     }
     let matched = 0;
     const unmatched: EtbQueryResult[] = [];
+    const results: EtbRunResult[] = [];
     const candidates = await tx.sailing.findMany({
       where: run.targetSailingId ? { id: run.targetSailingId, terminal: run.terminal } : { terminal: run.terminal },
       select: { id: true, carrier: true, vesselName: true, voyage: true },
@@ -77,16 +79,30 @@ export async function completeEtbQueryRun(input: { runId: string; source: string
     for (const result of input.results) {
       screenshotStorageKey ||= result.screenshotStorageKey;
       const sailing = uniqueEtbMatch(result, candidates);
+      const base = {
+        vessel: result.vesselName,
+        voyage: result.voyage,
+        after: result.etbAt?.toISOString() ?? null,
+        ...(result.screenshotStorageKey ? { screenshotStorageKey: result.screenshotStorageKey } : {}),
+      };
       if (!sailing) {
+        results.push({ ...base, soNumbers: [], before: null, outcome: "unmatched" });
         unmatched.push(result);
         continue;
       }
+      await tx.$queryRaw`SELECT id FROM "Sailing" WHERE id=${sailing.id} FOR UPDATE`;
+      const snapshot = await tx.sailing.findUniqueOrThrow({
+        where: { id: sailing.id },
+        select: { adoptedEtbAt: true, orders: { select: { soNumber: true }, orderBy: { soNumber: "asc" } } },
+      });
+      const before = snapshot.adoptedEtbAt?.toISOString() ?? null;
+      const outcome = !base.after ? "no-etb" : !before ? "first" : base.after === before ? "same" : "changed";
+      results.push({ ...base, before, outcome, soNumbers: snapshot.orders.map(order => order.soNumber) });
       if (result.portCutoffText) await tx.soOrder.updateMany({ where: { sailingId: sailing.id }, data: { portCutoffText: result.portCutoffText } });
       if (result.etbAt) await recordEtbObservationInTransaction(tx, {
         sailingId: sailing.id, etbAt: result.etbAt, source: input.source,
         sourceUrl: result.sourceUrl, screenshotStorageKey: result.screenshotStorageKey,
       });
-      else if (result.portCutoffText) await tx.soOrder.updateMany({ where: { sailingId: sailing.id }, data: { etbText: null, etbSource: null, etbObservedAt: new Date() } });
       matched += 1;
     }
     if (unmatched.length) {
@@ -112,6 +128,7 @@ export async function completeEtbQueryRun(input: { runId: string; source: string
         sessionState: completion.sessionState,
         handoffReason: completion.handoffReason,
         resultCount: matched,
+        comparisonReport: { resultCount: input.results.length, unmatched: unmatched.length, results },
         screenshotStorageKey,
         errorMessage: null,
         finishedAt: new Date(),

@@ -1,4 +1,4 @@
-import { acceptShekouAgreement } from "../src/lib/shekou-login";
+import { acceptEtbLoginAgreement } from "../src/lib/etb-login-agreement";
 import { restoreEtbSession, saveEtbSession } from "../src/lib/etb-browser-session";
 import { chromium } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
@@ -49,6 +49,7 @@ async function fillYantianLogin(page: import("@playwright/test").Page) {
   await submit.waitFor({ state: "visible", timeout: 10_000 });
   await username.fill(credential.username);
   await password.fill(credential.password);
+  await acceptEtbLoginAgreement(page, false);
   await submit.click();
 }
 
@@ -214,7 +215,7 @@ async function runShekouWorker() {
       await password.waitFor({ state: "visible", timeout: 15_000 });
       await username.fill(credential.username);
       await password.fill(credential.password);
-      await acceptShekouAgreement(page);
+      await acceptEtbLoginAgreement(page, true);
       await page.getByRole("button", { name: /^登录$/ }).click({ timeout: 15_000 });
       console.log(JSON.stringify({ terminal: "蛇口", event: "credential_login_submitted", finalUrl: safeShekouUrl(page.url()), title: await page.title(), reason: "已预填账号密码并提交；若出现图形验证码，请员工在受控浏览器手动完成。" }));
     }

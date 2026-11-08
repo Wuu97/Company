@@ -95,7 +95,7 @@
   font-weight: var(--type-field-label-weight);
   line-height: var(--type-field-label-line-height);
 }
-.body input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.body input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([data-composite-input]),
 .body select,
 .body button[aria-haspopup="listbox"] {
   min-height: var(--control-height);
@@ -104,11 +104,11 @@
   font-weight: var(--type-control-weight);
   line-height: var(--type-control-line-height);
 }
-.body input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.body input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([data-composite-input]),
 .body select {
   border: 1px solid #d9d9d9;
 }
-.body input:focus-visible,
+.body input:not([data-composite-input]):focus-visible,
 .body select:focus-visible,
 .body button[aria-haspopup="listbox"]:focus-visible {
   outline: none;
@@ -125,7 +125,7 @@
   .actions {
     flex-direction: row;
   }
-  .body input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  .body input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([data-composite-input]),
   .body select,
   .body button[aria-haspopup="listbox"] {
     min-height: var(--control-height);

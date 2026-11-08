@@ -10,6 +10,8 @@ export async function POST(request:Request) {
   const form=await request.formData();
   const file=form.get("file");
   const soOrderId=typeof form.get("soOrderId")==="string"?String(form.get("soOrderId")):undefined;
+  if(soOrderId && form.getAll("file").length > 1)
+    return NextResponse.json({error:"重新上传每次只能提交 1 份 SO PDF。"},{status:400});
   if(!(file instanceof File))
     return NextResponse.json({error:"请选择 SO PDF 文件"},{status:400});
   const bytes=Buffer.from(await file.arrayBuffer());
@@ -24,7 +26,7 @@ export async function POST(request:Request) {
   // A staged file can disappear from the current browser batch after a refresh,
   // but it is still eligible for recognition. Re-selecting it should restore it
   // to the current batch instead of making it impossible to identify.
-  if(existing && !existing.soOrderId && ["PENDING", "FAILED"].includes(existing.parseStatus))
+  if(existing && !soOrderId && !existing.soOrderId && ["PENDING", "FAILED"].includes(existing.parseStatus))
     return NextResponse.json({id:existing.id,parseStatus:existing.parseStatus,reused:true});
   if(existing) return NextResponse.json({error:"该原始文件已上传",soOrderId:existing.soOrderId},{status:409});
   // Uploads are staged until the user explicitly starts recognition. This keeps

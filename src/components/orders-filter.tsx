@@ -1,6 +1,5 @@
 import type { FilterItem } from "@/components/ui/common-filter-bar";
 import { UrlFilterBar } from "@/components/ui/url-filter-bar";
-import { cutoffOptions } from "@/lib/so-order-filters";
 import { statusLabel } from "@/lib/status-labels";
 
 const orderStatuses = ["PENDING_REVIEW", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const;
@@ -8,7 +7,7 @@ const orderStatuses = ["PENDING_REVIEW", "CONFIRMED", "IN_PROGRESS", "COMPLETED"
 type Props = {
   q: string;
   status?: string;
-  cutoff?: string;
+  parseStatus?: string;
   customerId?: string;
   customers: { id: string; name: string }[];
   reviewOnly?: boolean;
@@ -17,7 +16,7 @@ type Props = {
 export function OrdersFilter({
   q,
   status = "",
-  cutoff = "",
+  parseStatus = "",
   customerId = "",
   customers,
   reviewOnly = false,
@@ -39,10 +38,13 @@ export function OrdersFilter({
     },
     {
       type: "select",
-      key: "cutoff",
-      label: "截柜状态",
-      placeholder: "全部截柜状态",
-      options: cutoffOptions,
+      key: "parseStatus",
+      label: "解析状态",
+      placeholder: "全部解析状态",
+      options: (reviewOnly ? ["PARSED"] : ["PARSED", "VERIFIED"]).map(value => ({
+        value,
+        label: statusLabel(value),
+      })),
     },
     {
       type: "select",
@@ -56,8 +58,7 @@ export function OrdersFilter({
   return (
     <UrlFilterBar
       items={items}
-      className="[--filter-control-height:36px] [--filter-input-width:260px] [&_button[data-variant=reset]]:ml-auto [&_button[data-variant=reset]]:border-0 [&_button[data-variant=reset]]:bg-transparent [&_button[data-variant=reset]]:text-slate-500 [&_button[data-variant=reset]]:hover:bg-slate-50 [&_button[data-variant=reset]_svg]:hidden"
-      initialValues={{ q, status, cutoff, customerId }}
+      initialValues={{ q, status, parseStatus, customerId }}
       fixedParams={reviewOnly ? { review: "1" } : undefined}
     />
   );

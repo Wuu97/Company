@@ -1,3 +1,4 @@
+import { TABLE_EMPTY_MARKER } from "@/components/ui/table-placeholder";
 import { PageContainer } from "@/components/ui/page-container";
 import type { ContactTaskStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -110,7 +111,7 @@ export default async function ContactTasks({
                   <div>
                     <span className={styles.label}>已确认柜量</span>
                     <b>
-                      {confirmed} / {totalContainers || "—"}
+                      {confirmed} / {totalContainers || TABLE_EMPTY_MARKER}
                     </b>
                   </div>
                   {task.note && (

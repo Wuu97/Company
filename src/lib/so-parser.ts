@@ -5,7 +5,8 @@ export type CargoItemSummary = { description: string; packagesText?: string; wei
 
 export type ParsedSO = {
   soNumber?: string; carrier?: string; customerReference?: string; vesselName?: string; voyage?: string;
-  loadPort?: string; dischargePort?: string; etdText?: string; etaText?: string; cutoffText?: string;
+  loadPort?: string; dischargePort?: string; etdText?: string; etaText?: string; etbText?: string; cutoffText?: string;
+  siCutoffRule?: "PREVIOUS_DAY_NOON";
   siCutoffText?: string; openingText?: string; vgmCutoffText?: string; portCutoffText?: string;
   emptyPickupLocation?: string; fullReturnLocation?: string; transportMode?: string;
   containers: ContainerSummary[]; cargoItems?: CargoItemSummary[]; raw: Record<string, string>;
@@ -70,8 +71,8 @@ function cmaSiCutoff(text: string) {
 
 function normalizeContainerType(value: string) {
   const upper = value.toUpperCase();
-  if (/20.*(?:HC|HQ|HIGH\s*CUBE)/.test(upper)) return "20HC";
-  if (/40.*(?:HC|HQ|HIGH\s*CUBE)/.test(upper)) return "40HC";
+  if (/20.*(?:HC|HIGH\s*CUBE)/.test(upper)) return "20HC";
+  if (/40.*(?:HC|HIGH\s*CUBE)/.test(upper)) return "40HC";
   return upper.replace(/\s+|'/g, "");
 }
 
@@ -174,17 +175,18 @@ export class TailwindParser implements SoParser {
 export class OoclParser implements SoParser {
   canParse({ text }: ParserInput) { return /\bOOCL\b|BOOKING ACKNOWLEDGEMENT/i.test(text); }
   parse({ text }: ParserInput): ParsedSO {
-    const dateValue = (label: string) => first(text, new RegExp(`${label}\\s*:\\s*(\\d{1,2}\\s+[A-Z]{3,9}\\s+\\d{4}(?:\\s+\\d{1,2}:\\d{2})?)`, "i")) ?? "";
+    const dateValue = (label: string, source = text) => first(source, new RegExp(`${label}\\s*:\\s*(\\d{1,2}\\s+[A-Z]{3,9}\\s+\\d{4}(?:\\s+\\d{1,2}:\\d{2})?)`, "i")) ?? "";
     const vessel = text.match(/INTENDED\s+VESSEL\/VOYAGE\s*:\s*([^\n]+?)\s+([A-Z0-9]{2,})\s*$/im);
     const containers = text.match(/DESPATCH\s+QUANTITY\s+FCL\s+QTY\s+SIZE\/TYPE\s*:\s*(\d+)\s*X\s*(20|40|45)\s*(HC|HQ|GP|DC|DV)/i);
     const loadPort = first(text, /PORT\s+OF\s+LOADING\s*:\s*([^\n]+?)(?:\s+ETA\s*:|$)/i);
     const dischargePort = first(text, /PORT\s+OF\s+DISCHARGE\s*:\s*([^\n]+)/i);
+    const dischargeSection = text.match(/PORT\s+OF\s+DISCHARGE\s*:[\s\S]*?(?=\b(?:DESTINATION\s+TERMINAL|PLACE\s+OF\s+DELIVERY|INTENDED\s+FCL|PORT\s+OF\s+LOADING)\b|$)/i)?.[0] ?? "";
     return {
       soNumber: first(text, /BOOKING\s+NUMBER\s*:\s*([A-Z0-9-]+)/i),
       carrier: "OOCL",
       vesselName: vessel?.[1]?.trim(), voyage: vessel?.[2]?.trim(),
       loadPort, dischargePort,
-      etdText: dateValue("ETD"), etaText: dateValue("ETA"),
+      etdText: dateValue("ETD"), etaText: dateValue("ETA", dischargeSection),
       portCutoffText: dateValue("INTENDED\\s+FCL\\s+CONTAINER\\s+DELIVERY\\s+CUT-OFF"),
       vgmCutoffText: dateValue("INTENDED\\s+VGM\\s+CUT-OFF"),
       siCutoffText: dateValue("INTENDED\\s+(?:ELECTRONIC\\s+)?SHIPPING\\s+INSTRUCTION\\s+CUT-OFF"),
@@ -200,6 +202,8 @@ export class TsLinesReleaseOrderParser implements SoParser {
   parse({ text }: ParserInput): ParsedSO {
     const routing = text.match(/LEG\s+VESSEL\s+VESSEL\s+NAME\s+VOYAGE\s+POL\s+POD\s*\n\s*\d+\s+([A-Z0-9-]+)\s+(.+?)\s+([A-Z0-9-]{3,})\s+([A-Z]{3,})\s+([^\n]+)/i);
     const container = text.match(/CONT\.\s*QTY\s*\/\s*TYPE\s*:\s*(\d+)\s*[x×]\s*(20|40|45)\s*(HC|HQ|GP|DC|DV)/i);
+    const openingText = oneDate(lineValue(text, "RECEIVING DATE") ?? "");
+    const japanSiRule = text.match(/日本\s*和\s*NW1\s*截[关關]前一天的\s*12\s*[点點]/i)?.[0];
     const closingText = oneDate(first(text, /CLOSING\s+DATE\s*:\s*([^\n]+)/i) ?? "");
     const loadPort = first(text, /PORT\s+OF\s+LOADING\s*:\s*([^\n]+)/i);
     const dischargePort = first(text, /PORT\s+OF\s+DISCHARGE\s*:\s*([^\n]+)/i);
@@ -209,9 +213,10 @@ export class TsLinesReleaseOrderParser implements SoParser {
       carrier: "TS LINES",
       vesselName: routing?.[2]?.trim(), voyage: routing?.[3]?.trim(),
       loadPort, dischargePort, fullReturnLocation,
-      cutoffText: closingText, portCutoffText: closingText,
+      openingText, cutoffText: closingText, portCutoffText: closingText,
+      siCutoffRule: japanSiRule && /\bJAPAN\b|日本/i.test(dischargePort ?? routing?.[6] ?? "") ? "PREVIOUS_DAY_NOON" : undefined,
       containers: container ? [{ quantity: Number(container[1]), containerType: normalizeContainerType(`${container[2]}${container[3]}`) }] : [],
-      raw: { vesselCode: routing?.[1]?.trim() ?? "", closingDate: closingText },
+      raw: { vesselCode: routing?.[1]?.trim() ?? "", closingDate: closingText, ...(japanSiRule ? { japanSiRule } : {}) },
     };
   }
 }

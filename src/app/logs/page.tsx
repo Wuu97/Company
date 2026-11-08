@@ -45,10 +45,19 @@ function comparableValue(value: unknown): string {
   }
   return JSON.stringify(value);
 }
-function changeRows(before: unknown, after: unknown) {
+const parseStatusAction = "SO_PARSE_STATUS_UPDATED";
+const parseStatusField = "parseStatus";
+const soFieldAction = "SO_FIELD_UPDATED";
+const internalSailingFields = ["sailingId", "sailingSync"];
+
+function changeRows(action: string, before: unknown, after: unknown) {
   const beforeValue = recordValue(before);
   const afterValue = recordValue(after);
-  return Object.keys(afterValue).filter(key => comparableValue(beforeValue[key]) !== comparableValue(afterValue[key])).map(key => ({ key, label: displayFieldLabel(key), before: displayValue(beforeValue[key]), after: displayValue(afterValue[key]) }));
+  return Object.keys(afterValue)
+    .filter(key => action !== parseStatusAction || key === parseStatusField)
+    .filter(key => action !== soFieldAction || !internalSailingFields.includes(key))
+    .filter(key => comparableValue(beforeValue[key]) !== comparableValue(afterValue[key]))
+    .map(key => ({ key, label: displayFieldLabel(key), before: displayValue(beforeValue[key]), after: displayValue(afterValue[key]) }));
 }
 function objectRows(entityType: string, before: unknown, after: unknown, entityId: string, business?: Record<string, unknown>) {
   const values = { ...business, ...recordValue(before), ...recordValue(after) };
@@ -74,11 +83,10 @@ function objectRows(entityType: string, before: unknown, after: unknown, entityI
     : [{ label: labels[key] || displayFieldLabel(key), value: displayValue(values[key]) }]);
   return rows.length ? rows.slice(0, 2) : [{ label: auditEntityLabel(entityType), value: entityType === "SoOrder" ? "(未关联单号)" : "" }];
 }
-function hasChangeDetail(before: unknown, after: unknown) {
-  return Object.keys(recordValue(before)).length > 0 && Object.keys(recordValue(after)).length > 0 && changeRows(before, after).length > 0;
-}
-function changeDetail(before: unknown, after: unknown) {
-  const rows = changeRows(before, after);
+function changeDetail(action: string, before: unknown, after: unknown) {
+  if (!Object.keys(recordValue(before)).length) return null;
+  const rows = changeRows(action, before, after);
+  if (!rows.length) return null;
   return (
     <div>
       <div className={styles.changeContent}>
@@ -128,16 +136,39 @@ export default async function Logs({
         SELECT 1 FROM jsonb_each(
           CASE WHEN jsonb_typeof(l.after) = 'object' THEN l.after ELSE '{}'::jsonb END
         ) AS changed(key, value)
-        WHERE COALESCE(l.before ->> changed.key, '')
+        WHERE (l.action <> ${parseStatusAction} OR changed.key = ${parseStatusField})
+          AND (l.action <> ${soFieldAction} OR changed.key NOT IN (${Prisma.join(internalSailingFields)}))
+          AND COALESCE(l.before ->> changed.key, '')
           IS DISTINCT FROM COALESCE(l.after ->> changed.key, '')
       )
   `;
+  const showSystem = input.showSystem === "1";
+  const visibilityWhere: Prisma.OperationLogWhereInput = showSystem ? {} : { actorUserId: { not: null } };
+  const [actionRows, entityRows, user, allLogTotal, monthRows] = await Promise.all([
+    prisma.operationLog.findMany({
+      where: visibilityWhere,
+      distinct: ["action"],
+      select: { action: true },
+      orderBy: { action: "asc" },
+    }),
+    prisma.operationLog.findMany({
+      where: visibilityWhere,
+      distinct: ["entityType"],
+      select: { entityType: true },
+      orderBy: { entityType: "asc" },
+    }),
+    currentUser(),
+    prisma.operationLog.count(),
+    prisma.$queryRaw<{ month: string }[]>`SELECT DISTINCT to_char("createdAt", 'YYYY-MM') AS month FROM "OperationLog" ORDER BY month DESC`,
+  ]);
+  const action = showSystem || actionRows.some(row => row.action === input.action) ? input.action : undefined;
+  const entityType = showSystem || entityRows.some(row => row.entityType === input.entityType) ? input.entityType : undefined;
   const where: Prisma.OperationLogWhereInput = {
     ...(emptyEdits.length ? { id: { notIn: emptyEdits.map(log => log.id) } } : {}),
-    ...(input.action ? { action: input.action } : {}),
-    ...(input.entityType ? { entityType: input.entityType } : {}),
+    ...(action ? { action } : {}),
+    ...(entityType ? { entityType } : {}),
     ...(monthStart && monthEnd ? { createdAt: { gte: monthStart, lt: monthEnd } } : {}),
-    ...(input.showSystem === "1" ? {} : { actorUserId: { not: null } }),
+    ...visibilityWhere,
     ...(q
       ? {
           OR: [
@@ -147,22 +178,7 @@ export default async function Logs({
         }
       : {}),
   };
-  const [total, actionRows, entityRows, user, allLogTotal, monthRows] = await Promise.all([
-    prisma.operationLog.count({ where }),
-    prisma.operationLog.findMany({
-      distinct: ["action"],
-      select: { action: true },
-      orderBy: { action: "asc" },
-    }),
-    prisma.operationLog.findMany({
-      distinct: ["entityType"],
-      select: { entityType: true },
-      orderBy: { entityType: "asc" },
-    }),
-    currentUser(),
-    prisma.operationLog.count(),
-    prisma.$queryRaw<{ month: string }[]>`SELECT DISTINCT to_char("createdAt", 'YYYY-MM') AS month FROM "OperationLog" ORDER BY month DESC`,
-  ]);
+  const total = await prisma.operationLog.count({ where });
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const currentPage = Math.min(page, totalPages);
   const logs = await prisma.operationLog.findMany({
@@ -191,7 +207,7 @@ export default async function Logs({
           <FilterTextField aria-label="操作人 / 业务单号" name="q" defaultValue={q} placeholder="操作人 / 业务单号" />
         </FilterField>
         <FilterField label="操作类型">
-          <FilterSelectField aria-label="操作类型" name="action" defaultValue={input.action || ""}>
+          <FilterSelectField aria-label="操作类型" name="action" defaultValue={action || ""}>
             <option value="">操作类型</option>
             {actionRows.map((item) => (
               <option key={item.action} value={item.action}>
@@ -201,7 +217,7 @@ export default async function Logs({
           </FilterSelectField>
         </FilterField>
         <FilterField label="业务对象">
-          <FilterSelectField aria-label="业务对象" name="entityType" defaultValue={input.entityType || ""}>
+          <FilterSelectField aria-label="业务对象" name="entityType" defaultValue={entityType || ""}>
             <option value="">业务对象</option>
             {entityRows.map((item) => (
               <option key={item.entityType} value={item.entityType}>
@@ -216,20 +232,20 @@ export default async function Logs({
             {monthRows.map(item => <option key={item.month} value={item.month}>{monthLabel(item.month)}</option>)}
           </FilterSelectField>
         </FilterField>
-        <label data-filter-toggle className={styles.systemLogToggle}><input type="checkbox" name="showSystem" value="1" defaultChecked={input.showSystem === "1"} /><span>包含系统自动日志</span></label>
+        <label data-filter-toggle className={styles.systemLogToggle}><input type="checkbox" name="showSystem" value="1" defaultChecked={showSystem} /><span>包含系统自动日志</span></label>
         <FilterClearLink href="/logs" />
         </div>{user?.role === "ADMIN" && <div className={styles.dangerAction}><ClearLogsButton total={allLogTotal} /></div>}
-      </ListFilter>} pagination={<Pagination currentPage={currentPage} totalPages={totalPages} total={total} pageSize={pageSize} href={page => href(input, page)} label="操作日志分页"/>}>
+      </ListFilter>} pagination={<Pagination currentPage={currentPage} totalPages={totalPages} total={total} pageSize={pageSize} href={page => href({ ...input, action, entityType }, page)} label="操作日志分页"/>}>
 
 
       {visibleLogs.length ? <section className={styles.auditList} aria-label="操作记录" tabIndex={0}><div className={styles.logTable}>
         <TableHeader as="div" className={styles.tableHeader}><span>操作时间</span><span>操作人</span><span>操作内容</span><span>业务对象 / 标识</span><span>字段变化</span></TableHeader>
-        {visibleLogs.map((log) => <AuditExpandedRow key={log.id} detail={hasChangeDetail(log.before, log.after) ? changeDetail(log.before, log.after) : null}>
+        {visibleLogs.map((log) => <AuditExpandedRow key={log.id} detail={changeDetail(log.action, log.before, log.after)}>
           <time className={styles.time} dateTime={log.createdAt.toISOString()}>{formatChinaDateTime(log.createdAt)}:{String(log.createdAt.getUTCSeconds()).padStart(2, "0")}</time>
           <div className={styles.actor}>
             <b>{log.actorName || "系统处理"}</b>
           </div>
-          <div className={styles.action}>
+          <div className={styles.action} title={auditActionLabel(log.action)}>
             {log.action.endsWith("_DELETED") ? <StatusBadge tone="critical">{auditActionLabel(log.action)}</StatusBadge> : <span>{auditActionLabel(log.action)}</span>}
           </div>
           <div className={styles.objectTags}>{objectRows(log.entityType, log.before, log.after, log.entityId, businessById.get(`${log.entityType}:${log.entityId}`)).map(item => <span key={item.label} data-missing={item.value === "(未关联单号)" || !item.value || undefined} title={item.value ? `${item.label}：${item.value}` : item.label}><b>{item.label}</b>{item.value}</span>)}</div>

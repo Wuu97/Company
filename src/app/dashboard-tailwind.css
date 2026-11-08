@@ -3,12 +3,20 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities) source(none) important;
 @source "./page.tsx";
+@source "./etb-runs/page.tsx";
+@source "../components/ui/workspace-metrics.tsx";
 @source "./dashboard-tasks.tsx";
 @source "./dashboard-actions.tsx";
 @source "./dashboard-notifications.tsx";
 @source "./orders/page.tsx";
+@source "./orders";
+@source "../components/container-adjustment-form.tsx";
+@source "../components/so-file-preview.tsx";
+@source "../components/so-version-upload.tsx";
+@source "./orders/order-status-action.tsx";
 @source "./orders/order-upload-actions.tsx";
 @source "../components/orders-filter.tsx";
+@source "../components/so-upload-form.tsx";
 @source "../components/notification-read-button.tsx";
 
 .dashboard-workspace,

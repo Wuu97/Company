@@ -7,8 +7,13 @@ import { actorFields } from "@/lib/audit";
 import { normalizeCarrierName } from "@/lib/carrier-name";
 import { etbAutoLinkEligibility } from "@/lib/etb-sailing-link";
 
-const fields = ["customerId", "carrier", "vesselName", "voyage", "etbText", "openingText", "siCutoffText", "portCutoffText", "etaText", "etdText", "emptyPickupLocation", "fullReturnLocation"] as const;
-const schema = z.object({ field: z.enum(fields), value: z.string().trim().min(1) });
+const fields = ["customerId", "customerReference", "carrier", "vesselName", "voyage", "etbText", "openingText", "siCutoffText", "portCutoffText", "cutoffText", "etaText", "etdText", "emptyPickupLocation", "fullReturnLocation"] as const;
+const edit = z.object({ field: z.enum(fields), value: z.string().trim().min(1) });
+const schema = z.union([edit, z.object({
+  changes: z.array(edit).min(1).max(fields.length).refine(
+    changes => new Set(changes.map(change => change.field)).size === changes.length,
+  ),
+})]);
 const sailingFields = new Set(["carrier", "vesselName", "voyage", "fullReturnLocation"]);
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -20,14 +25,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const order = await prisma.$transaction(async tx => {
       const before = await tx.soOrder.findUniqueOrThrow({ where: { id } });
-      const { field, value } = input.data;
-      if (field === "customerId" && !await tx.customer.findUnique({ where: { id: value }, select: { id: true } })) throw new Error("客户不存在");
-      const data: Prisma.SoOrderUpdateInput = field === "customerId" ? { customer: { connect: { id: value } } } : { [field]: field === "carrier" ? normalizeCarrierName(value) : value };
-      if (field === "siCutoffText") Object.assign(data, { siCutoffSource: "MANUAL", siCutoffEstimatedFromText: null });
-      if (field === "etbText") Object.assign(data, { etbSource: "MANUAL", etbObservedAt: new Date(), etbNeedsReview: false });
+      const changes = "changes" in input.data ? input.data.changes : [input.data];
+      const data: Prisma.SoOrderUpdateInput = {};
+      for (const { field, value } of changes) {
+        if (field === "customerId") {
+          if (!await tx.customer.findUnique({ where: { id: value }, select: { id: true } })) throw new Error("客户不存在");
+          data.customer = { connect: { id: value } };
+        } else {
+          data[field] = field === "carrier" ? normalizeCarrierName(value) : value;
+        }
+        if (field === "siCutoffText") Object.assign(data, { siCutoffSource: "MANUAL", siCutoffEstimatedFromText: null });
+        if (field === "etbText") Object.assign(data, { etbSource: "MANUAL", etbObservedAt: new Date(), etbNeedsReview: false });
+      }
       let updated = await tx.soOrder.update({ where: { id }, data });
+      const resetEtb = changes.some(({ field }) => field === "etbText")
+        ? {}
+        : { etbText: null, etbSource: null, etbObservedAt: null, etbNeedsReview: false };
       let sailingSync = "UNCHANGED";
-      if (sailingFields.has(field) && updated.parseStatus === "VERIFIED") {
+      if (changes.some(({ field }) => sailingFields.has(field)) && updated.parseStatus === "VERIFIED") {
         const eligibility = etbAutoLinkEligibility({ ...updated, parseReview: { needsReview: false } });
         if (eligibility.eligible) {
           const sailing = await tx.sailing.upsert({
@@ -36,15 +51,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             update: { loadPort: updated.loadPort! },
           });
           if (before.sailingId !== sailing.id) {
-            updated = await tx.soOrder.update({ where: { id }, data: { sailingId: sailing.id, etbText: null, etbSource: null, etbObservedAt: null, etbNeedsReview: false } });
+            updated = await tx.soOrder.update({ where: { id }, data: { sailingId: sailing.id, ...resetEtb } });
             sailingSync = "RELINKED";
           }
         } else if (before.sailingId) {
-          updated = await tx.soOrder.update({ where: { id }, data: { sailingId: null, etbText: null, etbSource: null, etbObservedAt: null, etbNeedsReview: false } });
+          updated = await tx.soOrder.update({ where: { id }, data: { sailingId: null, ...resetEtb } });
           sailingSync = "CLEARED";
         }
       }
-      await tx.operationLog.create({ data: { action: "SO_FIELD_UPDATED", entityType: "SoOrder", entityId: id, ...actorFields(actor), before: { [field]: field === "customerId" ? before.customerId : before[field], sailingId: before.sailingId }, after: { [field]: value, sailingId: updated.sailingId, sailingSync } } });
+      await tx.operationLog.create({
+        data: {
+          action: "SO_FIELD_UPDATED", entityType: "SoOrder", entityId: id, ...actorFields(actor),
+          before: { ...Object.fromEntries(changes.map(({ field }) => [field, before[field]])), sailingId: before.sailingId },
+          after: { ...Object.fromEntries(changes.map(({ field }) => [field, updated[field]])), sailingId: updated.sailingId, sailingSync },
+        },
+      });
       return updated;
     });
     return NextResponse.json(order);

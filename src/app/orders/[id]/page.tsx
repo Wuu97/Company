@@ -1,52 +1,231 @@
-import { PageContainer } from "@/components/ui/page-container";
-import { prisma } from "@/lib/prisma";
-import businessStyles from "@/components/business.module.css";
+import { ArrowLeft, Building2, FileText, Ship } from "lucide-react";
 import { notFound } from "next/navigation";
-import { DeleteOrderButton } from "@/components/delete-order-button";
-import { InlineOrderValue } from "@/components/inline-order-value";
-import { SoFilePreview } from "@/components/so-file-preview";
-import { SoVersionUpload } from "@/components/so-version-upload";
-import { CancelActionButton } from "@/components/cancel-action-button";
-import { ApplyVersionChangeButton } from "@/components/apply-version-change-button";
-import { ContainerAdjustmentForm } from "@/components/container-adjustment-form";
-import { KeyValueGrid } from "@/components/ui/key-value-grid";
+import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
-const changeLabels: Record<string, string> = { soNumber: "SO 编号", carrier: "船公司", vesselName: "船名", voyage: "航次", etdText: "预计开船时间", etaText: "预计到港时间", etbText: "预计靠港时间", openingText: "开仓时间", siCutoffText: "补料时间", vgmCutoffText: "VGM 截止时间", portCutoffText: "码头截止时间" };
-function versionChangeRows(changes: unknown) { if (!changes || typeof changes !== "object" || Array.isArray(changes)) return []; return Object.entries(changes as Record<string, unknown>).map(([key, value]) => ({ label: changeLabels[key] || "其他业务信息", value: typeof value === "object" ? "已更新" : String(value ?? "已清空") })); }
-function pending(value?: string | null) { return !value || ["待解析", "待核对", "待人工核对"].includes(value.trim()); }
-import { OrderStatusTag, ParseStatusTag } from "@/components/order-status-form";
+import { ButtonLink } from "@/components/ui/button";
+import { DeleteOrderButton } from "@/components/delete-order-button";
+import type { InlineOrderField } from "@/components/inline-order-value";
+import { SoFilePreview } from "@/components/so-file-preview";
+import { SoVersionUpload } from "@/components/so-version-upload";
+import { ApplyVersionChangeButton } from "@/components/apply-version-change-button";
+import { ContainerAdjustmentForm } from "@/components/container-adjustment-form";
+import { prisma } from "@/lib/prisma";
 import { statusLabel, statusTone } from "@/lib/status-labels";
-import { OrderSectionNav } from "@/components/order-section-nav";
 import { formatChinaDateTime, formatOperationalTimeText, resolveOpeningTime } from "@/lib/time";
-import styles from "./page.module.css";
+import type { ParseReview } from "@/lib/so-review-task";
+import { AiReviewTable, type AiReviewRow } from "./ai-review-table";
+import { ShippingFields, type ShippingField } from "./shipping-fields";
 
-export default async function OrderDetail({params}:{params:Promise<{id:string}>}) {
-  const {id}=await params;
-  const [order,customers]=await Promise.all([prisma.soOrder.findUnique({where:{id},include:{customer:true,files:{orderBy:{version:"asc"}},containers:true,plans:{include:{factory:true,items:true}},versionChanges:{where:{status:"PENDING"},include:{soFileVersion:true}}}}),prisma.customer.findMany({select:{id:true,name:true},orderBy:{name:"asc"}})]);
-  if(!order)notFound();
-  const opening=resolveOpeningTime(order.openingText,order.portCutoffText);
-  const latestExtraction = order.files.at(-1)?.rawExtraction as { containers?: Array<{ containerType?: string; quantity?: number }>; ai?: { values?: Record<string, string>; evidence?: Record<string, string>; confidence?: Record<string, number> } } | null;
-  const parsedContainers = (latestExtraction?.containers ?? []).filter(item => item.containerType && item.quantity).map(item => ({ containerType: item.containerType!, quantity: item.quantity! }));
-  const orderValues: Record<string, string | null> = { soNumber: order.soNumber, carrier: order.carrier, customerReference: order.customerReference, vesselName: order.vesselName, voyage: order.voyage, loadPort: order.loadPort, dischargePort: order.dischargePort, etdText: order.etdText, etaText: order.etaText, etbText: order.etbText, openingText: order.openingText, siCutoffText: order.siCutoffText, vgmCutoffText: order.vgmCutoffText, portCutoffText: order.portCutoffText, emptyPickupLocation: order.emptyPickupLocation, fullReturnLocation: order.fullReturnLocation, transportMode: order.transportMode };
-  const aiSuggestions = Object.entries(latestExtraction?.ai?.values ?? {}).filter(([field, value]) => value && orderValues[field] !== value);
-  const initialContainers = order.containers.filter(container => container.active).sort((a, b) => a.internalCode.localeCompare(b.internalCode)).map(container => ({ id: container.id, internalCode: container.internalCode, containerType: container.containerType, note: container.note, containerNo: container.containerNo }));
-  return <>
-    <PageHeader title={<>SO 详情：{order.soNumber}</>} actions={<DeleteOrderButton orderId={id} returnToOrders/>}/><PageContainer>
-    <section className={styles.summary}>
-      <div className={styles.field}><span className={styles.fieldLabel}>客户</span><div className={styles.fieldValue}><b className={styles.name}>{order.customer?.name || <InlineOrderValue orderId={id} field="customerId" display="待匹配" placeholder="选择客户" options={customers}/>}</b></div></div>
-      <div className={styles.field}><span className={styles.fieldLabel}>船公司</span><div className={styles.fieldValue}><b>{pending(order.carrier) ? <InlineOrderValue orderId={id} field="carrier" display="待解析" placeholder="输入船公司"/> : order.carrier}</b></div></div>
-      <div className={styles.field}><span className={styles.fieldLabel}>船名 / 航次</span><div className={styles.fieldValue}><b>{pending(order.vesselName) ? <InlineOrderValue orderId={id} field="vesselName" display="待核对" placeholder="输入船名"/> : order.vesselName} / {pending(order.voyage) ? <InlineOrderValue orderId={id} field="voyage" display="待核对" placeholder="输入航次"/> : order.voyage}</b></div></div>
-      <div className={styles.field}><span className={styles.fieldLabel}>解析状态</span><div className={styles.fieldValue}>{["PARSED", "VERIFIED"].includes(order.parseStatus) ? <ParseStatusTag orderId={id} status={order.parseStatus as "PARSED" | "VERIFIED"}/> : <StatusBadge tone={statusTone(order.parseStatus)}>{statusLabel(order.parseStatus)}</StatusBadge>}</div></div>
-      <div className={styles.field}><span className={styles.fieldLabel}>业务状态</span><div className={styles.fieldValue}><OrderStatusTag orderId={id} status={order.status}/></div></div>
-    </section>
-    <OrderSectionNav/>
-    {order.versionChanges.map(change=>{const rows=versionChangeRows(change.changes);return <section key={change.id}><h3>新版本差异待确认（v{change.soFileVersion.version}）</h3>{rows.length?<ul className={businessStyles["change-summary"]}>{rows.map((row,index)=><li key={`${row.label}-${index}`}><b>{row.label}：</b>{row.value}</li>)}</ul>:<p>本次版本包含待确认的业务信息更新。</p>}<p className={businessStyles["muted"]}>柜型或柜量变化不会在此自动应用，需使用柜量调整流程处理。</p><ApplyVersionChangeButton url={`/api/orders/${id}/version-changes/${change.id}/apply`}/></section>})}
-    <section className={styles.fileSection}><h3>上传的 SO 文件</h3>{order.files.map(f=><SoFilePreview key={f.id} fileId={f.id} fileName={f.originalName}/>)}</section>
-    {aiSuggestions.length ? <section><h3>AI 识别建议待核对</h3><p className={businessStyles.muted}>以下内容尚未写入 SO；请依据原文核对后再手动更新。</p><ul className={businessStyles["change-summary"]}>{aiSuggestions.map(([field, value]) => <li key={field}><b>{changeLabels[field] || field}：</b>{value}<small>依据：{latestExtraction?.ai?.evidence?.[field] || "未提供"} · 置信度 {Math.round((latestExtraction?.ai?.confidence?.[field] || 0) * 100)}%</small></li>)}</ul></section> : null}
-    <section><h3>装运执行信息</h3><KeyValueGrid items={[{label:"预计靠泊时间（ETB）",emphasis:true,value:<InlineOrderValue orderId={id} field="etbText" value={order.etbText ? formatOperationalTimeText(order.etbText) : ""} display={order.etbText ? formatOperationalTimeText(order.etbText) : "待人工核对"} placeholder="输入 ETB"/>},{label:"开仓时间",value:<>{<InlineOrderValue orderId={id} field="openingText" value={order.openingText ? formatOperationalTimeText(order.openingText) : ""} display={opening?.value || "待人工核对"} placeholder="输入开仓时间"/>}{opening?.source === "SYSTEM_ESTIMATED" && <small>系统推算</small>}</>},{label:"补料时间",value:<InlineOrderValue orderId={id} field="siCutoffText" value={order.siCutoffText ? formatOperationalTimeText(order.siCutoffText) : ""} display={order.siCutoffText ? formatOperationalTimeText(order.siCutoffText) : "待人工核对"} placeholder="输入补料时间"/>},{label:"截关时间（CY）",value:<InlineOrderValue orderId={id} field="portCutoffText" value={order.portCutoffText ? formatOperationalTimeText(order.portCutoffText) : ""} display={order.portCutoffText ? formatOperationalTimeText(order.portCutoffText) : "待人工核对"} placeholder="输入 CY 截关时间"/>},{label:"预计到港时间（ETA）",value:<InlineOrderValue orderId={id} field="etaText" value={order.etaText ? formatOperationalTimeText(order.etaText) : ""} display={order.etaText ? formatOperationalTimeText(order.etaText) : "待人工核对"} placeholder="输入 ETA"/>},{label:"预计开船时间（ETD）",value:<InlineOrderValue orderId={id} field="etdText" value={order.etdText ? formatOperationalTimeText(order.etdText) : ""} display={order.etdText ? formatOperationalTimeText(order.etdText) : "待人工核对"} placeholder="输入 ETD"/>}]} /><KeyValueGrid items={[{label:"提柜地点",value:order.emptyPickupLocation || <InlineOrderValue orderId={id} field="emptyPickupLocation" display="待人工核对" placeholder="输入提空柜地点"/>},{label:"还柜地点",value:order.fullReturnLocation || <InlineOrderValue orderId={id} field="fullReturnLocation" display="待人工核对" placeholder="输入交重柜地点"/>}]} /></section>
-    <ContainerAdjustmentForm orderId={id} initialContainers={initialContainers.length ? initialContainers : parsedContainers.flatMap(({ containerType, quantity }) => Array.from({ length: quantity }, () => ({ containerType })) )}/>
-    <SoVersionUpload orderId={id}/>
-    <section><h3>装柜计划</h3>{order.plans.length?<div className={styles.planList}>{order.plans.map(p=><article className={styles.planItem} key={p.id}><div><b>{formatChinaDateTime(p.scheduledAt)} · <span className={styles.name}>{p.factory.name}</span></b><span>{statusLabel(p.status)} · 已安排 {p.items.length} 柜</span></div>{["DRAFT","CONFIRMED"].includes(p.status)&&<CancelActionButton url={`/api/plans/${p.id}/cancel`} label="取消计划"/>}</article>)}</div>:"暂无计划"}</section>
-  </PageContainer></>;
+const fieldLabels: Record<string, string> = {
+  soNumber: "SO 编号", carrier: "船公司", customerReference: "客户参考号",
+  vesselName: "船名", voyage: "航次", loadPort: "装货港", dischargePort: "卸货港",
+  etdText: "预计开航时间（ETD）", etaText: "预计到港时间（ETA）", etbText: "预计靠泊时间（ETB）",
+  openingText: "开舱时间", cutoffText: "截放行／截关时间", siCutoffText: "补料时间", vgmCutoffText: "VGM 截止时间",
+  portCutoffText: "截重柜时间（CY）", emptyPickupLocation: "放行／提空柜地点",
+  fullReturnLocation: "还柜地点", transportMode: "运输方式",
+};
+
+const shippingKeys = [
+  "openingText", "siCutoffText", "portCutoffText", "cutoffText", "etbText",
+  "etdText", "etaText", "carrier", "vesselName", "voyage", "emptyPickupLocation", "fullReturnLocation",
+] as const;
+const editableFields = new Set<string>(["customerReference", ...shippingKeys]);
+
+type Extraction = {
+  containers?: { containerType?: string; quantity?: number }[];
+  parseReview?: ParseReview;
+  ai?: {
+    values?: Record<string, string>;
+    evidence?: Record<string, string>;
+    confidence?: Record<string, number>;
+    siRule?: { destinationEvidence: string; clauseEvidence: string; cutoffEvidence: string; explanation: string };
+    siRuleStatus?: "PREVIOUS_DAY_NOON" | "NEEDS_REVIEW";
+  };
+};
+
+function versionChangeRows(changes: unknown) {
+  if (!changes || typeof changes !== "object" || Array.isArray(changes)) return [];
+  return Object.entries(changes).map(([field, value]) => ({
+    field, label: fieldLabels[field] || "其他业务信息",
+    value: typeof value === "object" && value !== null ? "已更新" : String(value ?? "已清空"),
+  }));
+}
+
+export default async function OrderDetail({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const order = await prisma.soOrder.findUnique({
+    where: { id },
+    include: {
+      files: { orderBy: { version: "desc" } },
+      containers: { where: { active: true }, orderBy: { internalCode: "asc" } },
+      plans: {
+        where: { status: { notIn: ["CANCELLED", "REPLACED"] } },
+        orderBy: { scheduledAt: "desc" },
+        select: { status: true, items: { where: { active: true }, select: { containerUnitId: true } }, transportTask: { select: { status: true } } },
+      },
+      versionChanges: { where: { status: "PENDING" }, include: { soFileVersion: true } },
+    },
+  });
+  if (!order) notFound();
+
+  const extraction = order.files.find(file => file.rawExtraction)?.rawExtraction as Extraction | undefined;
+  const ai = extraction?.ai;
+  const summaryFields = new Set(["carrier", "vesselName", "voyage"]);
+  const aiRows: AiReviewRow[] = Object.entries(ai?.values ?? {}).flatMap(([field, value]) => {
+    if (typeof value !== "string" || !value.trim()) return [];
+    const stored = Object.hasOwn(fieldLabels, field) ? order[field as keyof typeof order] : null;
+    const current = typeof stored === "string" ? stored : "";
+    const time = field.endsWith("Text");
+    const normalized = time ? formatOperationalTimeText(value) : value.trim();
+    const currentValue = time ? formatOperationalTimeText(current) : current.trim();
+    const score = ai?.confidence?.[field];
+    const confidence = typeof score === "number" && Number.isFinite(score) && score >= 0 && score <= 1 ? score : undefined;
+    const flagged = extraction?.parseReview?.conflictingFields?.includes(field) || extraction?.parseReview?.missingCoreFields?.includes(field);
+    const needsReview = normalized !== currentValue || (order.parseStatus !== "VERIFIED" && Boolean(flagged || (confidence !== undefined && confidence < 0.9)));
+    return [{
+      field, label: fieldLabels[field] || field, value, confidence, needsReview,
+      evidence: ai?.evidence?.[field],
+      edit: needsReview && editableFields.has(field) ? { field: field as InlineOrderField, value: normalized } : undefined,
+    }];
+  }).sort((a, b) => Number(!a.needsReview && summaryFields.has(a.field)) - Number(!b.needsReview && summaryFields.has(b.field)));
+  const opening = resolveOpeningTime(order.openingText, order.portCutoffText);
+  const formId = "so-shipping-fields";
+  const cutoffDuplicatesSi = Boolean(order.cutoffText && order.siCutoffText
+    && formatOperationalTimeText(order.cutoffText) === formatOperationalTimeText(order.siCutoffText));
+  const fields: ShippingField[] = shippingKeys.map(key => {
+    const time = key.endsWith("Text");
+    const value = order[key] ?? "";
+    return {
+      key, time, label: fieldLabels[key],
+      value: time ? formatOperationalTimeText(value) : value,
+      estimated: key === "openingText" && opening?.source === "SYSTEM_ESTIMATED"
+        ? opening.value
+        : key === "siCutoffText" && order.siCutoffSource === "SYSTEM_ESTIMATED" && order.siCutoffText
+          ? formatOperationalTimeText(order.siCutoffText)
+          : undefined,
+      needsReview: (key === "cutoffText" && cutoffDuplicatesSi) || (key === "siCutoffText" && order.siCutoffSource === "NEEDS_REVIEW") || (key === "etbText" && order.etbNeedsReview),
+    };
+  });
+  const planByContainer = new Map<string, (typeof order.plans)[number]>();
+  for (const plan of order.plans) {
+    for (const item of plan.items) {
+      if (!planByContainer.has(item.containerUnitId)) planByContainer.set(item.containerUnitId, plan);
+    }
+  }
+  const containers = order.containers.length ? order.containers.map(container => {
+    const plan = planByContainer.get(container.id);
+    const status = plan?.transportTask?.status;
+    const workStatus = status && status !== "PLANNED" && status !== "CANCELLED"
+      ? { label: statusLabel(status), tone: statusTone(status) }
+      : { label: "未排车", tone: "unread" as const };
+    return { ...container, workStatus };
+  }) : (extraction?.containers ?? []).flatMap(
+    ({ containerType, quantity }) => containerType && quantity ? Array.from({ length: quantity }, () => ({ containerType })) : [],
+  );
+
+  return (
+    <main className="bg-slate-50">
+      <PageHeader
+        className="sticky top-0 z-10 bg-slate-50 py-2"
+        title={
+          <>
+            <ButtonLink href="/orders" variant="text" size="small" aria-label="返回 SO 订单"><ArrowLeft size={18} aria-hidden="true" /></ButtonLink>
+            <span className="break-all">SO: {order.soNumber}</span>
+            <StatusBadge tone={statusTone(order.status)}>{statusLabel(order.status)}</StatusBadge>
+            <StatusBadge tone={statusTone(order.parseStatus)}>{statusLabel(order.parseStatus)}</StatusBadge>
+          </>
+        }
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <DeleteOrderButton orderId={id} returnToOrders size="toolbar" />
+          </div>
+        }
+      />
+
+      <PageContainer className="h-auto">
+        <div className="grid w-full [&>section+section:not(#so-documents)]:border-0 [&>section+section:not(#so-documents)]:border-t [&>section+section:not(#so-documents)]:border-solid [&>section+section:not(#so-documents)]:border-slate-200 [&>section]:min-w-0 [&>section]:py-3 [&>section:first-child]:pt-0 [&>section:last-child]:pb-0">
+          <section aria-labelledby="execution-timeline">
+            <ShippingFields orderId={id} formId={formId} fields={fields} referenceTime={Date.now()} voyageDetails={
+              <>
+                <div className="flex min-w-0 items-start gap-2">
+                  <Building2 size={15} aria-hidden="true" className="mt-0.5 shrink-0 text-slate-400" />
+                  <div className="grid min-w-0 content-start gap-1">
+                    <span className="text-xs text-slate-500">船公司</span>
+                    <span className="flex min-h-6 items-center break-words text-sm font-semibold text-slate-900">{order.carrier || "待核对"}</span>
+                  </div>
+                </div>
+                <div className="flex min-w-0 items-start gap-2">
+                  <Ship size={15} aria-hidden="true" className="mt-0.5 shrink-0 text-slate-400" />
+                  <div className="grid min-w-0 content-start gap-1">
+                    <span className="text-xs text-slate-500">船名／航次</span>
+                    <span className="flex min-h-6 items-center break-words text-sm font-semibold text-slate-900">
+                      {[order.vesselName, order.voyage].filter(Boolean).join(" / ") || "待核对"}
+                    </span>
+                  </div>
+                </div>
+              </>
+            } />
+          </section>
+
+          <ContainerAdjustmentForm orderId={id} soNumber={order.soNumber} initialContainers={containers} />
+          <section id="so-documents">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="m-0 flex items-center gap-2 text-base font-semibold text-slate-900">
+                <FileText size={18} aria-hidden="true" className="text-blue-600" />
+                单据版本
+              </h2>
+              <SoVersionUpload orderId={id} />
+            </div>
+            {order.files.length ? (
+              <div className="grid gap-2">
+                {order.files.map(file => (
+                  <SoFilePreview
+                    key={file.id}
+                    fileId={file.id}
+                    parseStatus={file.parseStatus}
+                    fileName={file.originalName}
+                    version={file.version}
+                    uploadedAt={formatChinaDateTime(file.createdAt)}
+                  />
+                ))}
+              </div>
+            ) : <p className="m-0 text-xs text-slate-500">暂无原始单据。</p>}
+            {order.versionChanges.map(change => {
+              const rows = versionChangeRows(change.changes);
+              return (
+                <div key={change.id} className="mt-3 rounded-lg border border-solid border-amber-200 bg-amber-50 p-3 text-xs">
+                  <h3 className="m-0 text-xs font-semibold text-amber-800">V{change.soFileVersion.version} 差异待确认</h3>
+                  {rows.length ? <ul className="my-2 pl-4">{rows.map(row => <li key={row.field}>{row.label}：{row.value}</li>)}</ul>
+                    : <p>本次版本包含待确认的业务信息更新。</p>}
+                  <p>柜型和柜量变化需在柜位配置中单独处理。</p>
+                  <ApplyVersionChangeButton url={`/api/orders/${id}/version-changes/${change.id}/apply`} />
+                </div>
+              );
+            })}
+          </section>
+          {Boolean(extraction?.parseReview?.conflictingFields?.length) && (
+            <section>
+              <AiReviewTable orderId={id} rows={aiRows} />
+              {ai?.siRuleStatus && (
+                <details className="mt-2 text-xs text-slate-600">
+                  <summary className="cursor-pointer">
+                    AI 补料条款 · {order.siCutoffSource === "NEEDS_REVIEW" || ai.siRuleStatus === "NEEDS_REVIEW" ? "待核对" : "已核验原文"}
+                  </summary>
+                  {ai.siRule && (
+                    <div className="mt-2 grid gap-1 [overflow-wrap:anywhere]">
+                      <p className="m-0">{ai.siRule.explanation}</p>
+                      <p className="m-0">航线依据　{ai.siRule.destinationEvidence}</p>
+                      <p className="m-0">条款原文　{ai.siRule.clauseEvidence}</p>
+                      <p className="m-0">截关依据　{ai.siRule.cutoffEvidence}</p>
+                    </div>
+                  )}
+                </details>
+              )}
+            </section>
+          )}
+        </div>
+      </PageContainer>
+    </main>
+  );
 }

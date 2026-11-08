@@ -1,5 +1,6 @@
 "use client";
 
+import { TABLE_EMPTY_MARKER, TablePlaceholder } from "@/components/ui/table-placeholder";
 import { TableHeader } from "@/components/ui/table-header";
 
 import { partnerStatementHeaders, partnerStatementCell } from "@/lib/settlement/partner-statement";
@@ -37,7 +38,7 @@ function cell(line: any, label: string, index: number) {
   if (numeric(label)) return money(amount(line, label));
   const plan = line.transportTask?.loadingPlan;
   const values: Record<string, unknown> = { 序号: index + 1, 日期: String(line.businessDate || "").slice(0, 10), 工厂名称: plan?.factory?.name, 订舱号: plan?.soOrder?.soNumber, 柜号: line.containerUnit?.containerNo, 柜型: line.containerUnit?.containerType, 行驶路线: line.route?.name, 车牌号: line.transportLeg?.vehicleNo || line.transportLeg?.vehicle?.plateNumber, 备注: line.priceSnapshot?.note || line.transportLeg?.note };
-  return String(values[label] ?? "—");
+  return String(values[label] ?? TABLE_EMPTY_MARKER);
 }
 export function BillLinesTable({ bill, items, offset, editable }: { bill: any; items: any[]; offset: number; editable: boolean }) {
   const { showConfirm, confirmationDialog } = useConfirm();
@@ -63,11 +64,13 @@ export function BillLinesTable({ bill, items, offset, editable }: { bill: any; i
   const driverTags = (line: any, labels: string[]) => <div className={css.feeTags}>{labels.map(label => <StatusTag key={label} text={`${label} ${driverValue(line, label)}`} />)}</div>;
   const driverSum = (label: string) => {
     const values = bill.lines.map((line: any) => valueCell(line, label, 0)).filter((value: unknown) => typeof value === "bigint") as bigint[];
-    return values.length ? money(values.reduce((sum, value) => sum + value, 0n)) : "—";
+    return values.length ? money(values.reduce((sum, value) => sum + value, 0n)) : TABLE_EMPTY_MARKER;
   };
+  const freightLabel = partner ? "司机运费" : "付运费";
+  const moneyCell = (value: string | number, heading: string) => value === TABLE_EMPTY_MARKER ? <TablePlaceholder heading={heading} /> : value;
   if (bill.billType === "DRIVER" || partner) return <div className={css.root}>{confirmationDialog}
     {error && <p role="alert">{error}</p>}
-    <p className={css.hint}>作业明细 · 金额单位：元 · 合计涵盖全部明细 · — 表示未记录</p>
+    <p className={css.hint}>作业明细 · 金额单位：元 · 合计涵盖全部明细 · {TABLE_EMPTY_MARKER} 表示未记录</p>
     <div className={css.scroll} role="region" aria-label={partner ? "合作车明细" : "司机工资明细"}>
       <table className={`${css.table} ${css.compact}`}>
         <caption className={css.srOnly}>司机工资明细（紧凑模式）</caption>
@@ -78,12 +81,12 @@ export function BillLinesTable({ bill, items, offset, editable }: { bill: any; i
           <td>{driverValue(line, "做柜日期")}<div className={css.secondary}>{driverValue(line, partner ? "装卸地点" : "行驶路线")}</div></td>
           <td><div className={css.container}>{driverValue(line, "柜号")}<StatusTag text={String(driverValue(line, "柜型"))} /></div>{!partner && <div className={css.secondary}>{driverValue(line, "订舱号")}</div>}</td>
           <td>{!partner && <>{driverValue(line, "工厂名称")}<div className={css.secondary}>工作号：{driverValue(line, "工作号")}</div></>}<div className={css.secondary}>公里数：{driverValue(line, "公里数")}</div></td>
-          <td className={css.number}>{driverValue(line, partner ? "司机运费" : "付运费")}</td>
+          <td className={css.number}>{moneyCell(driverValue(line, freightLabel), freightLabel)}</td>
           <td>{driverTags(line, feeLabels)}</td>
-          <td className={`${css.number} ${css.strong}`}>{driverValue(line, "小计")}</td>
+          <td className={`${css.number} ${css.strong}`}>{moneyCell(driverValue(line, "小计"), "小计")}</td>
           <td><button className={css.remove} disabled={!editable || busy !== null} onClick={() => remove(line)}>{busy === line.id ? "移除中…" : "移除"}</button></td>
         </tr>)}</tbody>
-        {bill.lines.length > 0 && <tfoot><tr><td>合计</td><td>{legCount} 个运段</td><td>{bill.lines.length} 条明细</td><td /><td className={css.number}>{driverSum(partner ? "司机运费" : "付运费")}</td><td><div className={css.feeTags}>{feeLabels.map(label => <StatusTag key={label} text={`${label} ${driverSum(label)}`} />)}</div></td><td className={`${css.number} ${css.strong}`}>{driverSum("小计")}</td><td /></tr></tfoot>}
+        {bill.lines.length > 0 && <tfoot><tr><td>合计</td><td>{legCount} 个运段</td><td>{bill.lines.length} 条明细</td><td /><td className={css.number}>{moneyCell(driverSum(freightLabel), freightLabel)}</td><td><div className={css.feeTags}>{feeLabels.map(label => <StatusTag key={label} text={`${label} ${driverSum(label)}`} />)}</div></td><td className={`${css.number} ${css.strong}`}>{moneyCell(driverSum("小计"), "小计")}</td><td /></tr></tfoot>}
       </table>
       <DriverStatementTable partner={partner} className={`${css.table} ${css.expanded}`} items={items} allItems={bill.lines} offset={offset} actions={line => <div><button className={css.remove} disabled={!editable || busy !== null} onClick={() => remove(line)}>{busy === line.id ? "移除中…" : "移除"}</button></div>} />
       {!bill.lines.length && <EmptyState title="暂无已入账明细">添加待结算运段后显示司机作业明细。</EmptyState>}

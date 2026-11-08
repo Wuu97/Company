@@ -20,13 +20,14 @@ type DateTimeInputProps = Omit<
   value: string;
   onValueChange: (value: string) => void;
   onCommit?: (value: string) => void;
+  allowDateOnly?: boolean;
 };
 
-type DateTimeFieldProps = InputHTMLAttributes<HTMLInputElement>;
+type DateTimeFieldProps = InputHTMLAttributes<HTMLInputElement> & { allowDateOnly?: boolean };
 
-function splitValue(value: string) {
-  const match = /^(\d{4}-\d{2}-\d{2})(?:T| )(\d{2}:\d{2})$/.exec(value);
-  return { date: match?.[1] || "", time: match?.[2] || "" };
+function splitValue(value: string, allowDateOnly: boolean) {
+  const match = /^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2}))?$/.exec(value);
+  return { date: match && (match[2] || allowDateOnly) ? match[1] : "", time: match?.[2] || "" };
 }
 
 function validDate(value: string) {
@@ -45,8 +46,10 @@ function validTime(value: string) {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 }
 
-function combine(date: string, time: string) {
-  return validDate(date) && validTime(time) ? `${date}T${time}` : "";
+function combine(date: string, time: string, allowDateOnly: boolean) {
+  if (!validDate(date)) return "";
+  if (validTime(time)) return `${date}T${time}`;
+  return allowDateOnly && !time ? date : "";
 }
 
 function dayKey(date: Date) {
@@ -176,11 +179,13 @@ function TimePopover({
   value,
   onSelect,
   onClose,
+  allowDateOnly,
 }: {
   anchor: HTMLElement;
   value: string;
   onSelect: (time: string) => void;
   onClose: () => void;
+  allowDateOnly: boolean;
 }) {
   const initial = validTime(value) ? value : "00:00";
   const [hour, setHour] = useState(initial.slice(0, 2));
@@ -282,6 +287,7 @@ function TimePopover({
           />
         </div>
         <div className={styles.timeActions}>
+          {allowDateOnly && <button type="button" onClick={() => { onSelect(""); onClose(); }}>清除</button>}
           <button type="button" onClick={onClose}>
             取消
           </button>
@@ -301,6 +307,7 @@ export const DateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
       value,
       onValueChange,
       onCommit,
+      allowDateOnly = false,
       className,
       disabled,
       required,
@@ -311,7 +318,7 @@ export const DateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
     },
     ref,
   ) {
-    const { date: valueDate, time: valueTime } = splitValue(value);
+    const { date: valueDate, time: valueTime } = splitValue(value, allowDateOnly);
     const [date, setDate] = useState(valueDate);
     const [time, setTime] = useState(valueTime);
     const [open, setOpen] = useState(false);
@@ -324,25 +331,29 @@ export const DateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
     const inputId = useId();
 
     useEffect(() => {
+      const current = currentRef.current;
+      if (allowDateOnly && value === combine(current.date, current.time, allowDateOnly)) return;
       setDate(valueDate);
       setTime(valueTime);
       currentRef.current = { date: valueDate, time: valueTime };
-    }, [valueDate, valueTime]);
+    }, [allowDateOnly, value, valueDate, valueTime]);
     useEffect(() => {
       dateInputRef.current?.setCustomValidity(
-        required && !validTime(time) ? "请选择时间。" : "",
+        allowDateOnly
+          ? (date || time) && !validDate(date) ? "请输入有效日期。" : ""
+          : required && !validTime(time) ? "请选择时间。" : "",
       );
-    }, [required, time]);
+    }, [allowDateOnly, date, required, time]);
     const update = (nextDate: string, nextTime: string) => {
       currentRef.current = { date: nextDate, time: nextTime };
       setDate(nextDate);
       setTime(nextTime);
-      onValueChange(combine(nextDate, nextTime));
+      onValueChange(combine(nextDate, nextTime, allowDateOnly));
     };
     const commit = (
       nextDate = currentRef.current.date,
       nextTime = currentRef.current.time,
-    ) => onCommit?.(combine(nextDate, nextTime));
+    ) => onCommit?.(combine(nextDate, nextTime, allowDateOnly));
     const handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
       onBlur?.(event);
       window.setTimeout(() => {
@@ -356,7 +367,7 @@ export const DateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
       }, 0);
     };
     const invalid = Boolean(
-      (date || time) && (!validDate(date) || !validTime(time)),
+      (date || time) && !combine(date, time, allowDateOnly),
     );
 
     return (
@@ -428,13 +439,13 @@ export const DateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
             <i aria-hidden="true">◷</i>
           </button>
         </div>
-        <input type="hidden" name={name} value={combine(date, time)} />
+        <input type="hidden" name={name} value={combine(date, time, allowDateOnly)} />
         {open && calendarButtonRef.current && (
           <CalendarPopover
             anchor={calendarButtonRef.current}
             value={date}
             onSelect={(nextDate) => {
-              const nextTime = time || "00:00";
+              const nextTime = allowDateOnly ? (nextDate ? time : "") : time || "00:00";
               update(nextDate, nextTime);
               window.setTimeout(() => commit(nextDate, nextTime), 0);
             }}
@@ -445,6 +456,7 @@ export const DateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
           <TimePopover
             anchor={timeButtonRef.current}
             value={time}
+            allowDateOnly={allowDateOnly}
             onSelect={(nextTime) => {
               update(date, nextTime);
               window.setTimeout(() => commit(date, nextTime), 0);

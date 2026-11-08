@@ -1,4 +1,5 @@
 "use client";
+import { TABLE_EMPTY_MARKER } from "@/components/ui/table-placeholder";
 import { ContainerTags, CountedNote, UnitInput, RouteNodes } from "./rate-form-fields";
 import { AppPagination } from "@/components/ui/app-pagination";
 import { useListPagination } from "@/components/ui/use-list-pagination";
@@ -248,13 +249,13 @@ export function RouteManagementClient({
   const priceFor = (r: Route) => r.prices.find((p: any) => p.billType === type && (type !== "CUSTOMER" || !customerId || (p.scope === "OBJECT" && p.customerId === customerId)) && (type !== "DRIVER" || !driverId || !p.driverId || p.driverId === driverId) && (type !== "PARTNER" || !fleetOwnerId || !p.fleetOwnerId || p.fleetOwnerId === fleetOwnerId));
   const columns: DataTableColumn<Route>[] = [
     { key: "name", minWidth: 205, align: "left", title: tab === "partner" ? "装卸地点" : "行驶路线", dataIndex: "name", render: (_, r) => <span className={styles.cellText} title={r.name}>{r.name}</span> },
-    ...(tab !== "partner" ? [{ key: "factory", minWidth: 205, align: "left" as const, title: "工厂名称", render: (_: unknown, r: Route) => { const price = priceFor(r); const name = price?.factory?.name || price?.customer?.factories?.[0]?.name || "—"; return <span className={styles.cellText} title={name}>{name}</span>; } }] : []),
-    { key: "container", width: 120, align: "center", title: "柜型", render: (_, r) => (tab === "partner" ? r.applicableContainerTypes : priceFor(r)?.applicableContainerTypes)?.join("、") || "—" },
+    ...(tab !== "partner" ? [{ key: "factory", minWidth: 205, align: "left" as const, title: "工厂名称", render: (_: unknown, r: Route) => { const price = priceFor(r); const name = price?.factory?.name || price?.customer?.factories?.[0]?.name; return name ? <span className={styles.cellText} title={name}>{name}</span> : TABLE_EMPTY_MARKER; } }] : []),
+    { key: "container", width: 120, align: "center", title: "柜型", render: (_, r) => (tab === "partner" ? r.applicableContainerTypes : priceFor(r)?.applicableContainerTypes)?.join("、") || TABLE_EMPTY_MARKER },
     ...(tab === "partner" ? [
       { key: "kilometers", title: "公里数", width: 110, dataIndex: "standardKilometers", type: "number" as const },
       { key: "toll", title: "路桥费", width: 150, dataIndex: "standardToll", type: "money" as const },
       { key: "fuel", title: "油费", width: 150, dataIndex: "standardFuel", type: "money" as const },
-    ] : [{ key: "price", width: 150, align: "right" as const, title: tab === "driver" ? "付运费" : "运费", type: "money" as const, render: (_: unknown, r: Route) => { const value = priceFor(r)?.unitPrice; return value == null ? "—" : new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY" }).format(Number(value)); } }]),
+    ] : [{ key: "price", width: 150, align: "right" as const, title: tab === "driver" ? "付运费" : "运费", type: "money" as const, render: (_: unknown, r: Route) => { const value = priceFor(r)?.unitPrice; return value == null ? TABLE_EMPTY_MARKER : new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY" }).format(Number(value)); } }]),
     { key: "status", title: "状态", width: 120, align: "center", render: (_, r) => <StatusBadgeSwitch active={r.active} label="路线状态" confirmation="both" onChange={active => toggleRoute(r, active)} /> },
   ];
   return (

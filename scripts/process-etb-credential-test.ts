@@ -1,5 +1,5 @@
 import { manualSessions } from "../src/lib/etb-manual-session";
-import { acceptShekouAgreement } from "../src/lib/shekou-login";
+import { acceptEtbLoginAgreement } from "../src/lib/etb-login-agreement";
 import { chromium, type BrowserContext, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -53,9 +53,7 @@ export async function processCredentialTestRun(id: string) {
     await password.waitFor({ state: "visible", timeout: 15_000 });
     if (!await username.count() || !await password.count() || !await submit.count()) throw new Error("无法识别登录表单；该平台选择器尚未完成技术验证");
     await username.fill(credential.username); await password.fill(credential.password);
-    if (run.terminal === "蛇口") {
-      await acceptShekouAgreement(page);
-    }
+    await acceptEtbLoginAgreement(page, run.terminal === "蛇口");
     await submit.click(); await page.waitForTimeout(3000);
     const image = await screenshot(page, id);
     const body = await page.locator("body").innerText();

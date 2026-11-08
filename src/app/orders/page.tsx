@@ -1,31 +1,37 @@
 import type { Prisma } from "@prisma/client";
 import { Download, FileText } from "lucide-react";
 import { DeleteOrderButton } from "@/components/delete-order-button";
-import { OrderStatusTag, ParseStatusTag } from "@/components/order-status-form";
+import { DataTable } from "@/components/ui/data-table";
+import { TableBody } from "@/components/ui/table-body";
+import { TableHeader } from "@/components/ui/table-header";
+import { OrderCustomerAction } from "./order-customer-action";
+import { OrderStatusAction } from "./order-status-action";
 import { ParsePendingButton } from "@/components/parse-pending-button";
 import { OrdersFilter } from "@/components/orders-filter";
+import { PageContainer } from "@/components/ui/page-container";
 import { Pagination } from "@/components/ui/pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { prisma } from "@/lib/prisma";
 import { cutoffOptions, orderCutoffStatus, orderSearchConditions } from "@/lib/so-order-filters";
 import { soReviewReasons } from "@/lib/so-review-task";
 import { statusLabel, statusTone } from "@/lib/status-labels";
-import { formatOperationalTimeText } from "@/lib/time";
+import { formatOperationalTimeText, resolveOpeningTime } from "@/lib/time";
 import { OrderUploadActions, OrderUploadButton } from "./order-upload-actions";
 
 const columns = [
   "SO 编号 / 提单号",
-  "船公司 / 航次",
+  "船名 / 航次",
   "箱型箱量",
-  "柜号",
+  "开仓时间",
+  "补料时间",
+  "截关时间",
   "合作客户",
-  "截港时间",
   "流转状态",
   "操作",
 ];
 
-const cell = "px-4 py-3 align-top";
-const secondary = "mt-0.5 block text-xs text-slate-500";
+const columnWidths = [15, 14, 8, 11, 11, 11, 10, 9, 11];
+const cell = "px-4 py-3 text-left! [overflow-wrap:anywhere]";
 
 type OrderExtraction = {
   containers?: { containerType?: string; quantity?: number }[];
@@ -96,8 +102,7 @@ export default async function Orders({
     customer: { select: { name: true } },
     containers: {
       where: { active: true },
-      select: { containerType: true, containerNo: true, internalCode: true },
-      orderBy: { internalCode: "asc" as const },
+      select: { containerType: true },
     },
     files: {
       orderBy: { version: "desc" as const },
@@ -159,30 +164,43 @@ export default async function Orders({
         </div>
       </header>
 
-      <section aria-label="订单列表" className="min-w-0 rounded-lg border border-solid border-slate-200/90 bg-white shadow-xs">
-        <div className="border-0 border-b border-solid border-slate-100 p-4">
+      <PageContainer
+        filter={
           <OrdersFilter
             q={q}
             status={status}
-            cutoff={cutoff}
+            parseStatus={reviewOnly && parseStatus !== "PARSED" ? undefined : parseStatus}
             customerId={input.customerId}
             customers={customers}
             reviewOnly={reviewOnly}
           />
-        </div>
-
-        <div className="overflow-x-auto [container-type:inline-size]">
-          <table aria-label={reviewOnly ? "待复核 SO" : "SO 订单"} className="w-full min-w-[960px] border-collapse text-[13px] text-slate-700">
-            <thead className="bg-slate-50">
+        }
+        pagination={total > pageSize && (
+          <Pagination
+            pageSize={pageSize}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            total={total}
+            href={page => href(input, page)}
+            label="订单分页"
+          />
+        )}
+      >
+        <div className="[container-type:inline-size] [&_[data-table-surface]]:rounded-none [&_[data-table-surface]]:border-0">
+          <DataTable mobileHint={null} aria-label={reviewOnly ? "待复核 SO" : "SO 订单"} className="w-full min-w-[1280px] table-fixed border-collapse">
+            <colgroup>
+              {columns.map((column, index) => <col key={column} style={{ width: `${columnWidths[index]}%` }} />)}
+            </colgroup>
+            <TableHeader className="bg-slate-50">
               <tr>
-                {columns.map(column => (
-                  <th key={column} scope="col" className="px-4 py-3 text-left text-xs font-medium text-slate-500">
+                {columns.map((column, index) => (
+                  <th key={column} scope="col" className={`px-4 py-3 text-slate-500 ${index < columns.length - 2 ? "text-left!" : ""}`}>
                     {column}
                   </th>
                 ))}
               </tr>
-            </thead>
-            <tbody>
+            </TableHeader>
+            <TableBody>
               {orders.map(order => {
                 const extraction = order.files[0]?.rawExtraction as OrderExtraction | undefined;
                 const review = soReviewReasons(extraction?.parseReview);
@@ -195,45 +213,48 @@ export default async function Orders({
                   ?.filter(item => item.containerType && item.quantity)
                   .map(item => `${item.quantity} × ${item.containerType}`);
                 const quantities = confirmed.length ? confirmed : parsed;
+                const opening = resolveOpeningTime(order.openingText, order.portCutoffText);
+                const siTime = order.siCutoffSource !== "NEEDS_REVIEW" && order.siCutoffText
+                  ? formatOperationalTimeText(order.siCutoffText)
+                  : null;
                 const cutoffTime = order.portCutoffText && formatOperationalTimeText(order.portCutoffText);
                 return (
                   <tr key={order.id} className="border-0 border-b border-solid border-slate-100 last:border-b-0 hover:bg-slate-50/70">
                     <td className={cell}>
-                      <a className="font-medium text-blue-700 no-underline hover:underline" href={`/orders/${order.id}`}>
+                      <a className="font-medium text-blue-700 underline" href={`/orders/${order.id}`}>
                         {order.soNumber}
                       </a>
-                      {review.length > 0 && <span className="mt-1 block text-xs text-amber-700">需核对：{review.join("；")}</span>}
+                      {review.length > 0 && <span className="mt-1 block text-[11px] leading-4 text-amber-700">{review.join("；")}</span>}
                     </td>
                     <td className={cell}>
-                      {order.carrier || "待核对"}
-                      <span className={secondary}>{[order.vesselName, order.voyage].filter(Boolean).join(" / ") || "待核对"}</span>
+                      {[order.vesselName, order.voyage].filter(Boolean).join(" / ") || "待核对"}
                     </td>
                     <td className={cell}>{quantities?.join("；") || "待核对"}</td>
                     <td className={cell}>
-                      {order.containers.length
-                        ? order.containers.map(container => (
-                            <span key={container.internalCode} className="block whitespace-nowrap">
-                              {container.containerNo || container.internalCode}
-                            </span>
-                          ))
-                        : "待补充"}
+                      {opening?.value || "待核对"}
+                      {opening?.source === "SYSTEM_ESTIMATED" && <small className="block text-xs text-slate-500">系统推算</small>}
                     </td>
-                    <td className={cell}>{order.customer?.name || "待匹配客户"}</td>
-                    <td className={`${cell} whitespace-nowrap`}>{cutoffTime || "待核对"}</td>
                     <td className={cell}>
-                      <div className="flex flex-wrap items-center gap-1">
-                        <OrderStatusTag orderId={order.id} status={order.status} />
-                        {order.parseStatus === "PARSED" || order.parseStatus === "VERIFIED"
-                          ? <ParseStatusTag orderId={order.id} status={order.parseStatus} />
-                          : <StatusBadge tone={statusTone(order.parseStatus)}>{statusLabel(order.parseStatus)}</StatusBadge>}
+                      {siTime || "待核对"}
+                      {siTime && order.siCutoffSource === "SYSTEM_ESTIMATED" && <small className="block text-xs text-slate-500">系统推算</small>}
+                    </td>
+                    <td className={cell}>{cutoffTime || "待核对"}</td>
+                    <td className={cell}>
+                      <OrderCustomerAction orderId={order.id} customerId={order.customerId} customerName={order.customer?.name} customers={customers} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap items-center justify-center gap-1">
+                        <StatusBadge tone={statusTone(order.status)}>{statusLabel(order.status)}</StatusBadge>
+                        <StatusBadge tone={statusTone(order.parseStatus)}>{statusLabel(order.parseStatus)}</StatusBadge>
                       </div>
                     </td>
-                    <td className={cell}>
-                      <div className="flex flex-wrap items-center gap-1.5">
+                    <td className="px-2 py-3">
+                      <div className="flex flex-wrap items-center justify-center gap-x-1">
+                        <OrderStatusAction orderId={order.id} soNumber={order.soNumber} status={order.status} parseStatus={order.parseStatus} />
                         {order.parseStatus === "PARSED" && (
-                          <ParsePendingButton orderId={order.id} reparse compact variant="secondary" size="small" />
+                          <ParsePendingButton orderId={order.id} reparse compact variant="text" size="small" />
                         )}
-                        <DeleteOrderButton orderId={order.id} size="small" />
+                        <DeleteOrderButton orderId={order.id} size="small" variant="text" className="text-slate-500 hover:text-rose-600" />
                       </div>
                     </td>
                   </tr>
@@ -257,23 +278,11 @@ export default async function Orders({
                   </td>
                 </tr>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </DataTable>
         </div>
 
-        {total > pageSize && (
-          <div className="border-0 border-t border-solid border-slate-100 px-4">
-            <Pagination
-              pageSize={pageSize}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              total={total}
-              href={page => href(input, page)}
-              label="订单分页"
-            />
-          </div>
-        )}
-      </section>
+      </PageContainer>
     </>
   );
 

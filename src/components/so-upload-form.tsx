@@ -1,122 +1,241 @@
 "use client";
 
-import businessStyles from "@/components/business.module.css";
-import { useEffect, useState } from "react";
+import { FileText, LoaderCircle, UploadCloud, XIcon } from "lucide-react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ParsePendingButton } from "@/components/parse-pending-button";
-import { userFeedback } from "@/lib/user-feedback";
 import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Dialog } from "@/components/ui/dialog";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
-import { FileUploadTrigger } from "@/components/ui/file-upload-trigger";
+import { userFeedback } from "@/lib/user-feedback";
 
 type ParseState = "PENDING" | "PROCESSING" | "PARSED" | "FAILED" | "VERIFIED";
-type BatchFile = { key: string; id?: string; name: string; source: File; upload: "uploading" | "success" | "error"; parseStatus?: ParseState; error?: string };
-const parseLabel: Record<ParseState, string> = { PENDING: "待识别", PROCESSING: "识别中", PARSED: "识别完成", FAILED: "识别失败", VERIFIED: "已核对" };
+type Entry = { key: string; source: File; id?: string; status?: ParseState; error?: string };
+const parseLabel: Record<ParseState, string> = {
+  PENDING: "待识别", PROCESSING: "识别中", PARSED: "识别完成", FAILED: "识别失败", VERIFIED: "已核对",
+};
 
-export function SoUploadForm({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [fileName, setFileName] = useState("");
-  const [batchFiles, setBatchFiles] = useState<BatchFile[]>([]);
-  const [expanded, setExpanded] = useState(false);
-  const [removingId, setRemovingId] = useState<string | null>(null);
-  const [confirmingRemoval, setConfirmingRemoval] = useState<BatchFile | null>(null);
-  const [parseStatus, setParseStatus] = useState<{ state: "running" | "success" | "error"; message: string } | null>(null);
-  const [parseProgress, setParseProgress] = useState<{ completed: number; total: number } | null>(null);
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+}
+
+export function SoUploadForm({ open, onClose, orderId }: { open: boolean; onClose: () => void; orderId?: string }) {
+  const versionUpload = Boolean(orderId);
+  const maxFiles = versionUpload ? 1 : 10;
+  const input = useRef<HTMLInputElement>(null);
+  const running = useRef(false);
   const router = useRouter();
-  const successfulFiles = batchFiles.filter(file => file.upload === "success" && file.id);
-  const uploadFailures = batchFiles.filter(file => file.upload === "error");
-  const parseFailures = successfulFiles.filter(file => file.parseStatus === "FAILED");
-  const recognizableFiles = successfulFiles.filter(file => file.parseStatus === "PENDING" || file.parseStatus === "FAILED");
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [phase, setPhase] = useState("");
+  const [error, setError] = useState("");
+  const [confirming, setConfirming] = useState<Entry | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const busy = Boolean(phase);
+  const selected = entries.filter(entry => !entry.id);
+  const ready = entries.filter(entry => !entry.id || entry.status === "PENDING" || entry.status === "FAILED" || entry.status === "PROCESSING");
+  const completed = entries.length - ready.length;
 
-  useEffect(() => { if (!message) return; const timeout = window.setTimeout(() => setMessage(""), 3500); return () => window.clearTimeout(timeout); }, [message]);
-  useEffect(() => { if (!batchFiles.length) setExpanded(false); }, [batchFiles.length]);
-  const patchFile = (key: string, patch: Partial<BatchFile>) => setBatchFiles(current => current.map(file => file.key === key ? { ...file, ...patch } : file));
-  const dismissFailedUpload = (key: string) => setBatchFiles(current => current.filter(file => file.key !== key));
+  function select(files: File[]) {
+    if (running.current || !files.length) return;
+    if (versionUpload && (files.length > 1 || entries.length > 0)) {
+      setError("重新上传每次只能选择 1 份 SO PDF。");
+      return;
+    }
+    if (files.some(file => !/\.pdf$/i.test(file.name))) {
+      setError("请选择 PDF 文件。");
+      return;
+    }
+    const known = new Set(entries.map(entry => entry.key));
+    const additions: Entry[] = [];
+    for (const source of files) {
+      const key = JSON.stringify([source.name, source.size, source.lastModified]);
+      if (known.has(key)) continue;
+      known.add(key);
+      additions.push({ key, source });
+    }
+    if (ready.length + additions.length > maxFiles) {
+      setError("单次最多选择 10 份 PDF。");
+      return;
+    }
+    setError("");
+    setEntries(current => [...current, ...additions]);
+  }
 
-  async function upload(files: File[], retryKey?: string) {
-    if (busy) return;
-    setBusy(true); setMessage(""); setParseStatus(null); setParseProgress(null);
-    const entries = retryKey ? batchFiles.filter(file => file.key === retryKey) : files.map((file, index) => ({ key: `${Date.now()}-${index}-${file.name}`, name: file.name, source: file, upload: "uploading" as const }));
-    if (retryKey) patchFile(retryKey, { upload: "uploading", error: undefined }); else setBatchFiles(current => [...current, ...entries]);
-    try { for (const entry of entries) {
-      setFileName(entry.name); const data = new FormData(); data.set("file", entry.source);
-      try {
-        const response = await fetch("/api/orders/upload", { method: "POST", body: data });
-        const result = await response.json().catch(() => null) as { id?: string; error?: string; parseStatus?: ParseState; reused?: boolean } | null;
-        if (!response.ok) { patchFile(entry.key, { upload: "error", error: result?.error || `上传请求失败（HTTP ${response.status}）` }); continue; }
-        if (!result?.id) throw new Error("上传服务返回的数据不完整，请稍后重试。");
-        setBatchFiles(current => {
-          const duplicate = current.some(file => file.key !== entry.key && file.id === result.id);
-          if (duplicate) return current.filter(file => file.key !== entry.key);
-          return current.map(file => file.key === entry.key ? { ...file, id: result.id, upload: "success" as const, parseStatus: result.parseStatus || "PENDING", error: undefined } : file);
-        });
-      } catch (error) { patchFile(entry.key, { upload: "error", error: error instanceof Error ? error.message : userFeedback.network }); }
-    }} finally { setFileName(""); setBusy(false); }
+  function update(key: string, patch: Partial<Entry>) {
+    setEntries(current => current.map(entry => entry.key === key ? { ...entry, ...patch } : entry));
+  }
+
+  async function start() {
+    if (running.current || !ready.length) return;
+    running.current = true;
+    setError("");
+    setPhase("正在准备文件…");
+    const ids = new Set<string>();
+    try {
+      for (const entry of ready) {
+        if (entry.id) {
+          ids.add(entry.id);
+          continue;
+        }
+        setPhase(`正在上传：${entry.source.name}`);
+        update(entry.key, { error: undefined });
+        try {
+          const data = new FormData();
+          data.set("file", entry.source);
+          if (orderId) data.set("soOrderId", orderId);
+          const response = await fetch("/api/orders/upload", { method: "POST", body: data });
+          const result = await response.json().catch(() => null) as { id?: string; parseStatus?: ParseState; error?: string } | null;
+          if (!response.ok || !result?.id) throw new Error(result?.error || "上传失败，请重试。");
+          const { id, parseStatus = "PENDING" } = result;
+          update(entry.key, { id, status: parseStatus });
+          if (parseStatus !== "PARSED" && parseStatus !== "VERIFIED") ids.add(id);
+        } catch (cause) {
+          update(entry.key, { error: cause instanceof Error ? cause.message : userFeedback.network });
+        }
+      }
+      if (!ids.size) return;
+      setPhase("正在识别订单信息…");
+      const fileIds = [...ids];
+      const response = await fetch("/api/orders/parse", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ fileIds }),
+      });
+      const result = await response.json().catch(() => null) as { failedCount?: number; error?: string } | null;
+      if (!response.ok) throw new Error(result?.error || "识别暂未完成，请重试。");
+
+      const progress = await fetch(`/api/orders/parse/progress?fileIds=${encodeURIComponent(fileIds.join(","))}`);
+      if (!progress.ok) throw new Error("暂时无法读取识别结果，请重试。");
+      const { files } = await progress.json() as { files: { id: string; parseStatus: ParseState }[] };
+      const statuses = new Map(files.map(file => [file.id, file.parseStatus]));
+      setEntries(current => current.map(entry => {
+        const status = entry.id && statuses.get(entry.id);
+        return status ? { ...entry, status } : entry;
+      }));
+      if (result?.failedCount) setError("部分文件识别失败，可点击「开始识别」重试。");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : userFeedback.network);
+    } finally {
+      if (ids.size) router.refresh();
+      running.current = false;
+      setPhase("");
+    }
   }
 
   async function removeUploaded() {
-    if (!confirmingRemoval?.id || removingId) return;
-    setRemovingId(confirmingRemoval.id);
+    if (!confirming?.id || removing) return;
+    setRemoving(true);
     try {
-      const response = await fetch(`/api/orders/upload/${confirmingRemoval.id}`, { method: "DELETE" });
-      if (response.ok) { setMessage(`“${confirmingRemoval.name}”已删除。`); setBatchFiles(current => current.filter(file => file.key !== confirmingRemoval.key)); setConfirmingRemoval(null); router.refresh(); }
-      else { const result = await response.json().catch(() => null) as { error?: string } | null; setMessage(result?.error || `删除失败（HTTP ${response.status}）。`); }
-    } catch { setMessage(userFeedback.network); } finally { setRemovingId(null); }
+      const response = await fetch(`/api/orders/upload/${confirming.id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const result = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(result?.error || "删除失败，请重试。");
+      }
+      setEntries(current => current.filter(entry => entry.id !== confirming.id));
+      setConfirming(null);
+      router.refresh();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : userFeedback.network);
+      setConfirming(null);
+    } finally {
+      setRemoving(false);
+    }
   }
 
-  function updateParseProgress(progress: { completed: number; total: number; files?: Array<{ id: string; parseStatus: string }> }) {
-    setParseProgress({ completed: progress.completed, total: progress.total });
-    if (!progress.files) return;
-    const statusById = new Map(progress.files.map(file => [file.id, file.parseStatus as ParseState]));
-    setBatchFiles(current => current.map(file => file.id && statusById.has(file.id) ? { ...file, parseStatus: statusById.get(file.id) } : file));
-  }
-
-  function handleParseStatus(status: { state: "running" | "success" | "error"; message: string }) {
-    setParseStatus(status);
-    if (status.state === "success") setExpanded(false);
-  }
-
-  async function retryRecognition(file: BatchFile) {
-    if (!file.id) return;
-    setParseStatus({ state: "running", message: "正在识别订单信息…" }); setParseProgress({ completed: 0, total: 1 }); patchFile(file.key, { parseStatus: "PROCESSING" });
-    try {
-      const response = await fetch("/api/orders/parse", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ fileIds: [file.id] }) });
-      const result = await response.json().catch(() => null) as { failedCount?: number; error?: string } | null;
-      if (!response.ok) throw new Error(result?.error || "订单信息暂未识别完成，请稍后重试。");
-      patchFile(file.key, { parseStatus: result?.failedCount ? "FAILED" : "PARSED" }); setParseStatus(result?.failedCount ? { state: "error", message: "识别失败，请重试或检查文件内容。" } : { state: "success", message: "订单信息识别完成。" }); setParseProgress({ completed: 1, total: 1 }); router.refresh();
-    } catch (error) { patchFile(file.key, { parseStatus: "FAILED" }); setParseStatus({ state: "error", message: error instanceof Error ? error.message : "订单信息暂未识别完成，请稍后重试。" }); }
+  function close() {
+    setEntries(current => current.filter(entry => entry.id));
+    setError("");
+    onClose();
   }
 
   if (!open) return null;
-  const closeDisabled = busy || parseStatus?.state === "running" || confirmingRemoval !== null;
-  return <Dialog
-    title="导入 SO 单据"
-    subtitle="可同时上传多份 PDF，上传后可识别订单信息。"
-    onClose={onClose}
-    closeDisabled={closeDisabled}
-    actions={<Button variant="secondary" disabled={closeDisabled} onClick={onClose}>关闭</Button>}
-  >
-    <div className={businessStyles["so-upload__actions"]}>
-      <div className={businessStyles["so-upload__controls"]}>
-        <FileUploadTrigger variant="secondary" size="toolbar" className={businessStyles["so-upload__trigger"]} name="file" accept=".pdf,application/pdf" multiple busy={busy} onChange={event => { const files = Array.from(event.target.files || []); event.target.value = ""; if (files.length) void upload(files); }}>{busy ? "正在上传…" : "上传 SO 文件"}</FileUploadTrigger>
-        <ParsePendingButton variant="primary" size="toolbar" fileIds={recognizableFiles.map(file => file.id!)} requireFiles reloadOnComplete={false} onStatusChange={handleParseStatus} onProgressChange={updateParseProgress} />
-      </div>
-      <div className={businessStyles["so-upload__status"]}>
-        {busy && fileName ? <StatusMessage tone="loading" text={`正在上传：${fileName}`} /> : <StatusMessage tone={uploadFailures.length || parseFailures.length ? "error" : "info"} text={`文件 ${batchFiles.length} · 上传成功 ${successfulFiles.length} · 上传失败 ${uploadFailures.length}${parseFailures.length ? ` · 识别失败 ${parseFailures.length}` : ""}`} />}
-        {batchFiles.length > 0 && <Button type="button" variant="text" className={businessStyles["so-upload__toggle"]} onClick={() => setExpanded(value => !value)}>{expanded ? "收起列表 ▲" : "查看文件 ▼"}</Button>}
-      </div>
-    </div>
-    {parseStatus?.state === "running" && parseProgress && <div className={businessStyles["so-upload__progress"]} role="progressbar" aria-valuemin={0} aria-valuemax={parseProgress.total} aria-valuenow={parseProgress.completed}><span>正在识别：{parseProgress.completed} / {parseProgress.total}</span><i><b style={{ width: `${parseProgress.total ? parseProgress.completed / parseProgress.total * 100 : 0}%` }} /></i></div>}
-    {expanded && batchFiles.length > 0 && <div className={businessStyles["so-upload__files"]}><ul>{batchFiles.map(file => <li key={file.key}><span title={file.name}>{file.name}</span><em className={file.upload === "error" || file.parseStatus === "FAILED" ? businessStyles["so-upload__file-error"] : undefined}>{file.upload === "uploading" ? "上传中" : file.upload === "error" ? `上传失败：${file.error}` : parseLabel[file.parseStatus || "PENDING"]}</em>{file.upload === "error" ? <><Button type="button" size="small" variant="secondary" onClick={() => void upload([file.source], file.key)}>重试</Button><Button type="button" size="small" variant="danger" className={businessStyles["so-upload__remove"]} onClick={() => dismissFailedUpload(file.key)}>删除</Button></> : file.parseStatus === "FAILED" ? <Button type="button" size="small" variant="text" onClick={() => void retryRecognition(file)}>重试识别</Button> : file.parseStatus === "PENDING" ? <Button type="button" size="small" variant="danger" className={businessStyles["so-upload__remove"]} disabled={removingId !== null} onClick={() => setConfirmingRemoval(file)}>删除</Button> : null}</li>)}</ul></div>}
-    {confirmingRemoval && <DeleteConfirmDialog title="确认删除此上传？" busy={removingId === confirmingRemoval.id} onClose={() => setConfirmingRemoval(null)} onConfirm={removeUploaded}><p>将删除“{confirmingRemoval.name}”及其待识别 SO，且无法恢复。</p></DeleteConfirmDialog>}
-  </Dialog>;
-}
+  const closeDisabled = busy || confirming !== null;
 
-function StatusMessage({ tone, text }: { tone: "loading" | "success" | "error" | "info"; text: string }) {
-  return <span className={[businessStyles["so-upload__status-message"], businessStyles[`so-upload__status-message--${tone}`]].join(" ")} title={text} role={tone === "error" ? "alert" : "status"}>
-    {tone === "loading" && <span className={businessStyles["so-upload__status-icon"]} aria-hidden="true" />}
-    <span className={businessStyles["so-upload__status-text"]}>{text}</span>
-  </span>;
+  return (
+    <Dialog
+      title={versionUpload ? "上传 SO 新版本" : "导入 SO 单据"}
+      subtitle={versionUpload ? "每次上传一份 PDF，原有文件和版本记录会保留。" : "支持批量上传 PDF 订舱单，导入后系统将自动识别并核对字段"}
+      onClose={close}
+      closeDisabled={closeDisabled}
+      actions={
+        <>
+          <Button size="toolbar" variant="secondary" disabled={closeDisabled} onClick={close}>
+            取消
+          </Button>
+          <Button size="toolbar" disabled={closeDisabled || !ready.length} onClick={() => void start()}>
+            {busy && <LoaderCircle size={14} className="animate-spin" aria-hidden="true" />}
+            {busy ? "处理中…" : `开始识别 (${ready.length})`}
+          </Button>
+        </>
+      }
+    >
+      <input ref={input} type="file" hidden accept=".pdf,application/pdf" multiple={!versionUpload} disabled={closeDisabled} onChange={event => {
+        select(Array.from(event.currentTarget.files ?? []));
+        event.currentTarget.value = "";
+      }} />
+      <button
+        type="button"
+        disabled={closeDisabled}
+        onClick={() => input.current?.click()}
+        onDragOver={event => event.preventDefault()}
+        onDrop={event => {
+          event.preventDefault();
+          select(Array.from(event.dataTransfer.files));
+        }}
+        className="flex w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50/50 p-5 transition-colors hover:border-blue-400 hover:bg-blue-50/30 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <UploadCloud size={18} className="text-slate-400" aria-hidden="true" />
+        <span className="text-xs font-medium text-slate-700">点击或将 SO 文件拖拽至此处</span>
+        <span className="mt-0.5 text-[11px] text-slate-400">支持 PDF，单次最多 {maxFiles} 份</span>
+      </button>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+        <span className="rounded-full bg-slate-100 px-2 py-1">已选 {selected.length} 份</span>
+        {completed > 0 && <span>已完成 {completed} 份</span>}
+        {selected.length > 0 && (
+          <button type="button" disabled={closeDisabled} onClick={() => {
+            setEntries(current => current.filter(entry => entry.id));
+            setError("");
+          }} className="ml-auto cursor-pointer border-0 bg-transparent text-xs text-slate-400 transition-colors hover:text-rose-500 disabled:opacity-50">清空</button>
+        )}
+      </div>
+      {phase && <div role="status" className="mt-2 break-all text-xs text-slate-600">{phase}</div>}
+      {error && <div role="alert" className="mt-2 text-xs text-red-700">{error}</div>}
+      {entries.length > 0 && (
+        <ul className="m-0 mt-2 box-border max-h-[160px] list-none overflow-y-auto p-0 pr-1 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]">
+          {entries.map(entry => (
+            <li key={entry.key} className="flex items-center justify-between rounded-md border-0 border-b border-solid border-slate-100 p-2 transition-colors last:border-0 hover:bg-slate-50">
+              <div className="mr-3 flex min-w-0 flex-1 items-center">
+                <FileText size={16} className="mr-2 shrink-0 text-rose-500" aria-hidden="true" />
+                <span className="min-w-0 flex-1 truncate text-xs text-slate-700" title={entry.source.name}>{entry.source.name}</span>
+              </div>
+              <span className="mr-3 w-16 shrink-0 text-right font-mono text-[11px] whitespace-nowrap text-slate-400">
+                {formatFileSize(entry.source.size)}
+              </span>
+              <div className="grid shrink-0 grid-cols-[84px_24px] items-center justify-items-end gap-2">
+                <StatusBadge className={!entry.error && !entry.status ? "font-normal" : undefined} title={entry.error} tone={entry.error || entry.status === "FAILED" ? "critical" : entry.status === "PARSED" ? "success" : "muted"}>
+                  {entry.error ? "上传失败" : entry.status ? parseLabel[entry.status] : "待上传"}
+                </StatusBadge>
+                {(!entry.id || (!versionUpload && entry.status === "PENDING")) && (
+                  <button type="button" disabled={closeDisabled} aria-label={`移除 ${entry.source.name}`} onClick={() => {
+                    if (entry.id) setConfirming(entry);
+                    else setEntries(current => current.filter(file => file.key !== entry.key));
+                  }} className="inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-transparent p-0 text-slate-400 transition-colors hover:text-rose-500 disabled:cursor-not-allowed disabled:opacity-50">
+                    <XIcon size={14} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {confirming && (
+        <DeleteConfirmDialog title="确认删除此上传？" busy={removing} onClose={() => setConfirming(null)} onConfirm={removeUploaded}>
+          <p>将删除「{confirming.source.name}」及其待识别 SO，且无法恢复。</p>
+        </DeleteConfirmDialog>
+      )}
+    </Dialog>
+  );
 }

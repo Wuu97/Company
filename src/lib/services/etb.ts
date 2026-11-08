@@ -18,7 +18,6 @@ export async function recordEtbObservationInTransaction(tx: Prisma.TransactionCl
   const {note, actor, ...observationInput}=input;
   const observation=await tx.sailingObservation.create({data:{...observationInput,status:isSame?"IGNORED":"PENDING",reviewNote:note}});
   if(!isSame){
-   await tx.soOrder.updateMany({where:{sailingId:sailing.id},data:{etbText:formatChinaDateTime(input.etbAt),etbSource:input.source,etbObservedAt:new Date(),etbNeedsReview:true}});
    await tx.sailing.update({where:{id:sailing.id},data:{pendingEtbAt:input.etbAt,pendingEtbSource:input.source,pendingEtbObservedAt:new Date(),etbNeedsReview:true}});
    const orders=await tx.soOrder.findMany({where:{sailingId:sailing.id},select:{id:true}});
    await tx.soOrder.updateMany({where:{sailingId:sailing.id},data:{etbNeedsReview:true}});

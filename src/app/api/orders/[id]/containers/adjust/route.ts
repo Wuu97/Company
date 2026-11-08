@@ -9,6 +9,11 @@ const schema = z.object({
     containerType: z.string().trim().min(1).max(30),
     note: z.string().trim().max(300).optional(),
   })).min(1),
+  expectedContainers: z.array(z.object({
+    id: z.string().cuid(),
+    containerType: z.string(),
+    note: z.string().nullable(),
+  })).optional(),
 });
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {

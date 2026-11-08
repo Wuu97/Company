@@ -1,3 +1,5 @@
+import { WorkspaceMetrics } from "@/components/ui/workspace-metrics";
+import { TABLE_EMPTY_MARKER } from "@/components/ui/table-placeholder";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageContainer } from "@/components/ui/page-container";
@@ -174,15 +176,15 @@ export default async function Dashboard({
       id: order.id,
       soNumber: order.soNumber,
       vessel:
-        [order.vesselName, order.voyage].filter(Boolean).join(" / ") || "—",
+        [order.vesselName, order.voyage].filter(Boolean).join(" / ") || TABLE_EMPTY_MARKER,
       cargo:
         Array.from(types, ([type, count]) => `${type} × ${count}`).join("、") ||
-        "—",
+        TABLE_EMPTY_MARKER,
       containers:
         order.containers
           .map((box) => box.containerNo)
           .filter(Boolean)
-          .join("、") || "—",
+          .join("、") || TABLE_EMPTY_MARKER,
       steps,
       risks,
       pendingDispatch,
@@ -258,23 +260,7 @@ export default async function Dashboard({
       />
       <PageContainer className="p-0">
         <div className="dashboard-workspace flex min-h-full w-full flex-col xl:h-full">
-          <dl className="m-0 grid w-full shrink-0 grid-cols-2 border-b border-slate-200/80 lg:grid-cols-4">
-            {kpis.map(({ label, count, detail }, index) => (
-              <div
-                key={label}
-                className={`min-w-0 p-3.5 xl:p-4 2xl:p-5 ${index % 2 ? "border-l border-slate-100" : ""} ${index >= 2 ? "border-t border-slate-100 lg:border-t-0" : ""} ${index === 2 ? "lg:border-l" : ""}`}
-              >
-                <div className="min-w-0" title={detail}>
-                  <dt className="text-xs font-medium text-slate-500">
-                    {label}
-                  </dt>
-                  <dd className="mb-0 ml-0 mt-1 font-mono text-2xl font-bold tabular-nums text-slate-800 2xl:text-[28px]">
-                    {count}
-                  </dd>
-                </div>
-              </div>
-            ))}
-          </dl>
+          <WorkspaceMetrics metrics={kpis.map(({ label, count, detail }) => ({ label, value: count, detail }))} />
           <div className="flex min-h-[320px] flex-1 flex-col overflow-hidden xl:flex-row">
             <DashboardTasks
               rows={visibleRows}
@@ -340,7 +326,7 @@ export default async function Dashboard({
                       ({ id, terminal, finishedAt, resultCount }) => (
                         <li key={id} className="flex gap-2">
                           <time
-                            className="shrink-0 font-mono text-xs text-slate-400"
+                            className="shrink-0 text-xs text-slate-400"
                             dateTime={finishedAt?.toISOString()}
                           >
                             {finishedAt?.toLocaleTimeString("zh-CN", {

@@ -18,3 +18,19 @@ describe("SI 截止时间来源", () => {
     expect(resolveSiCutoff({ latestDeadlineText: "19/09/2026 16:00", otherCutoffTexts: ["18/09/2026 12:00"] })).toEqual({ source: "NEEDS_REVIEW" });
   });
 });
+
+describe("T.S. Lines 日本航线补料条款", () => {
+  it("按截关前一日中午计算，与截关时刻无关", () => {
+    expect(resolveSiCutoff({
+      latestDeadlineText: "22-Oct-2026 16:00",
+      rule: "PREVIOUS_DAY_NOON",
+    })).toMatchObject({ effectiveText: "2026-10-21 12:00", source: "SYSTEM_ESTIMATED" });
+  });
+
+  it("周末截关需要核对单独条款", () => {
+    expect(resolveSiCutoff({
+      latestDeadlineText: "25-Oct-2026 16:00",
+      rule: "PREVIOUS_DAY_NOON",
+    })).toEqual({ source: "NEEDS_REVIEW" });
+  });
+});

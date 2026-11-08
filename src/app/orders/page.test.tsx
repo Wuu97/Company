@@ -16,11 +16,11 @@ vi.stubGlobal("React", React);
 afterAll(() => vi.unstubAllGlobals());
 
 describe("SO orders table", () => {
-  it("keeps all eight column headers and the upload action when there are no matches", async () => {
+  it("keeps all nine column headers and the upload action when there are no matches", async () => {
     findMany.mockResolvedValueOnce([]);
     const html = renderToStaticMarkup(await Orders({ searchParams: Promise.resolve({ q: "missing" }) }));
-    expect(html.match(/scope="col"/g)).toHaveLength(8);
-    expect(html).toMatch(/<tbody><tr><td colSpan="8">/i);
+    expect(html.match(/scope="col"/g)).toHaveLength(9);
+    expect(html).toMatch(/<tbody[^>]*><tr><td colSpan="9">/i);
     expect(html).toContain("未找到符合条件的订单");
     expect(html.match(/导入 SO 单据/g)).toHaveLength(2);
   });

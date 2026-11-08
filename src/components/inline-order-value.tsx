@@ -7,10 +7,12 @@ import { InlineEditInput, InlineEditTrigger } from "@/components/ui/inline-edito
 import { DateTimeInput } from "@/components/ui/date-time-field";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { FilterSelect } from "@/components/ui/filter-select";
+import { validOperationalDateInput } from "@/lib/time";
 import styles from "./inline-order-value.module.css";
 
-type Field =
+export type InlineOrderField =
   | "customerId"
+  | "customerReference"
   | "carrier"
   | "vesselName"
   | "voyage"
@@ -22,7 +24,7 @@ type Field =
   | "etdText"
   | "emptyPickupLocation"
   | "fullReturnLocation";
-const timeFields = new Set<Field>([
+const timeFields = new Set<InlineOrderField>([
   "etbText",
   "openingText",
   "siCutoffText",
@@ -30,16 +32,6 @@ const timeFields = new Set<Field>([
   "etaText",
   "etdText",
 ]);
-const timePattern =
-  /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])(?: ([01]\d|2[0-3]):[0-5]\d)?$/;
-
-function validTime(value: string) {
-  const match = value.match(timePattern);
-  if (!match) return false;
-  const [, year, month, day] = match;
-  return Number(day) <= new Date(Number(year), Number(month), 0).getDate();
-}
-
 export function InlineOrderValue({
   orderId,
   field,
@@ -50,7 +42,7 @@ export function InlineOrderValue({
   className,
 }: {
   orderId: string;
-  field: Field;
+  field: InlineOrderField;
   display: string;
   value?: string;
   placeholder: string;
@@ -74,7 +66,7 @@ export function InlineOrderValue({
       setEditing(false);
       return;
     }
-    if (timeFields.has(field) && !validTime(trimmed)) {
+    if (timeFields.has(field) && !validOperationalDateInput(trimmed)) {
       const message = "请输入 YYYY-MM-DD，时间可选（YYYY-MM-DD HH:mm）。";
       setError(message);
       if (inputRef.current instanceof HTMLInputElement) {

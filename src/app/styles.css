@@ -101,6 +101,11 @@ summary:focus-visible {
   }
 }
 
+time,
+input:is([type="date"], [type="datetime-local"], [type="month"], [type="time"], [type="week"]) {
+  font-family: var(--font-family-ui);
+}
+
 /* Keep all button labels at regular weight, including nested label elements. */
 
 /* Shared geometry for content-centered dialogs and notifications. */
@@ -110,7 +115,7 @@ body {
   font-weight: var(--type-body-weight);
   line-height: var(--type-body-line-height);
   margin: 0;
-  font-family: Arial, "Microsoft YaHei", sans-serif;
+  font-family: var(--font-family-ui);
   background: #f5f7fa;
   color: #182230;
   display: flex;

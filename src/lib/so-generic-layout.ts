@@ -79,9 +79,7 @@ export function detectFieldConflict(candidates: FieldCandidate[]): FieldConflict
 }
 
 function containerType(size: string, kind: string) {
-  const upper = `${size}${kind}`.toUpperCase();
-  if (/^(20|40|45)(HC|HQ)$/.test(upper)) return `${upper.slice(0, 2)}HC`;
-  return upper;
+  return `${size}${kind}`.toUpperCase();
 }
 
 export function extractGenericLayout(text: string): GenericLayoutResult {

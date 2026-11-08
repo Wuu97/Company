@@ -1,3 +1,4 @@
+import { TABLE_EMPTY_MARKER, TablePlaceholder } from "@/components/ui/table-placeholder";
 import { TableBody } from "@/components/ui/table-body";
 import { TableHeader } from "@/components/ui/table-header";
 import { ArchiveFilterBar } from "./archive-filter-bar";
@@ -156,24 +157,23 @@ export async function CustomerFactoryList({
                       </span>
                     </td>
                     <td>
-                      <span
-                        className={styles.cellEllipsis}
-                        title={factory?.address}
-                      >
-                        {factory?.address || "—"}
-                      </span>
+                      {factory?.address ? (
+                        <span className={styles.cellEllipsis} title={factory.address}>{factory.address}</span>
+                      ) : <TablePlaceholder heading="工厂地址" />}
                     </td>
                     <td>
-                      <span>{factory?.contactName || "—"}</span>
-                      <span className={styles.customerCode}>
-                        {factory?.contactPhone ? (
-                          <a href={`tel:${factory.contactPhone}`}>
-                            {factory.contactPhone}
-                          </a>
-                        ) : (
-                          "—"
-                        )}
-                      </span>
+                      {factory?.contactName || factory?.contactPhone ? <>
+                        <span>{factory.contactName || TABLE_EMPTY_MARKER}</span>
+                        <span className={styles.customerCode}>
+                          {factory?.contactPhone ? (
+                            <a href={`tel:${factory.contactPhone}`}>
+                              {factory.contactPhone}
+                            </a>
+                          ) : (
+                            TABLE_EMPTY_MARKER
+                          )}
+                        </span>
+                      </> : <TablePlaceholder heading="联系人 / 电话" />}
                     </td>
                     {index === 0 && (
                       <td rowSpan={factories.length}>

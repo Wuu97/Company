@@ -15,6 +15,7 @@ export type CreateLoadingPlanInput = {
 export type AdjustContainersInput = {
   orderId: string;
   containers: Array<{ id?: string; containerType: string; note?: string }>;
+  expectedContainers?: Array<{ id: string; containerType: string; note: string | null }>;
   actor?: AuditActor;
 };
 
@@ -117,6 +118,13 @@ export async function adjustContainers(input: AdjustContainersInput) {
       tx.customerConfirmation.aggregate({ where: { soOrderId: input.orderId, status: { in: ["PARTIAL", "CONFIRMED"] } }, _sum: { quantity: true } }),
       tx.containerUnit.findMany({ where: { soOrderId: input.orderId, active: true }, orderBy: { internalCode: "asc" } }),
     ]);
+    if (input.expectedContainers) {
+      const expected = new Map(input.expectedContainers.map(item => [item.id, item]));
+      if (expected.size !== current.length || current.some(item => {
+        const previous = expected.get(item.id);
+        return previous?.containerType !== item.containerType || previous.note !== item.note;
+      })) throw new Error("柜位已被更新，请刷新页面后重试。");
+    }
     if (activePlanItems) throw new Error("存在生效装柜计划；请先调整或取消计划后再调整柜量。");
 
     const desiredTotal = input.containers.length;

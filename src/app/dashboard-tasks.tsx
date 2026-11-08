@@ -1,3 +1,4 @@
+import { TABLE_EMPTY_MARKER } from "@/components/ui/table-placeholder";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
@@ -34,7 +35,7 @@ const columns: DataTableColumn<WorkflowRow>[] = [
     key: "vessel",
     title: "船名航次",
     width: 150,
-    render: (_, row) => (
+    render: (_, row) => row.vessel === TABLE_EMPTY_MARKER ? TABLE_EMPTY_MARKER : (
       <span className="block whitespace-normal [overflow-wrap:anywhere]">
         {row.vessel}
       </span>

@@ -24,7 +24,7 @@ describe("generic SO table layout extraction", () => {
   });
   it("extracts month-name dates and flattened container table rows", () => {
     const result = extractGenericLayout("Booking No: BK-26002\nVessel/Voyage: OCEAN STAR / 8W12\nETD: 03-NOV-2026 18:30\nETA\n28.11.2026\nContainer summary\n2 40HQ\n1 20GP");
-    expect(result.fields).toMatchObject({ etdText: "03-NOV-2026 18:30", etaText: "28.11.2026", containers: [{ containerType: "40HC", quantity: 2 }, { containerType: "20GP", quantity: 1 }] });
+    expect(result.fields).toMatchObject({ etdText: "03-NOV-2026 18:30", etaText: "28.11.2026", containers: [{ containerType: "40HQ", quantity: 2 }, { containerType: "20GP", quantity: 1 }] });
   });
   it("keeps side-by-side loading and discharge ports distinct in flattened tables", () => {
     const result = extractGenericLayout("Port Of Loading(装货港)   Port Of Discharge(卸货港)\nSHEKOU, CHINA   INCHEON, KOREA");

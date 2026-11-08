@@ -43,7 +43,7 @@ export async function DashboardNotifications({ userId }: { userId: string }) {
                   {item.readAt ? "已读" : "未读"}
                 </StatusBadge>
                 <time
-                  className="font-mono text-xs text-slate-400"
+                  className="text-xs text-slate-400"
                   dateTime={item.createdAt.toISOString()}
                 >
                   {formatChinaDateTime(item.createdAt)}

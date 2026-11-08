@@ -1,5 +1,6 @@
 "use client";
 
+import { TablePlaceholder } from "./ui/table-placeholder";
 import { Button } from "./ui/button";
 import { useState, type ReactNode } from "react";
 import rowStyles from "./ui/table-body.module.css";
@@ -29,7 +30,7 @@ export function AuditExpandedRow({
               {open ? "收起 ⌃" : "查看 ⌄"}
             </Button>
           ) : (
-            <span className={styles.noDetail}>—</span>
+            <TablePlaceholder heading="字段变化" className={styles.noDetail} />
           )}
         </div>
       </div>

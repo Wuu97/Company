@@ -13,7 +13,7 @@ const columns: DataTableColumn<Row>[] = [
   { key: "actions", title: "操作", fixed: "right", width: 100, render: (_, row) => <button>{row.id}</button> }
 ];
 describe("shared business components", () => {
-  it("formats money and preserves missing values", () => { expect(formatTableMoney("12345.6")).toMatch(/[¥￥]12,345\.60/); expect(formatTableMoney(0)).toMatch(/[¥￥]0\.00/); expect(formatTableMoney(null)).toBe("—"); expect(formatTableMoney("invalid")).toBe("—"); });
+  it("formats money and preserves missing values", () => { expect(formatTableMoney("12345.6")).toMatch(/[¥￥]12,345\.60/); expect(formatTableMoney(0)).toMatch(/[¥￥]0\.00/); expect(formatTableMoney(null)).toBe("–"); expect(formatTableMoney("invalid")).toBe("–"); });
   it("renders nested data, semantic labels and frozen offsets", () => {
     const html = renderToStaticMarkup(<DataTable columns={columns} dataSource={[{ id: "bill-1", amount: "1234.5", status: "OK", nested: { name: "测试客户" } }]} rowKey="id"/>);
     expect(html).toContain("测试客户"); expect(html).toContain("已确认"); expect(html).toContain("1,234.50"); expect(html).toContain("left:0"); expect(html).toContain("right:0"); expect(html).toContain("text-align:right");
