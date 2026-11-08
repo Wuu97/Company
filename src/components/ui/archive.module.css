@@ -17,18 +17,6 @@
   font-size: var(--type-caption-size);
   font-weight: var(--type-caption-weight);
 }
-.empty {
-  grid-column: 1 / -1;
-  min-height: 240px;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  text-align: center;
-}
-.empty > span {
-  color: #94a3b8;
-  font-size: var(--type-page-title-size);
-}
 /* Field spacing is provided by Dialog. */
 .form {
   display: grid;
@@ -49,18 +37,4 @@
   color: #64748b;
   font-size: var(--type-caption-size);
   line-height: var(--type-caption-line-height);
-}
-
-.filter.filter {
-  display: grid;
-  grid-template-columns: minmax(240px, 360px) minmax(160px, 220px) auto;
-  justify-content: start;
-  align-items: end;
-  gap: 16px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
 }

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { EmptyState } from "./empty-state";
+import { TableEmptyState } from "./table-empty-state";
 import styles from "./archive.module.css";
 export function ArchiveSection({
   title,
@@ -27,10 +27,5 @@ export function ArchiveEmptyState({
   title: string;
   children: ReactNode;
 }) {
-  return (
-    <div className={styles.empty}>
-      <span aria-hidden="true">▤</span>
-      <EmptyState title={title}>{children}</EmptyState>
-    </div>
-  );
+  return <TableEmptyState title={title} description={children} />;
 }

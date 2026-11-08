@@ -80,7 +80,7 @@ export function CreateActions({
             新增客户
           </Button>
           <Button create
-            variant="secondary"
+            variant="outline"
             onClick={() => open("factory")}
           >
             新增工厂

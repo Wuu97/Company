@@ -1,6 +1,8 @@
 "use client";
 
-import { PageContainer } from "@/components/ui/page-container";
+import { ArchiveFilterBar } from "@/app/archives/archive-filter-bar";
+
+import { ArchivePageContainer as PageContainer } from "@/app/archives/archive-page-container";
 
 import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -8,23 +10,13 @@ import { Button } from "@/components/ui/button";
 import { CheckboxField, TextField } from "@/components/ui/form-controls";
 import { Dialog } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/ui/page-header";
-import { ArchiveSection, ArchiveEmptyState } from "@/components/ui/archive";
 import styles from "@/components/ui/archive.module.css";
 import { FeedbackMessage } from "@/components/ui/feedback-message";
-import {
-  ListFilter,
-  FilterField,
-  FilterTextField,
-  FilterSelectField,
-  FilterActions,
-  FilterClearLink,
-} from "@/components/ui/list";
-import {
-  RecordCard,
-  RecordCardHeader,
-  RecordCardList,
-} from "@/components/ui/record-card";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { StatusBadgeSwitch } from "@/components/ui/status-badge-switch";
+import { useListPagination } from "@/components/ui/use-list-pagination";
+import { AppPagination } from "@/components/ui/app-pagination";
+import { type ArchiveTab } from "@/app/archives/archive-tabs";
 
 type Kind = "drivers" | "fleet-owners" | "temporary-vehicles";
 type Row = {
@@ -77,14 +69,17 @@ export function ResourceRecords({
   q = "",
   status = "",
   archiveTotal = rows.length,
+  archiveTab,
 }: {
   kind: Kind;
+  archiveTab?: ArchiveTab;
   rows: Row[];
   q?: string;
   status?: string;
   archiveTotal?: number;
 }) {
   const label = labels[kind];
+  const pagination = useListPagination(rows, JSON.stringify([kind, q, status]));
   const [editing, setEditing] = useState<Row | null | undefined>(undefined);
   const [error, setError] = useState("");
   const formId = useId();
@@ -130,12 +125,30 @@ export function ResourceRecords({
     setError("");
     setMessage("");
   }
+  const columns: DataTableColumn<Row>[] = [
+    ...(isVehicle
+      ? [{ key: "plateNumber", title: "车牌号", dataIndex: "plateNumber" as const, width: 180 }]
+      : [{ key: "name", title: label.name, dataIndex: "name" as const, width: 200 }]),
+    ...(kind === "drivers" ? [{ key: "plateNumber", title: "车牌号", dataIndex: "plateNumber" as const, width: 160 }] : []),
+    { key: "phone", title: "联系电话", dataIndex: "phone", width: 180 },
+    { key: "active", title: "状态", width: 120, render: (_, item) => (
+      <StatusBadgeSwitch active={item.active} label={`${label.singular}状态`} onChange={async active => {
+        await call(`/api/resources/${kind}/${item.id}`, "PATCH", isVehicle
+          ? { plateNumber: item.plateNumber, phone: item.phone, active }
+          : { name: item.name, phone: item.phone, ...(kind === "drivers" ? { plateNumber: item.plateNumber } : {}), active });
+        router.refresh();
+      }} />
+    ) },
+    { key: "actions", title: "操作", width: 120, render: (_, item) => (
+      <Button variant="text" size="small" onClick={() => open(item)}>编辑</Button>
+    ) },
+  ];
   const row = editing;
   return (
     <>
       <PageHeader
         title={
-          kind === "drivers"
+          archiveTab ? "业务档案" : kind === "drivers"
             ? "司机档案"
             : kind === "fleet-owners"
               ? "合作车资料"
@@ -144,69 +157,26 @@ export function ResourceRecords({
         description={label.description}
 
       />
-<PageContainer actions={
+<PageContainer activeTab={archiveTab} tabsLabel="业务档案分类" pagination={<AppPagination {...pagination.props} />} actions={
           <Button create size="toolbar" onClick={() => open(null)}>新增{label.singular}</Button>
-        }  filter={<ListFilter className={styles.filter} key={`${q}-${status}`}>
-          <FilterField label="查找档案" search>
-            <FilterTextField
-              name="q"
-              defaultValue={q}
-              placeholder={isVehicle ? "车牌号或手机号" : kind === "drivers" ? "姓名、车牌或联系电话" : "名称或联系电话"}
-            />
-          </FilterField>
-          <FilterField label="档案状态">
-            <FilterSelectField name="status" defaultValue={status}>
-              <option value="">全部</option>
-              <option value="ACTIVE">启用</option>
-              <option value="INACTIVE">停用</option>
-            </FilterSelectField>
-          </FilterField>
-          <FilterActions>
-            <FilterClearLink href={`/${kind}`} />
-          </FilterActions>
-        </ListFilter>}>
+        }  filter={<ArchiveFilterBar tab={archiveTab} q={q} status={status} placeholder={isVehicle ? "车牌号或手机号" : kind === "drivers" ? "姓名、车牌或联系电话" : "名称或联系电话"} />}>
 
       {message && <FeedbackMessage tone="success">{message}</FeedbackMessage>}
 
 
-        <RecordCardList className={styles.records} density="compact">
-          {rows.length ? (
-            rows.map((item) => (
-              <RecordCard density="compact" key={item.id}>
-                <RecordCardHeader density="compact">
-                  <div className={styles.recordCopy}>
-                    <b>{isVehicle ? item.plateNumber : item.name}</b>
-                    <small>
-                      {isVehicle
-                        ? item.phone || "手机号未填写"
-                        : `${[item.plateNumber, item.phone].filter(Boolean).join(" · ")}`}
-                    </small>
-                  </div>
-                  <StatusBadge tone={item.active ? "success" : "muted"}>
-                    {item.active ? "启用" : "停用"}
-                  </StatusBadge>
-                </RecordCardHeader>
-                <Button
-                  variant="secondary"
-                  size="small"
-                  onClick={() => open(item)}
-                >
-                  编辑档案
-                </Button>
-              </RecordCard>
-            ))
-          ) : (
-            <ArchiveEmptyState
-              title={
-                archiveTotal ? "没有匹配的档案" : `暂无${label.singular}档案`
-              }
-            >
-              {archiveTotal
-                ? "请调整关键词或档案状态，或清除筛选后重试。"
-                : "点击右上角新增按钮建立档案。"}
-            </ArchiveEmptyState>
-          )}
-        </RecordCardList>
+        <DataTable
+          fitContainer
+          mobileHint={null}
+          columns={columns}
+          dataSource={pagination.items}
+          rowKey="id"
+          empty={{
+            title: archiveTotal ? "没有匹配的档案" : `暂无${label.singular}档案`,
+            description: archiveTotal
+              ? "请调整关键词或档案状态，或清除筛选后重试。"
+              : "点击右上角新增按钮建立档案。",
+          }}
+        />
 
       {editing !== undefined && (
         <Dialog

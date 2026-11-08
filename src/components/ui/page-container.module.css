@@ -4,7 +4,14 @@
 }
 .card {
   min-width: 0;
-  padding: 16px;
+  min-height: 0;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   background: #fff;
@@ -35,20 +42,39 @@
   overflow-x: auto;
   gap: 12px 16px;
 }
-.card.card :global([data-list-filter]:not([data-filter-layout="logs"]) > label:not([data-filter-toggle])) {
+.card.card
+  :global(
+    [data-list-filter]:not([data-filter-layout="logs"])
+      > label:not([data-filter-toggle])
+  ) {
   display: flex;
   align-items: center;
   gap: 8px;
   flex: 1 0 220px;
   min-width: 0;
 }
-.card.card :global([data-list-filter]:not([data-filter-layout="logs"]) > label > span:first-child) {
+.card.card
+  :global(
+    [data-list-filter]:not([data-filter-layout="logs"])
+      > label
+      > span:first-child
+  ) {
   flex-shrink: 0;
 }
-.card.card :global([data-list-filter]:not([data-filter-layout="logs"]) > label > span:last-child) {
+.card.card
+  :global(
+    [data-list-filter]:not([data-filter-layout="logs"])
+      > label
+      > span:last-child
+  ) {
   min-width: 0;
 }
-.card.card :global([data-list-filter]:not([data-filter-layout="logs"]) > label > span:first-child:last-child) {
+.card.card
+  :global(
+    [data-list-filter]:not([data-filter-layout="logs"])
+      > label
+      > span:first-child:last-child
+  ) {
   flex-shrink: 1;
 }
 .card.card :global([data-filter-actions]) {
@@ -62,17 +88,29 @@
   margin-bottom: 0;
 }
 @media (max-width: 760px) {
-  .card { padding: 12px; }
-  .card.card :global([data-list-filter]:not([data-filter-layout="logs"]) > label:not([data-filter-toggle])) {
+  .card {
+    padding: 12px;
+  }
+  .card.card
+    :global(
+      [data-list-filter]:not([data-filter-layout="logs"])
+        > label:not([data-filter-toggle])
+    ) {
     flex-basis: 100%;
   }
 }
-.card.card :global([data-list-filter]:not([data-filter-layout="logs"]) > label:not([data-filter-toggle]) > :last-child) {
+.card.card
+  :global(
+    [data-list-filter]:not([data-filter-layout="logs"])
+      > label:not([data-filter-toggle])
+      > :last-child
+  ) {
   flex: 1;
   min-width: 0;
 }
-.card { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
-.hasTabs { padding-top: 0; }
+.hasTabs {
+  padding-top: 0;
+}
 .header {
   display: flex;
   align-items: center;
@@ -84,56 +122,164 @@
   flex-shrink: 0;
   border-bottom: 1px solid #e2e8f0;
 }
-.header > nav { min-width: 0; min-height: 32px; flex: 1; }
-.header > nav > :global([data-navigation-tab]) { height: 32px; padding-block: 0; box-sizing: border-box; }
-.actions { display: flex; align-items: center; gap: 8px; flex: none; padding: 0; }
-.filter, .content { min-width: 0; }
-.filter > :first-child, .content > :first-child { margin-top: 0; }
-.filter > :last-child, .content > :last-child { margin-bottom: 0; }
-.pagination { margin-top: -16px; padding-top: 0; }
-.pagination > nav { margin-top: 16px; }
-.card :global([data-record-card]) { border: 0; border-radius: 0; box-shadow: none; background: transparent; }
-@media(max-width:760px) { .card { padding: 16px; } .hasTabs { padding-top: 0; } .header { gap: 8px; } }
+.header > nav {
+  min-width: 0;
+  min-height: 32px;
+  flex: 1;
+}
+.header > nav > :global([data-navigation-tab]) {
+  height: 32px;
+  padding-block: 0;
+  box-sizing: border-box;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 0;
+}
+.filter,
+.content {
+  min-width: 0;
+}
+.filter > :first-child,
+.content > :first-child {
+  margin-top: 0;
+}
+.filter > :last-child,
+.content > :last-child {
+  margin-bottom: 0;
+}
+.pagination {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid #f0f2f5;
+  background: #fff;
+}
+.pagination > nav {
+  margin-top: 0;
+}
+.card :global([data-record-card]) {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+@media (max-width: 760px) {
+  .card {
+    padding: 16px;
+  }
+  .hasTabs {
+    padding-top: 0;
+  }
+  .header {
+    gap: 8px;
+  }
+}
 
-.filter { --control-height: 36px; --btn-height-toolbar: 36px; }
-.card.card :global([data-table-surface]) { border: 0; border-radius: 0; box-shadow: none; }
-.card.card :global([data-record-card] + [data-record-card]) { border-top: 1px solid #f0f0f0; }
+.filter {
+  --control-height: var(--filter-control-height, 32px);
+  --btn-height-toolbar: var(--filter-control-height, 32px);
+}
+.card.card :global([data-table-surface]) {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.card.card :global([data-record-card] + [data-record-card]) {
+  border-top: 1px solid #f0f0f0;
+}
 /* Pages without tabs share one toolbar; actions never reserve a separate header. */
-.inlineToolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; min-width:0; }
-.inlineFilter { flex:1; min-width:0; --control-height:36px; --btn-height-toolbar:36px; }
-.inlineFilter > :first-child { margin-top:0; }
-.inlineFilter > :last-child { margin-bottom:0; }
-.inlineActions { display:flex; align-items:center; justify-content:flex-end; flex:none; gap:8px; --btn-height-toolbar:36px; }
-.card.card .inlineFilter :global([data-list-filter]) { margin:0; }
-.card.card .inlineFilter :global([data-list-filter] > label:not([data-filter-toggle])) { flex:0 1 260px; }
-@media(max-width:760px) {
-  .inlineToolbar { flex-wrap:wrap; }
-  .inlineFilter { flex-basis:100%; }
-  .inlineActions { margin-left:auto; }
+.inlineToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+}
+.inlineFilter {
+  flex: 1;
+  min-width: 0;
+  --control-height: 36px;
+  --btn-height-toolbar: 36px;
+}
+.inlineFilter > :first-child {
+  margin-top: 0;
+}
+.inlineFilter > :last-child {
+  margin-bottom: 0;
+}
+.inlineActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: none;
+  gap: 8px;
+  --btn-height-toolbar: 36px;
+}
+.card.card .inlineFilter :global([data-list-filter]) {
+  margin: 0;
+}
+.card.card
+  .inlineFilter
+  :global([data-list-filter] > label:not([data-filter-toggle])) {
+  flex: 0 1 260px;
+}
+@media (max-width: 760px) {
+  .inlineToolbar {
+    flex-wrap: wrap;
+  }
+  .inlineFilter {
+    flex-basis: 100%;
+  }
+  .inlineActions {
+    margin-left: auto;
+  }
 }
 
 /* Slot margins must not stack with the card's 16px gap. */
-.card.card .filter > :last-child { margin-bottom: 0; }
+.card.card .filter > :last-child {
+  margin-bottom: 0;
+}
 .card.card .filter > :first-child,
-.card.card .content > :first-child { margin-top: 0; }
+.card.card .content > :first-child {
+  margin-top: 0;
+}
+.content {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.pagination:has(> nav:empty),
+.pagination:not(:has(nav)) {
+  display: none;
+}
 
-.card { min-height: calc(100dvh - 120px); box-sizing: border-box; }
-.content { flex: 1; }
-.pagination { margin-top: auto; }
-.pagination:has(> nav:empty), .pagination:not(:has(nav)) { display: none; }
-
-.content:has(> :global([data-app-pagination])) { display: flex; flex-direction: column; }
-.content > :global([data-app-pagination]) { margin-top: auto; padding-top: 16px; }
+.content:has(> :global([data-app-pagination])) {
+  display: flex;
+  flex-direction: column;
+}
+.content > :global([data-app-pagination]) {
+  margin-top: auto;
+  padding-top: 16px;
+}
 
 /* Header and footer stay visible; only the central content may scroll. */
-.card { min-height: 0; height: 100%; overflow: hidden; }
-.header, .filter, .inlineToolbar { flex-shrink: 0; }
-.content { flex: 1 1 0; min-height: 0; overflow: auto; overscroll-behavior: contain; }
-.pagination { flex-shrink: 0; margin-top: auto; padding-top: 16px; border-top: 1px solid #f0f2f5; background: #fff; }
-.pagination > nav { margin-top: 0; }
+.header,
+.filter,
+.inlineToolbar {
+  flex-shrink: 0;
+}
 
 /* Detail workspaces may let their table own both scroll axes. */
-.workspaceContent { display: flex; flex-direction: column; overflow: hidden; }
+.workspaceContent {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
 /* Match bill-management filter widths; never stretch controls across a wide row. */
 .card.card :global([data-list-filter]) {
@@ -151,12 +297,21 @@
   min-width: 0;
   gap: 6px;
 }
-.card.card :global([data-list-filter] > label:has(select):not([data-filter-toggle])),
-.card.card :global([data-list-filter] > label:has([aria-haspopup="listbox"]):not([data-filter-toggle])),
-.card.card :global([data-list-filter] > label:has(input[type="date"]):not([data-filter-toggle])) {
+.card.card
+  :global([data-list-filter] > label:has(select):not([data-filter-toggle])),
+.card.card
+  :global(
+    [data-list-filter]
+      > label:has([aria-haspopup="listbox"]):not([data-filter-toggle])
+  ),
+.card.card
+  :global(
+    [data-list-filter] > label:has(input[type="date"]):not([data-filter-toggle])
+  ) {
   width: var(--filter-select-width, 140px);
 }
-.card.card :global([data-list-filter] > label:not([data-filter-toggle]) > :last-child) {
+.card.card
+  :global([data-list-filter] > label:not([data-filter-toggle]) > :last-child) {
   width: 100%;
   min-width: 0;
   max-width: 100%;
@@ -174,16 +329,31 @@
   --control-height: var(--filter-control-height, 32px);
   --btn-height-toolbar: var(--filter-control-height, 32px);
 }
-.card.card .filter :global([data-list-filter] > label:not([data-filter-toggle])),
-.card.card .inlineFilter :global([data-list-filter] > label:not([data-filter-toggle])) {
+.card.card
+  .filter
+  :global([data-list-filter] > label:not([data-filter-toggle])),
+.card.card
+  .inlineFilter
+  :global([data-list-filter] > label:not([data-filter-toggle])) {
   flex: 0 0 auto;
   width: var(--filter-input-width, 200px);
 }
-.card.card .filter :global([data-list-filter] > label:has([aria-haspopup="listbox"]):not([data-filter-toggle])),
-.card.card .inlineFilter :global([data-list-filter] > label:has([aria-haspopup="listbox"]):not([data-filter-toggle])) {
+.card.card
+  .filter
+  :global(
+    [data-list-filter]
+      > label:has([aria-haspopup="listbox"]):not([data-filter-toggle])
+  ),
+.card.card
+  .inlineFilter
+  :global(
+    [data-list-filter]
+      > label:has([aria-haspopup="listbox"]):not([data-filter-toggle])
+  ) {
   width: var(--filter-select-width, 140px);
 }
-.card.card :global([data-list-filter] input:not([type="checkbox"]):not([type="hidden"])),
+.card.card
+  :global([data-list-filter] input:not([type="checkbox"]):not([type="hidden"])),
 .card.card :global([data-list-filter] button[aria-haspopup="listbox"]),
 .card.card :global([data-list-filter] select) {
   box-sizing: border-box;
@@ -192,8 +362,13 @@
   padding-block: 0;
 }
 @media (max-width: 760px) {
-  .card.card .filter :global([data-list-filter] > label:not([data-filter-toggle])),
-  .card.card .inlineFilter :global([data-list-filter] > label:not([data-filter-toggle])) {
-    flex: 0 1 100%; width: 100%;
+  .card.card
+    .filter
+    :global([data-list-filter] > label:not([data-filter-toggle])),
+  .card.card
+    .inlineFilter
+    :global([data-list-filter] > label:not([data-filter-toggle])) {
+    flex: 0 1 100%;
+    width: 100%;
   }
 }

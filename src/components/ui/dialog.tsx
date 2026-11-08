@@ -4,9 +4,11 @@ import {
   useEffect,
   useId,
   useRef,
+  useState,
   type MouseEvent,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import styles from "./dialog.module.css";
 import { Button } from "./button";
 
@@ -49,6 +51,9 @@ export function Dialog({
   variant,
   closing = false,
 }: Props) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const dialogRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
@@ -60,6 +65,7 @@ export function Dialog({
   closeDisabledRef.current = closeDisabled;
 
   useEffect(() => {
+    if (!mounted) return;
     openerRef.current =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
@@ -105,13 +111,15 @@ export function Dialog({
         opener.addEventListener("keydown", clear, { once: true });
       }
     };
-  }, []);
+  }, [mounted]);
 
   function closeFromBackdrop(event: MouseEvent<HTMLDivElement>) {
     if (event.target === event.currentTarget && !closeDisabled) onClose();
   }
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div data-closing={closing || undefined} className={[styles.backdrop, placement === "drawer" ? styles.drawerBackdrop : undefined].filter(Boolean).join(" ")} onMouseDown={closeFromBackdrop}>
       <div
         ref={dialogRef}
@@ -166,6 +174,7 @@ export function Dialog({
         )}
         <div className={styles.actions}>{actions}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

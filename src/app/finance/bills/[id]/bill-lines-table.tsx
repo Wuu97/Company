@@ -1,5 +1,8 @@
 "use client";
-import { partnerStatementHeaders, partnerMoneyColumns, partnerStatementCell } from "@/lib/settlement/partner-statement";
+
+import { TableHeader } from "@/components/ui/table-header";
+
+import { partnerStatementHeaders, partnerStatementCell } from "@/lib/settlement/partner-statement";
 import { useConfirm } from "@/components/ui/use-confirm";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -69,7 +72,7 @@ export function BillLinesTable({ bill, items, offset, editable }: { bill: any; i
       <table className={`${css.table} ${css.compact}`}>
         <caption className={css.srOnly}>司机工资明细（紧凑模式）</caption>
         <colgroup>{[5, 18, 18, 13, 10, 18, 10, 8].map((width, index) => <col key={index} style={{ width: `${width}%` }} />)}</colgroup>
-        <thead><tr>{["序号", partner ? "做柜日期 / 装卸地点" : "做柜日期 / 行驶路线", partner ? "柜号 / 柜型" : "订舱号 / 柜号 / 柜型", partner ? "公里数" : "工厂 / 工作号 / 公里数", partner ? "司机运费" : "付运费", "费用 / 扣款明细", "小计", "操作"].map((label, index) => <th key={label} scope="col" className={index >= 4 && index <= 6 ? css.number : undefined}>{label}</th>)}</tr></thead>
+        <TableHeader><tr>{["序号", partner ? "做柜日期 / 装卸地点" : "做柜日期 / 行驶路线", partner ? "柜号 / 柜型" : "订舱号 / 柜号 / 柜型", partner ? "公里数" : "工厂 / 工作号 / 公里数", partner ? "司机运费" : "付运费", "费用 / 扣款明细", "小计", "操作"].map((label, index) => <th key={label} scope="col" className={index >= 4 && index <= 6 ? css.number : undefined}>{label}</th>)}</tr></TableHeader>
         <tbody>{items.map((line, index) => <tr key={line.id}>
           <td>{offset + index + 1}</td>
           <td>{driverValue(line, "做柜日期")}<div className={css.secondary}>{driverValue(line, partner ? "装卸地点" : "行驶路线")}</div></td>
@@ -93,7 +96,7 @@ export function BillLinesTable({ bill, items, offset, editable }: { bill: any; i
       <table className={`${css.table} ${css.compact}`}>
         <caption className={css.srOnly}>账单已入账明细与费用汇总</caption>
         <colgroup>{[5, 18, 18, 13, 10, 18, 10, 8].map((width, index) => <col key={index} style={{ width: `${width}%` }} />)}</colgroup>
-        <thead><tr>{["序号", "日期 / 行驶路线", "订舱号 / 柜号 / 柜型", "工厂 / 车牌号", "基本运费", "杂费明细", "小计金额", "操作"].map((label, index) => <th key={label} scope="col" className={index >= 4 && index <= 6 ? css.number : index === 0 || index === 7 ? css.center : undefined}>{label}</th>)}</tr></thead>
+        <TableHeader><tr>{["序号", "日期 / 行驶路线", "订舱号 / 柜号 / 柜型", "工厂 / 车牌号", "基本运费", "杂费明细", "小计金额", "操作"].map((label, index) => <th key={label} scope="col" className={index >= 4 && index <= 6 ? css.number : index === 0 || index === 7 ? css.center : undefined}>{label}</th>)}</tr></TableHeader>
         <tbody>{items.map((line, index) => <tr key={line.id}>
           <td className={css.center}>{offset + index + 1}</td>
           <td><strong>{cell(line, "日期", index)}</strong><div className={css.secondary}>{cell(line, "行驶路线", index)}</div></td>
@@ -109,7 +112,7 @@ export function BillLinesTable({ bill, items, offset, editable }: { bill: any; i
       <table className={`${css.table} ${css.expanded}`}>
         <caption className={css.srOnly}>账单已入账明细与费用汇总（完整展开）</caption>
         <colgroup>{expandedColumns.map(([label, width]) => <col key={label} style={{ width: `${width / expandedWidth * 100}%` }} />)}</colgroup>
-        <thead><tr>{expandedColumns.map(([label]) => <th key={label} scope="col" className={numeric(label) ? css.number : undefined}>{label}</th>)}</tr></thead>
+        <TableHeader><tr>{expandedColumns.map(([label]) => <th key={label} scope="col" className={numeric(label) ? css.number : undefined}>{label}</th>)}</tr></TableHeader>
         <tbody>{items.map((line, index) => <tr key={line.id}>{expandedColumns.map(([label]) => <td key={label} className={numeric(label) ? css.number : undefined}>
           {cell(line, label, offset + index)}
           {label === "备注" && <div><button className={css.remove} disabled={!editable || busy !== null} onClick={() => remove(line)}>{busy === line.id ? "移除中…" : "移除"}</button></div>}

@@ -1,3 +1,4 @@
+import { TableHeader } from "@/components/ui/table-header";
 import { formatChinaDateTime } from "@/lib/time";
 import { PageContainer } from "@/components/ui/page-container";
 import { Prisma } from "@prisma/client";
@@ -222,14 +223,14 @@ export default async function Logs({
 
 
       {visibleLogs.length ? <section className={styles.auditList} aria-label="操作记录" tabIndex={0}><div className={styles.logTable}>
-        <div className={styles.tableHeader}><span>操作时间</span><span>操作人</span><span>操作内容</span><span>业务对象 / 标识</span><span>字段变化</span></div>
+        <TableHeader as="div" className={styles.tableHeader}><span>操作时间</span><span>操作人</span><span>操作内容</span><span>业务对象 / 标识</span><span>字段变化</span></TableHeader>
         {visibleLogs.map((log) => <AuditExpandedRow key={log.id} detail={hasChangeDetail(log.before, log.after) ? changeDetail(log.before, log.after) : null}>
           <time className={styles.time} dateTime={log.createdAt.toISOString()}>{formatChinaDateTime(log.createdAt)}:{String(log.createdAt.getUTCSeconds()).padStart(2, "0")}</time>
           <div className={styles.actor}>
             <b>{log.actorName || "系统处理"}</b>
           </div>
           <div className={styles.action}>
-            {log.action.endsWith("_DELETED") ? <StatusBadge tone="critical" size="small">{auditActionLabel(log.action)}</StatusBadge> : <span>{auditActionLabel(log.action)}</span>}
+            {log.action.endsWith("_DELETED") ? <StatusBadge tone="critical">{auditActionLabel(log.action)}</StatusBadge> : <span>{auditActionLabel(log.action)}</span>}
           </div>
           <div className={styles.objectTags}>{objectRows(log.entityType, log.before, log.after, log.entityId, businessById.get(`${log.entityType}:${log.entityId}`)).map(item => <span key={item.label} data-missing={item.value === "(未关联单号)" || !item.value || undefined} title={item.value ? `${item.label}：${item.value}` : item.label}><b>{item.label}</b>{item.value}</span>)}</div>
         </AuditExpandedRow>)}

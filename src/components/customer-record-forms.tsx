@@ -60,7 +60,7 @@ export function CustomerRecordForm({ customer }: { customer: Customer }) {
           setOpen(true);
         }}
       >
-        编辑客户档案
+        编辑客户
       </Button>
       {!open && message && (
         <FeedbackMessage tone="success">{message}</FeedbackMessage>
@@ -168,7 +168,7 @@ export function FactoryRecordForm({
           setOpen(true);
         }}
       >
-        编辑工厂信息
+        编辑工厂
       </Button>
       {!open && message && (
         <FeedbackMessage tone="success">{message}</FeedbackMessage>

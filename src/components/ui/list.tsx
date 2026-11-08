@@ -13,7 +13,7 @@ import {
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import styles from "./list.module.css";
-import { Button, ButtonLink, type ButtonSize } from "./button";
+import { ButtonLink, type ButtonSize } from "./button";
 import { FilterSearchInput } from "./filter-search-input";
 import { FilterSelect } from "./filter-select";
 

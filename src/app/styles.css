@@ -42,7 +42,7 @@
   --type-caption-line-height: var(--line-height-caption);
 }
 
-aside {
+body > aside {
   width: 220px;
   min-height: 100vh;
   padding: 24px;
@@ -50,7 +50,7 @@ aside {
   color: #edf2fa;
 }
 
-aside h1 {
+body > aside h1 {
   margin: 0 0 32px;
   font-size: var(--font-title-lg);
 }
@@ -80,7 +80,7 @@ summary:focus-visible {
     --type-control-compact-line-height: 24px;
   }
 
-  aside {
+  body > aside {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -94,7 +94,7 @@ summary:focus-visible {
     z-index: 10;
   }
 
-  aside h1 {
+  body > aside h1 {
     flex: none;
     margin: 0 10px 0 0;
     font-size: var(--font-title-sm);
@@ -136,7 +136,7 @@ body {
   }
 }
 @media (min-width: 761px) {
-  aside {
+  body > aside {
     position: sticky;
     top: 0;
     align-self: flex-start;
@@ -144,7 +144,7 @@ body {
     overflow-y: auto;
     padding: 20px 24px;
   }
-  aside h1 {
+  body > aside h1 {
     margin-bottom: 20px;
   }
 }

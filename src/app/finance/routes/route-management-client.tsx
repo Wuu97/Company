@@ -136,10 +136,6 @@ export function RouteManagementClient({
   async function saveRoute(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
-    const routeParts = String(f.get("name") || "")
-      .split("-")
-      .map((part) => part.trim())
-      .filter(Boolean);
     const body = {
       name: f.get("name"),
       origin: String(f.get("origin") || ""),

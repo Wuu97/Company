@@ -1,34 +1,134 @@
 "use client";
 
-import businessStyles from "@/components/business.module.css";
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  ClipboardList,
+  Ship,
+  Users,
+  FolderArchive,
+  Wallet,
+  Settings,
+  ChevronRight,
+} from "lucide-react";
+import {
+  sidebarSections,
+  isSidebarRouteActive,
+  type SidebarItem,
+  type SidebarIcon,
+} from "./sidebar-config";
+import styles from "./sidebar.module.css";
 
-type Item = { group: string; href: string; label: string; count?: number };
+const icons = {
+  dashboard: LayoutDashboard,
+  orders: ClipboardList,
+  sailings: Ship,
+  customers: Users,
+  archives: FolderArchive,
+  finance: Wallet,
+  settings: Settings,
+} satisfies Record<SidebarIcon, typeof LayoutDashboard>;
 
-export function SidebarNav({ items }: { items: Item[] }) {
+export function SidebarNav({ items }: { items: SidebarItem[] }) {
   const pathname = usePathname();
-  const activeLinkRef = useRef<HTMLAnchorElement>(null);
-  const groups = [...new Set(items.map(item => item.group))];
+  const navRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    const activeLink = activeLinkRef.current;
-    const sidebar = activeLink?.closest("aside");
-    if (!activeLink || !sidebar) return;
-    const link = activeLink.getBoundingClientRect();
-    const container = sidebar.getBoundingClientRect();
-    const padding = 12;
-    if (link.top < container.top + padding) sidebar.scrollTop += link.top - container.top - padding;
-    if (link.bottom > container.bottom - padding) sidebar.scrollTop += link.bottom - container.bottom + padding;
+    const nav = navRef.current;
+    const active = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!nav || !active) return;
+    const target = active.getBoundingClientRect();
+    const viewport = nav.getBoundingClientRect();
+    if (target.top < viewport.top) nav.scrollTop += target.top - viewport.top;
+    else if (target.bottom > viewport.bottom)
+      nav.scrollTop += target.bottom - viewport.bottom;
   }, [pathname]);
-  return <nav className={businessStyles["sidebar-nav"]} aria-label="主导航">{groups.map(group => {
-    const groupItems = items.filter(item => item.group === group);
-    const groupActive = groupItems.some(item => item.href === "/" ? pathname === "/" : pathname === item.href || pathname.startsWith(`${item.href}/`));
-    return <details className={businessStyles["sidebar-nav__group"]} key={group} open={groupActive}>
-      <summary className={businessStyles["sidebar-nav__group-label"]}>{group}</summary>
-      <div className={businessStyles["sidebar-nav__group-items"]}>{groupItems.map(item => {
-        const active = item.href === "/" ? pathname === "/" : pathname === item.href || pathname.startsWith(`${item.href}/`);
-        return <a ref={active ? activeLinkRef : undefined} key={item.href} href={item.href} className={[businessStyles["sidebar-nav__link"], active ? businessStyles["sidebar-nav__link-active"] : undefined].filter(Boolean).join(" ")} aria-current={active ? "page" : undefined}>{item.label}{item.count ? <span className={businessStyles["nav-count"]}>{item.count}</span> : null}</a>;
-      })}</div>
-    </details>;
-  })}</nav>;
+
+  return (
+    <nav ref={navRef} className={styles.navigation} aria-label="主导航">
+      {sidebarSections.map((section) => (
+        <section
+          className={styles.section}
+          key={section.label}
+          aria-label={section.label}
+        >
+          <h2 className={styles.sectionTitle}>{section.label}</h2>
+          {section.groups.map((group) => {
+            const entries = items.filter((item) => item.group === group.label);
+            if (!entries.length) return null;
+            const Icon = icons[group.icon];
+            const active = entries.some((item) =>
+              isSidebarRouteActive(pathname, item.href),
+            );
+            const count = entries.reduce(
+              (total, item) => total + (item.count ?? 0),
+              0,
+            );
+            const content = (
+              <>
+                <Icon size={18} aria-hidden="true" />
+                <span className={styles.label}>{group.label}</span>
+                {count > 0 && (
+                  <span
+                    className={styles.count}
+                    aria-label={`${count} 条待处理`}
+                  >
+                    {count}
+                  </span>
+                )}
+                <ChevronRight
+                  size={14}
+                  className={styles.chevron}
+                  aria-hidden="true"
+                />
+              </>
+            );
+            if (entries.length === 1)
+              return (
+                <Link
+                  key={group.label}
+                  href={entries[0].href}
+                  className={`${styles.item} ${active ? styles.active : ""}`}
+                  aria-current={active ? "page" : undefined}
+                >
+                  {content}
+                </Link>
+              );
+            return (
+              <details
+                key={`${group.label}-${active}`}
+                className={styles.group}
+                open={active}
+              >
+                <summary
+                  className={`${styles.item} ${active ? styles.active : ""}`}
+                >
+                  {content}
+                </summary>
+                <div className={styles.children}>
+                  {entries.map((item) => {
+                    const selected = isSidebarRouteActive(pathname, item.href);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`${styles.child} ${selected ? styles.selected : ""}`}
+                        aria-current={selected ? "page" : undefined}
+                      >
+                        <span className={styles.label}>{item.label}</span>
+                        {!!item.count && (
+                          <span className={styles.count}>{item.count}</span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </details>
+            );
+          })}
+        </section>
+      ))}
+    </nav>
+  );
 }

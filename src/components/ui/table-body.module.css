@@ -1,0 +1,25 @@
+@media screen {
+  /* The bill list uses 14px for data cells. */
+  .body > tr > td,
+  .logRow {
+    font-size: 14px !important;
+  }
+
+  .body > tr {
+    height: 48px !important;
+  }
+  .body > tr > td {
+    box-sizing: border-box;
+    height: auto !important;
+    padding-block: 6px !important;
+    line-height: var(--type-body-line-height, 22px) !important;
+    vertical-align: middle;
+  }
+  .logRow {
+    box-sizing: border-box;
+    min-height: 48px !important;
+    padding-block: 6px !important;
+    line-height: var(--type-body-line-height, 22px) !important;
+    align-items: center;
+  }
+}

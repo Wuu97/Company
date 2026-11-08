@@ -1,0 +1,22 @@
+/* Keep printed statement geometry intact. All on-screen headers share log sizing. */
+@media screen {
+  .header > tr > th,
+  .grid,
+  .grid > * {
+    font-size: 13px !important;
+  }
+  .header > tr > th {
+    box-sizing: border-box;
+    height: calc(var(--type-table-header-line-height, 20px) + 22px) !important;
+    padding-block: 11px !important;
+    line-height: var(--type-table-header-line-height, 20px) !important;
+    vertical-align: middle;
+  }
+  .grid {
+    box-sizing: border-box;
+    min-height: calc(var(--type-table-header-line-height, 20px) + 22px);
+    padding-block: 11px !important;
+    line-height: var(--type-table-header-line-height, 20px) !important;
+    align-items: center;
+  }
+}

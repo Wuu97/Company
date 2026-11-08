@@ -14,7 +14,6 @@ import { FilterActions, FilterClearLink, FilterField, FilterSelectField, FilterT
 import { Pagination } from "@/components/ui/pagination";
 import { RecordCard, RecordCardField, RecordCardFields, RecordCardHeader, RecordCardList } from "@/components/ui/record-card";
 import { PageHeader } from "@/components/ui/page-header";
-import { NavTabs } from "@/components/ui/nav-tabs";
 import styles from "./page.module.css";
 
 const statuses = ["PLANNED", "DISPATCHED", "IN_TRANSIT", "COMPLETED", "CANCELLED"] as const;

@@ -1,449 +1,409 @@
-import { PageContainer } from "@/components/ui/page-container";
-import { prisma } from "@/lib/prisma";
-import { DashboardTasks } from "./dashboard-tasks";
-import { evaluateRiskAlerts } from "@/lib/risk-alerts";
-import { formatChinaDateTime } from "@/lib/time";
-import { soReviewReasons } from "@/lib/so-review-task";
-import { statusLabel } from "@/lib/status-labels";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { ButtonLink } from "@/components/ui/button";
-import styles from "./page.module.css";
+import { PageContainer } from "@/components/ui/page-container";
+import Link from "next/link";
+import {
+  ArrowUpRight,
+  Clock,
+  ClipboardCheck,
+  FileText,
+  Settings2,
+  Ship,
+  Truck,
+} from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import { currentUser } from "@/lib/auth";
+import {
+  chinaLocalDateTimeToDate,
+  formatOperationalTimeText,
+} from "@/lib/time";
+import { DashboardActions } from "./dashboard-actions";
+import {
+  DashboardTasks,
+  workflowSteps,
+  type WorkflowRow,
+} from "./dashboard-tasks";
 
-const alertSeverityLabels: Record<string, string> = {
-  CRITICAL: "紧急",
-  WARNING: "需关注",
-};
+const riskRules = [
+  {
+    key: "cutoff",
+    label: "截港预警",
+    detail: "未来 24 小时内截港且仍有柜未登记还柜",
+  },
+  {
+    key: "pickup",
+    label: "提柜异常",
+    detail: "超过计划提柜时间且未登记实际提柜",
+  },
+  { key: "dispatch", label: "派车超时", detail: "超过调度时间且任务仍待派车" },
+] as const;
 
-export default async function Dashboard() {
-  const [
-    pendingOrders,
-    parseReviewCandidates,
-    unmatchedOrders,
-    unplanned,
-    etbOrders,
-    etbHandoffs,
-    contactTasks,
-    impactedTransport,
-    ordersForConfirm,
-    riskOrders,
-  ] = await Promise.all([
+export default async function Dashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ risk?: string; step?: string }>;
+}) {
+  const todayInTokyo = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Asia/Tokyo",
+    dateStyle: "short",
+  }).format(new Date());
+  const dayStart = new Date(`${todayInTokyo}T00:00:00+09:00`);
+  const [viewer, query, orders, activity] = await Promise.all([
+    currentUser(),
+    searchParams,
     prisma.soOrder.findMany({
-      where: { parseStatus: { in: ["PENDING", "PARSED", "FAILED"] } },
-      select: { id: true, soNumber: true, carrier: true, parseStatus: true },
-      take: 8,
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.soOrder.findMany({
-      where: { parseStatus: "PARSED" },
+      where: { status: { notIn: ["COMPLETED", "CANCELLED"] } },
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
       select: {
         id: true,
         soNumber: true,
-        carrier: true,
-        files: {
-          orderBy: { version: "desc" },
-          take: 1,
-          select: { rawExtraction: true },
+        createdAt: true,
+        vesselName: true,
+        voyage: true,
+        parseStatus: true,
+        customerId: true,
+        portCutoffText: true,
+        containers: {
+          where: { active: true },
+          select: {
+            containerType: true,
+            containerNo: true,
+            planItems: {
+              where: {
+                active: true,
+                loadingPlan: { status: { notIn: ["CANCELLED", "REPLACED"] } },
+              },
+              select: {
+                loadingPlan: {
+                  select: {
+                    transportTask: {
+                      select: {
+                        status: true,
+                        scheduledAt: true,
+                        legs: {
+                          where: { status: { not: "CANCELLED" } },
+                          select: {
+                            plannedPickupAt: true,
+                            actualPickupAt: true,
+                            actualReturnAt: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.soOrder.findMany({
-      where: { customerId: null },
-      select: { id: true, soNumber: true, carrier: true },
-      take: 8,
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.containerUnit.findMany({
-      where: { active: true, planItems: { none: { active: true } } },
-      select: {
-        id: true,
-        internalCode: true,
-        containerType: true,
-        soOrder: { select: { id: true, soNumber: true } },
-      },
-      take: 8,
-      orderBy: { internalCode: "asc" },
-    }),
-    prisma.soOrder.findMany({
-      where: { etbNeedsReview: true },
-      select: {
-        id: true,
-        soNumber: true,
-        etbText: true,
-        sailing: { select: { id: true } },
-      },
-      take: 8,
-      orderBy: { createdAt: "desc" },
     }),
     prisma.etbQueryRun.findMany({
-      where: { status: "AWAITING_MANUAL", manualHandledAt: null },
-      select: {
-        id: true,
-        terminal: true,
-        handoffReason: true,
-        errorMessage: true,
-      },
-      take: 8,
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.customerContactTask.findMany({
-      where: { status: "OPEN" },
-      select: {
-        id: true,
-        dueAt: true,
-        soOrder: { select: { id: true, soNumber: true } },
-      },
-      take: 8,
-      orderBy: { dueAt: "asc" },
-    }),
-    prisma.transportTask.findMany({
-      where: { etbImpactNeedsReview: true },
-      select: {
-        id: true,
-        scheduledAt: true,
-        loadingPlan: {
-          select: { soOrder: { select: { id: true, soNumber: true } } },
+      where: {
+        finishedAt: {
+          gte: dayStart,
+          lt: new Date(dayStart.getTime() + 86_400_000),
         },
+        status: "SUCCEEDED",
       },
-      take: 8,
-      orderBy: { scheduledAt: "asc" },
-    }),
-    prisma.soOrder.findMany({
-      where: { containers: { some: { active: true } } },
-      include: {
-        containers: { where: { active: true }, select: { id: true } },
-        confirmations: {
-          where: { status: { in: ["PARTIAL", "CONFIRMED"] } },
-          select: { quantity: true },
-        },
-      },
-    }),
-    prisma.soOrder.findMany({
-      select: {
-        id: true,
-        soNumber: true,
-        etbNeedsReview: true,
-        openingText: true,
-        siCutoffText: true,
-        vgmCutoffText: true,
-        portCutoffText: true,
-        plans: { select: { scheduledAt: true, status: true } },
-      },
+      orderBy: [{ finishedAt: "desc" }, { id: "desc" }],
+      take: 3,
+      select: { id: true, terminal: true, finishedAt: true, resultCount: true },
     }),
   ]);
-  const parseReviewOrders = parseReviewCandidates
-    .map((order) => ({
-      ...order,
-      reasons: soReviewReasons(
-        (order.files[0]?.rawExtraction as { parseReview?: unknown } | undefined)
-          ?.parseReview as
-          | {
-              missingCoreFields?: string[];
-              conflictingFields?: string[];
-              needsReview?: boolean;
-            }
-          | undefined,
+
+  const now = new Date();
+  const dayFormat = new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Tokyo",
+    dateStyle: "short",
+  });
+  const today = dayFormat.format(now);
+  const rows = orders.map((order) => {
+    const types = new Map<string, number>();
+    const tasks = order.containers.flatMap((container) =>
+      container.planItems.flatMap(({ loadingPlan }) =>
+        loadingPlan.transportTask ? [loadingPlan.transportTask] : [],
       ),
-    }))
-    .filter((order) => order.reasons.length);
-  const pendingConfirm = ordersForConfirm.filter(
-    (order) =>
-      order.confirmations.reduce((sum, item) => sum + item.quantity, 0) <
-      order.containers.length,
-  ).length;
-  const alerts = evaluateRiskAlerts(riskOrders);
-  const cards = [
-    ["待识别 SO", pendingOrders.length, "/orders", "识别上传文件中的订单信息"],
-    [
-      "需核对订单",
-      parseReviewOrders.length,
-      "/orders?review=1",
-      "补全或确认关键信息",
-    ],
-    [
-      "待联系客户",
-      contactTasks.length || pendingConfirm,
-      contactTasks.length ? "/contact-tasks" : "/orders",
-      "确认开仓或装柜安排",
-    ],
-    ["待安排装柜", unplanned.length, "/plans", "为已确认柜子安排装柜"],
-    ["业务预警", alerts.length, "#business-alerts", "优先查看船期与截单风险"],
-  ] as const;
+    );
+    const pendingDispatch = order.containers.filter(
+      (container) =>
+        !container.planItems.some(
+          ({ loadingPlan }) =>
+            loadingPlan.transportTask &&
+            ["DISPATCHED", "IN_TRANSIT", "COMPLETED"].includes(
+              loadingPlan.transportTask.status,
+            ),
+        ),
+    ).length;
+    const outstandingReturn = order.containers.some(
+      (container) =>
+        !container.planItems.some(({ loadingPlan }) => {
+          const task = loadingPlan.transportTask;
+          return (
+            task &&
+            task.legs.length > 0 &&
+            task.legs.every((leg) => leg.actualReturnAt)
+          );
+        }),
+    );
+    const cutoff =
+      order.portCutoffText &&
+      chinaLocalDateTimeToDate(formatOperationalTimeText(order.portCutoffText));
+    const cutoffMs = cutoff ? cutoff.getTime() - now.getTime() : Infinity;
+    const risks = [
+      outstandingReturn && cutoffMs >= 0 && cutoffMs <= 86_400_000,
+      tasks.some(
+        (task) =>
+          task.status === "DISPATCHED" &&
+          task.legs.some(
+            (leg) =>
+              leg.plannedPickupAt &&
+              leg.plannedPickupAt < now &&
+              !leg.actualPickupAt &&
+              !leg.actualReturnAt,
+          ),
+      ),
+      tasks.some((task) => task.status === "PLANNED" && task.scheduledAt < now),
+    ];
+    const steps = [
+      order.parseStatus !== "VERIFIED",
+      !order.customerId,
+      !cutoff,
+      pendingDispatch > 0,
+    ];
+    for (const box of order.containers)
+      types.set(box.containerType, (types.get(box.containerType) ?? 0) + 1);
+    return {
+      id: order.id,
+      soNumber: order.soNumber,
+      vessel:
+        [order.vesselName, order.voyage].filter(Boolean).join(" / ") || "—",
+      cargo:
+        Array.from(types, ([type, count]) => `${type} × ${count}`).join("、") ||
+        "—",
+      containers:
+        order.containers
+          .map((box) => box.containerNo)
+          .filter(Boolean)
+          .join("、") || "—",
+      steps,
+      risks,
+      pendingDispatch,
+      runningToday:
+        dayFormat.format(order.createdAt) === today ||
+        tasks.some(
+          (task) =>
+            task.status !== "CANCELLED" &&
+            dayFormat.format(task.scheduledAt) === today,
+        ),
+    };
+  });
+  const counts = workflowSteps.map(
+    (_, index) => rows.filter((row) => row.steps[index]).length,
+  );
+  const riskCounts = riskRules.map(
+    (_, index) => rows.filter((row) => row.risks[index]).length,
+  );
+  const riskIndex = riskRules.findIndex((rule) => rule.key === query.risk);
+  const stepIndex = workflowSteps.findIndex(
+    (_, index) => String(index) === query.step,
+  );
+  const activeLabel = riskRules[riskIndex]?.label ?? workflowSteps[stepIndex];
+  const visibleRows = rows.flatMap<WorkflowRow>((row) => {
+    if (riskIndex >= 0)
+      return row.risks[riskIndex]
+        ? [{ ...row, blockers: [riskRules[riskIndex].label] }]
+        : [];
+    if (stepIndex >= 0 && !row.steps[stepIndex]) return [];
+    const blockers = workflowSteps.filter((_, index) => row.steps[index]);
+    return blockers.length ? [{ ...row, blockers }] : [];
+  });
+  const kpis = [
+    {
+      label: "今日运行订单",
+      icon: FileText,
+      count: rows.filter((row) => row.runningToday).length,
+      detail: "今日创建或有运输计划的未结订单",
+    },
+    {
+      label: "待确认流转",
+      icon: ClipboardCheck,
+      count: rows.filter((row) => row.steps[0] || row.steps[1]).length,
+      detail: "待核对或待匹配的去重订单数",
+    },
+    {
+      label: "待截港还柜",
+      icon: Clock,
+      count: riskCounts[0],
+      detail: "24 小时内截港的待还柜订单",
+    },
+    {
+      label: "待派车集装箱",
+      icon: Truck,
+      count: rows.reduce((sum, row) => sum + row.pendingDispatch, 0),
+      detail: "尚未派车的有效集装箱数",
+    },
+  ];
+  const syncTime = new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Tokyo",
+    timeStyle: "medium",
+  }).format(now);
 
   return (
-    <div className={styles.dashboard}>
+    <div className="mx-auto w-full max-w-[1920px]">
       <PageHeader
-        title="物流调度工作台"
-        description={
-          <span className={styles.intro}>先处理待办，再安排装柜与运输。</span>
-        }
-      /><PageContainer>
-      <div className={styles.cards}>
-        {cards.map(([title, count, href, detail]) => (
-          <a
-            className={[styles.card, count ? undefined : styles.quiet]
-              .filter(Boolean)
-              .join(" ")}
-            href={href}
-            key={title}
-          >
-            <div className={styles.cardTitle}>{title}</div>
-            <div className={styles.number}>{count}</div>
-            <span className={styles.cardAction}>
-              {count ? detail + " →" : "查看详情 →"}
-            </span>
-          </a>
-        ))}
-      </div>
-      <DashboardTasks
-        tasks={[
-          {
-            id: "task-0",
-            hint: "核对系统从 SO 中识别的订单信息",
-            empty: "暂无待识别或核对的 SO",
-            title: "识别与核对",
-            count: pendingOrders.length,
-            content: (
-              <section>
-                <h3>待识别或核对</h3>
-                <p className={styles.taskHint}>
-                  打开 SO 后核对系统识别出的订单信息。
-                </p>
-                {pendingOrders.length ? (
-                  <ul>
-                    {pendingOrders.map((order) => (
-                      <li key={order.id}>
-                        <a href={`/orders/${order.id}`}>{order.soNumber}</a> ·{" "}
-                        {order.carrier} · {statusLabel(order.parseStatus)}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>暂无待处理 SO。</p>
-                )}
-              </section>
-            ),
-          },
-          {
-            id: "task-1",
-            hint: "补全缺失内容，确认存在差异的字段",
-            empty: "暂无字段冲突或缺失项",
-            title: "关键信息确认",
-            count: parseReviewOrders.length,
-            content: (
-              <section>
-                <h3>关键信息待确认</h3>
-                <p className={styles.taskHint}>
-                  补全缺失内容或确认存在差异的字段。
-                </p>
-                {parseReviewOrders.length ? (
-                  <>
-                    <ul>
-                      {parseReviewOrders.slice(0, 8).map((order) => (
-                        <li key={order.id}>
-                          <a href={`/orders/${order.id}`}>{order.soNumber}</a> ·{" "}
-                          {order.reasons.join("；")}
-                        </li>
-                      ))}
-                    </ul>
-                    <ButtonLink
-                      variant="secondary"
-                      size="toolbar"
-                      href="/orders?review=1"
-                    >
-                      查看全部待确认订单
-                    </ButtonLink>
-                  </>
-                ) : (
-                  <p>暂无字段冲突或缺失项。</p>
-                )}
-              </section>
-            ),
-          },
-          {
-            id: "task-2",
-            hint: "为 SO 匹配对应客户",
-            empty: "暂无待匹配客户的 SO",
-            title: "客户匹配",
-            count: unmatchedOrders.length,
-            content: (
-              <section>
-                <h3>待匹配客户</h3>
-                {unmatchedOrders.length ? (
-                  <ul>
-                    {unmatchedOrders.map((order) => (
-                      <li key={order.id}>
-                        <a href={`/orders/${order.id}`}>{order.soNumber}</a> ·{" "}
-                        {order.carrier}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>暂无待匹配客户的 SO。</p>
-                )}
-              </section>
-            ),
-          },
-          {
-            id: "task-3",
-            hint: "处理需要联系客户或再次确认的事项",
-            empty: "暂无待联系或确认事项",
-            title: "联系与确认",
-            count: contactTasks.length || pendingConfirm,
-            content: (
-              <section>
-                <h3>待联系/确认</h3>
-                {contactTasks.length ? (
-                  <ul>
-                    {contactTasks.map((task) => (
-                      <li key={task.id}>
-                        <a href={`/orders/${task.soOrder.id}`}>
-                          {task.soOrder.soNumber}
-                        </a>{" "}
-                        · 开仓 {formatChinaDateTime(task.dueAt)}
-                      </li>
-                    ))}
-                  </ul>
-                ) : pendingConfirm ? (
-                  <p>
-                    有 {pendingConfirm} 个订单尚未完成柜量确认。
-                    <a href="/orders">查看订单</a>
-                  </p>
-                ) : (
-                  <p>暂无待联系或确认事项。</p>
-                )}
-              </section>
-            ),
-          },
-          {
-            id: "task-4",
-            hint: "确认靠港时间变化，再安排后续业务",
-            empty: "暂无需要确认的靠港时间",
-            title: "靠港时间确认",
-            count: etbOrders.length,
-            content: (
-              <section>
-                <h3>靠港时间待确认</h3>
-                <p className={styles.taskHint}>
-                  确认船期变化后，再决定是否调整后续安排。
-                </p>
-                {etbOrders.length ? (
-                  <ul>
-                    {etbOrders.map((order) => (
-                      <li key={order.id}>
-                        <a
-                          href={
-                            order.sailing
-                              ? `/sailings/${order.sailing.id}`
-                              : `/orders/${order.id}`
-                          }
-                        >
-                          {order.soNumber}
-                        </a>{" "}
-                        · {order.etbText || "预计靠港时间待确认"}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>暂无需要确认的靠港时间。</p>
-                )}
-              </section>
-            ),
-          },
-          {
-            id: "task-5",
-            hint: "补充无法自动获取的船期信息",
-            empty: "暂无需要人工协助的船期更新",
-            title: "船期更新协助",
-            count: etbHandoffs.length,
-            content: (
-              <section>
-                <h3>船期更新需要协助</h3>
-                <p className={styles.taskHint}>
-                  部分船期信息无法自动取得，需要人工补充或再次查询。
-                </p>
-                {etbHandoffs.length ? (
-                  <ul>
-                    {etbHandoffs.map((run) => (
-                      <li key={run.id}>
-                        <a href="/etb-runs">{run.terminal} 船期更新</a> ·{" "}
-                        {run.handoffReason || run.errorMessage || "请处理"}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>暂无需要人工协助的船期更新。</p>
-                )}
-              </section>
-            ),
-          },
-          {
-            id: "task-6",
-            hint: "确认靠港时间变化对已安排运输的影响",
-            empty: "暂无需要确认的派车安排",
-            title: "派车安排确认",
-            count: impactedTransport.length,
-            content: (
-              <section>
-                <h3>已派车安排待确认</h3>
-                <p className={styles.taskHint}>
-                  靠港时间变化可能影响已安排的运输。
-                </p>
-                {impactedTransport.length ? (
-                  <ul>
-                    {impactedTransport.map((task) => (
-                      <li key={task.id}>
-                        <a href="/plans">{task.loadingPlan.soOrder.soNumber}</a>{" "}
-                        · 派车 {formatChinaDateTime(task.scheduledAt)}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>暂无需要确认的派车安排。</p>
-                )}
-              </section>
-            ),
-          },
-        ]}
-      />
-      <details
-        className={styles.alertPanel}
-        id="business-alerts"
-        open={alerts.length > 0}
-      >
-        <summary className={styles.alertHeading}>
-          <div>
-            <h3>业务预警</h3>
-            <p>预警仅用于提醒核对，不会自动改动船期、截止时间或装柜安排。</p>
+        title="调度工作台"
+        actions={
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="m-0 text-xs text-slate-500">
+              数据同步于{" "}
+              <time dateTime={now.toISOString()}>{syncTime} JST</time>
+            </p>
+            <DashboardActions />
           </div>
-          <StatusBadge tone="warning">{alerts.length} 条待关注</StatusBadge>
-        </summary>
-        <div className={styles.alertList}>
-          {alerts.length ? (
-            alerts.map((alert, index) => (
-              <a
-                className={`${styles.alertItem}${alert.severity === "CRITICAL" ? ` ${styles.critical}` : ""}`}
-                href={alert.href}
-                key={`${alert.orderId}-${alert.type}-${index}`}
+        }
+      />
+      <PageContainer className="p-0">
+        <div className="dashboard-workspace flex min-h-full w-full flex-col xl:h-full">
+          <dl className="m-0 grid w-full shrink-0 grid-cols-2 border-b border-slate-200/80 lg:grid-cols-4">
+            {kpis.map(({ label, count, detail, icon: Icon }, index) => (
+              <div
+                key={label}
+                className={`flex min-w-0 items-center justify-between gap-2 p-3.5 xl:p-4 2xl:p-5 ${index % 2 ? "border-l border-slate-100" : ""} ${index >= 2 ? "border-t border-slate-100 lg:border-t-0" : ""} ${index === 2 ? "lg:border-l" : ""}`}
               >
-                <StatusBadge
-                  tone={alert.severity === "CRITICAL" ? "critical" : "warning"}
-                >
-                  {alertSeverityLabels[alert.severity]}
-                </StatusBadge>
-                <div>
-                  <b>{alert.title}</b>
-                  <p>{alert.detail}</p>
+                <div className="min-w-0" title={detail}>
+                  <dt className="text-xs font-medium text-slate-500">
+                    {label}
+                  </dt>
+                  <dd className="mb-0 ml-0 mt-1 font-mono text-2xl font-bold tabular-nums text-slate-800">
+                    {count}
+                  </dd>
                 </div>
-                <span className={styles.alertAction}>去核对 →</span>
-              </a>
-            ))
-          ) : (
-            <p className={styles.alertEmpty}>暂无需要处理的预警。</p>
-          )}
+                <span className="grid size-8 shrink-0 place-items-center rounded-md bg-slate-100 text-slate-500">
+                  <Icon size={16} aria-hidden="true" />
+                </span>
+              </div>
+            ))}
+          </dl>
+          <div className="flex min-h-[320px] flex-1 flex-col overflow-hidden xl:flex-row">
+            <DashboardTasks
+              rows={visibleRows}
+              counts={counts}
+              activeLabel={activeLabel}
+            />
+            <aside
+              className="flex w-full shrink-0 flex-col border-t border-slate-200/80 xl:w-[300px] xl:overflow-y-auto xl:border-l xl:border-t-0 2xl:w-[340px]"
+              aria-label="调度监控与快捷工具"
+            >
+              <section className="p-4" aria-labelledby="risk-title">
+                <header className="flex flex-wrap items-center justify-between gap-2">
+                  <h2
+                    id="risk-title"
+                    className="m-0 text-sm font-semibold text-slate-800"
+                  >
+                    实时风险监控
+                  </h2>
+                  <span
+                    className={`inline-flex items-center gap-1.5 text-xs ${riskCounts.some(Boolean) ? "text-amber-700" : "text-emerald-700"}`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="h-1.5 w-1.5 rounded-full bg-current"
+                    />
+                    {riskCounts.some(Boolean) ? "有风险待处理" : "运行正常"}
+                  </span>
+                </header>
+                <ul className="mb-0 mt-2 list-none divide-y divide-slate-100 p-0">
+                  {riskRules.map(({ key, label, detail }, index) => (
+                    <li
+                      key={key}
+                      title={detail}
+                      className="py-1.5 text-xs 2xl:py-2.5"
+                    >
+                      <Link
+                        href={`/?risk=${key}#workflow`}
+                        scroll={false}
+                        aria-current={riskIndex === index ? "true" : undefined}
+                        className={`flex justify-between gap-2 rounded-sm text-slate-700 no-underline hover:text-blue-700 ${riskIndex === index ? "font-semibold text-blue-700" : ""}`}
+                      >
+                        {label}
+                        <span
+                          className={`font-mono ${riskCounts[index] ? (index === 0 ? "text-amber-700" : "text-rose-700") : "text-slate-500"}`}
+                        >
+                          {riskCounts[index]} 项
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+              <section
+                className="border-t border-slate-200/80 p-4"
+                aria-labelledby="tools-title"
+              >
+                <h2
+                  id="tools-title"
+                  className="m-0 text-sm font-semibold text-slate-800"
+                >
+                  今日动态与快捷外链
+                </h2>
+                {activity.length ? (
+                  <ul className="mb-0 mt-2 list-none space-y-1.5 p-0 text-xs text-slate-600">
+                    {activity.map(
+                      ({ id, terminal, finishedAt, resultCount }) => (
+                        <li key={id} className="flex gap-2">
+                          <time
+                            className="shrink-0 font-mono text-slate-500"
+                            dateTime={finishedAt?.toISOString()}
+                          >
+                            {finishedAt?.toLocaleTimeString("zh-CN", {
+                              timeZone: "Asia/Tokyo",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </time>
+                          <span>
+                            {terminal} ETB 查询完成 · {resultCount} 条结果
+                          </span>
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                ) : (
+                  <p className="mb-0 mt-2 text-xs text-slate-500">
+                    今日暂无已完成的 ETB 查询
+                  </p>
+                )}
+                <div className="mt-3 divide-y divide-slate-100 border-t border-slate-100">
+                  <Link
+                    href="/sailings"
+                    className="flex items-center gap-2 py-2 text-xs text-slate-700 no-underline hover:text-blue-700"
+                  >
+                    <Ship size={15} aria-hidden="true" /> 码头 ETB 实时查询{" "}
+                    <ArrowUpRight
+                      size={13}
+                      className="ml-auto text-slate-400"
+                      aria-hidden="true"
+                    />
+                  </Link>
+                  {viewer?.role === "ADMIN" && (
+                    <Link
+                      href="/settings?tab=platforms"
+                      className="flex items-center gap-2 py-2 text-xs text-slate-700 no-underline hover:text-blue-700"
+                    >
+                      <Settings2 size={15} aria-hidden="true" /> 船期监控设置{" "}
+                      <ArrowUpRight
+                        size={13}
+                        className="ml-auto text-slate-400"
+                        aria-hidden="true"
+                      />
+                    </Link>
+                  )}
+                </div>
+              </section>
+            </aside>
+          </div>
         </div>
-      </details>
-    </PageContainer></div>
+      </PageContainer>
+    </div>
   );
 }
