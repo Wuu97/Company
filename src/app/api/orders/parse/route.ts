@@ -19,7 +19,7 @@ export async function POST(request:Request) {
     const { stdout, stderr } = await execFileAsync(
       join(process.cwd(), "node_modules/.bin/tsx"),
       [join(process.cwd(), "scripts/parse-so-files.ts")],
-      { cwd: process.cwd(), timeout: 120_000, env: { ...process.env, ...(fileIds.length ? { SO_FILE_VERSION_IDS: fileIds.join(",") } : file ? { SO_FILE_VERSION_ID: file.id, ...(file.parseStatus === "FAILED" ? { RETRY_FAILED: "1" } : {}), ...(body.reparse ? { REPARSE_PARSED: "1" } : {}) } : {}) } },
+      { cwd: process.cwd(), timeout: Math.max(180_000, fileIds.length * 180_000), env: { ...process.env, ...(fileIds.length ? { SO_FILE_VERSION_IDS: fileIds.join(",") } : file ? { SO_FILE_VERSION_ID: file.id, ...(file.parseStatus === "FAILED" ? { RETRY_FAILED: "1" } : {}), ...(body.reparse ? { REPARSE_PARSED: "1" } : {}) } : {}) } },
     );
     const summary = stdout.match(/PARSE_SUMMARY=(.+)$/m)?.[1];
     const result = summary ? JSON.parse(summary) : { processedCount: 0, failedCount: 0 };

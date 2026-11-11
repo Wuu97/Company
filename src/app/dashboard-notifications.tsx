@@ -1,3 +1,4 @@
+import { notificationContent } from "@/lib/notification-content";
 import { prisma } from "@/lib/prisma";
 import { formatChinaDateTime } from "@/lib/time";
 import { NotificationReadButton } from "@/components/notification-read-button";
@@ -36,7 +37,9 @@ export async function DashboardNotifications({ userId }: { userId: string }) {
       </header>
       {notifications.length ? (
         <ul className="m-0 mt-2 list-none divide-y divide-slate-100 p-0">
-          {notifications.map((item) => (
+          {notifications.map((record) => {
+            const item = { ...record, ...notificationContent(record) };
+            return (
             <li key={item.id} className="min-w-0 py-3">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-1.5">
                 <StatusBadge tone={item.readAt ? "muted" : "unread"}>
@@ -69,7 +72,8 @@ export async function DashboardNotifications({ userId }: { userId: string }) {
                 </div>
               )}
             </li>
-          ))}
+            );
+          })}
         </ul>
       ) : (
         <p className="mb-0 mt-3 text-xs text-slate-400">暂无新消息</p>

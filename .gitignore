@@ -14,3 +14,7 @@ test-results/
 *.tsbuildinfo
 next-env.d.ts
 playwright-report/
+
+# Local SO recognition experiments and rendered inspection pages
+outputs/so-benchmark-*/
+outputs/so-detail*.html

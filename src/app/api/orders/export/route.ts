@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   lines[0] = lines[0].replace("预计靠泊时间", "预计靠泊时间（ETB）\",\"开仓时间");
   for (const order of orders) {
     const containers = Object.entries(order.containers.reduce<Record<string, number>>((total, item) => ({ ...total, [item.containerType]: (total[item.containerType] || 0) + 1 }), {})).map(([type, quantity]) => `${quantity} × ${type}`).join("；");
-    lines.push([order.soNumber, order.customer?.name, order.carrier, order.vesselName, order.voyage, order.loadPort, order.dischargePort, containers, order.etdText, order.etaText, order.siCutoffText, order.etbText, resolveOpeningTime(order.openingText, order.portCutoffText)?.value, order.status, order.parseStatus].map(escape).join(","));
+    lines.push([order.soNumber, order.customer?.name, order.carrier, order.vesselName, order.voyage, order.loadPort, order.dischargePort, containers, order.etdText, order.etaText, order.siCutoffText, order.etbText, resolveOpeningTime(order.openingText, order.portCutoffText, order.cutoffText)?.value, order.status, order.parseStatus].map(escape).join(","));
   }
   const filename = `so-orders-${new Date().toISOString().slice(0, 10)}.csv`;
   return new NextResponse(`\uFEFF${lines.join("\r\n")}`, { headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="${filename}"` } });

@@ -115,7 +115,7 @@ export default async function Sailings({
             ? formatChinaDateTime(sailing.adoptedEtbAt)
             : format(order.etbText),
           opening:
-            resolveOpeningTime(order.openingText, order.portCutoffText)
+            resolveOpeningTime(order.openingText, order.portCutoffText, order.cutoffText)
               ?.value || TABLE_EMPTY_MARKER,
           cy,
           customs,

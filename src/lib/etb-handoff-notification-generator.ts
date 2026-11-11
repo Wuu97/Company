@@ -14,7 +14,7 @@ export async function generateEtbHandoffEscalations(now = new Date()) {
   await prisma.$transaction(async tx => {
     for (const run of overdue) notifications += await notifyActiveUsers(tx, {
       kind: "ETB_MANUAL_HANDOFF_OVERDUE",
-      title: `${run.terminal} ETB 人工接管超时`,
+      title: `${run.terminal} 靠泊时间查询待处理`,
       body: run.handoffReason || run.errorMessage || "该查询任务长时间未处理，请检查后重新排队或记录处理结果。",
       href: "/etb-runs",
       dedupeKey: `etb-escalation:${run.id}`,

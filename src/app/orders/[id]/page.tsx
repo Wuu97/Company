@@ -34,9 +34,11 @@ const editableFields = new Set<string>(["customerReference", ...shippingKeys]);
 
 type Extraction = {
   containers?: { containerType?: string; quantity?: number }[];
+  decisions?: Record<string, { status: string; value?: string }>;
   parseReview?: ParseReview;
   ai?: {
     values?: Record<string, string>;
+    containers?: { containerType?: string; quantity?: number }[];
     evidence?: Record<string, string>;
     confidence?: Record<string, number>;
     siRule?: { destinationEvidence: string; clauseEvidence: string; cutoffEvidence: string; explanation: string };
@@ -89,7 +91,16 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
       edit: needsReview && editableFields.has(field) ? { field: field as InlineOrderField, value: normalized } : undefined,
     }];
   }).sort((a, b) => Number(!a.needsReview && summaryFields.has(a.field)) - Number(!b.needsReview && summaryFields.has(b.field)));
-  const opening = resolveOpeningTime(order.openingText, order.portCutoffText);
+  const containerSuggestion = !extraction?.containers?.length && !order.containers.length
+    ? ai?.containers?.filter(item => item.containerType && item.quantity)
+      .map(item => `${item.quantity} × ${item.containerType}`).join("、")
+    : undefined;
+  const openingDecision = extraction?.decisions?.openingText;
+  const opening = openingDecision?.status === "review" && !order.openingText
+    ? undefined
+    : resolveOpeningTime(order.openingText, order.portCutoffText, order.cutoffText);
+  const estimatedOpening = opening?.source === "SYSTEM_ESTIMATED"
+    || (openingDecision?.status === "estimated" && order.openingText === openingDecision.value);
   const formId = "so-shipping-fields";
   const cutoffDuplicatesSi = Boolean(order.cutoffText && order.siCutoffText
     && formatOperationalTimeText(order.cutoffText) === formatOperationalTimeText(order.siCutoffText));
@@ -99,12 +110,12 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
     return {
       key, time, label: fieldLabels[key],
       value: time ? formatOperationalTimeText(value) : value,
-      estimated: key === "openingText" && opening?.source === "SYSTEM_ESTIMATED"
-        ? opening.value
+      estimated: key === "openingText" && estimatedOpening
+        ? opening?.value
         : key === "siCutoffText" && order.siCutoffSource === "SYSTEM_ESTIMATED" && order.siCutoffText
           ? formatOperationalTimeText(order.siCutoffText)
           : undefined,
-      needsReview: (key === "cutoffText" && cutoffDuplicatesSi) || (key === "siCutoffText" && order.siCutoffSource === "NEEDS_REVIEW") || (key === "etbText" && order.etbNeedsReview),
+      needsReview: (extraction?.decisions?.[key]?.status === "review" && !value) || (key === "cutoffText" && !extraction?.decisions && cutoffDuplicatesSi) || (key === "siCutoffText" && order.siCutoffSource === "NEEDS_REVIEW") || (key === "etbText" && order.etbNeedsReview),
     };
   });
   const planByContainer = new Map<string, (typeof order.plans)[number]>();
@@ -204,9 +215,10 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               );
             })}
           </section>
-          {Boolean(extraction?.parseReview?.conflictingFields?.length) && (
+          {(aiRows.some(row => row.needsReview) || containerSuggestion || Boolean(extraction?.parseReview?.conflictingFields?.length)) && (
             <section>
               <AiReviewTable orderId={id} rows={aiRows} />
+              {containerSuggestion && <p className="text-xs text-amber-800">AI 建议柜量 · 待确认：{containerSuggestion}</p>}
               {ai?.siRuleStatus && (
                 <details className="mt-2 text-xs text-slate-600">
                   <summary className="cursor-pointer">

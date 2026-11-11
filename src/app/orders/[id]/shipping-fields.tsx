@@ -9,7 +9,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { TextField } from "@/components/ui/form-controls";
 import { StatusTag } from "@/components/ui/status-tag";
 import { orderCutoffStatus } from "@/lib/so-order-filters";
-import { chinaLocalDateTimeToDate, estimateOpeningFromPortCutoff, validOperationalDateInput } from "@/lib/time";
+import { chinaLocalDateTimeToDate, resolveOpeningTime, validOperationalDateInput } from "@/lib/time";
 
 const steps = [
   { key: "openingText", icon: PackageOpen, priority: true },
@@ -80,9 +80,9 @@ export function ShippingFields({ orderId, formId, fields, referenceTime, voyageD
   }, []);
 
   const cyDraft = times.portCutoffText?.trim() ?? "";
-  // Keep computed values out of the submitted changes so they keep following CY.
-  const openingEstimate = times.openingText === undefined && validOperationalDateInput(cyDraft)
-    ? estimateOpeningFromPortCutoff(cyDraft)
+  // Keep computed values out of the submitted changes so they follow the cutoff.
+  const openingEstimate = times.openingText === undefined
+    ? resolveOpeningTime(undefined, cyDraft, times.cutoffText)?.value
     : undefined;
   const errors: Record<string, string> = {};
   for (const field of fields) {

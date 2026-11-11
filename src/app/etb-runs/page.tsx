@@ -12,6 +12,7 @@ import { WorkspaceMetrics } from "@/components/ui/workspace-metrics";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TABLE_EMPTY_MARKER } from "@/components/ui/table-placeholder";
 import { currentUser } from "@/lib/auth";
+import { etbNotificationBody } from "@/lib/notification-content";
 import {
   etbOutcomeLabels,
   readEtbRunReport,
@@ -406,7 +407,10 @@ export default async function EtbRuns({
                   <FeedbackMessage
                     tone={run.status === "FAILED" ? "error" : "warning"}
                   >
-                    {run.handoffReason || run.errorMessage}
+                    {etbNotificationBody(
+                      run.handoffReason || run.errorMessage,
+                      run.status === "AWAITING_MANUAL",
+                    )}
                   </FeedbackMessage>
                 )}
                 {run.screenshotStorageKey && (

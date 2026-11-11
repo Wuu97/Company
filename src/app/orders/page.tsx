@@ -34,6 +34,7 @@ const columnWidths = [15, 14, 8, 11, 11, 11, 10, 9, 11];
 const cell = "px-4 py-3 text-left! [overflow-wrap:anywhere]";
 
 type OrderExtraction = {
+  decisions?: Record<string, { status: string; value?: string }>;
   containers?: { containerType?: string; quantity?: number }[];
   parseReview?: Parameters<typeof soReviewReasons>[0];
 };
@@ -126,7 +127,7 @@ export default async function Orders({
   const filtered = found.filter(order => {
     if (cutoff && orderCutoffStatus(order.portCutoffText, now) !== cutoff) return false;
     const extraction = order.files[0]?.rawExtraction as OrderExtraction | undefined;
-    return !reviewOnly || soReviewReasons(extraction?.parseReview).length > 0;
+    return !reviewOnly || soReviewReasons(extraction?.parseReview, order).length > 0;
   });
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -203,7 +204,7 @@ export default async function Orders({
             <TableBody>
               {orders.map(order => {
                 const extraction = order.files[0]?.rawExtraction as OrderExtraction | undefined;
-                const review = soReviewReasons(extraction?.parseReview);
+                const review = soReviewReasons(extraction?.parseReview, order);
                 const counts = new Map<string, number>();
                 for (const { containerType } of order.containers) {
                   counts.set(containerType, (counts.get(containerType) ?? 0) + 1);
@@ -213,7 +214,11 @@ export default async function Orders({
                   ?.filter(item => item.containerType && item.quantity)
                   .map(item => `${item.quantity} × ${item.containerType}`);
                 const quantities = confirmed.length ? confirmed : parsed;
-                const opening = resolveOpeningTime(order.openingText, order.portCutoffText);
+                const openingDecision = extraction?.decisions?.openingText;
+                const opening = openingDecision?.status === "review" && !order.openingText
+                  ? undefined : resolveOpeningTime(order.openingText, order.portCutoffText, order.cutoffText);
+                const estimatedOpening = opening?.source === "SYSTEM_ESTIMATED"
+                  || (openingDecision?.status === "estimated" && order.openingText === openingDecision.value);
                 const siTime = order.siCutoffSource !== "NEEDS_REVIEW" && order.siCutoffText
                   ? formatOperationalTimeText(order.siCutoffText)
                   : null;
@@ -232,7 +237,7 @@ export default async function Orders({
                     <td className={cell}>{quantities?.join("；") || "待核对"}</td>
                     <td className={cell}>
                       {opening?.value || "待核对"}
-                      {opening?.source === "SYSTEM_ESTIMATED" && <small className="block text-xs text-slate-500">系统推算</small>}
+                      {estimatedOpening && <small className="block text-xs text-slate-500">系统推算</small>}
                     </td>
                     <td className={cell}>
                       {siTime || "待核对"}

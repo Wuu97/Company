@@ -45,6 +45,11 @@ export function formatOperationalTimeText(value: string) {
     const month = months[compactNamed[2].toUpperCase()];
     if (month) return `${compactNamed[3].length === 2 ? `20${compactNamed[3]}` : compactNamed[3]}-${month}-${compactNamed[1].padStart(2, "0")}${compactNamed[4] ? ` ${compactNamed[4].padStart(2, "0")}:${compactNamed[5]}` : ""}`;
   }
+  const compactNumeric = text.match(/\b(\d{4})(\d{2})(\d{2})\s+(\d{1,2}):(\d{2})\b/);
+  if (compactNumeric) {
+    const [, year, month, day, hour, minute] = compactNumeric;
+    return `${year}-${month}-${day} ${hour.padStart(2, "0")}:${minute}`;
+  }
   const yearFirst = text.match(/(\d{4})[/.\-](\d{1,2})[/.\-](\d{1,2})(?:\s+(\d{1,2}):(\d{2}))?/);
   if (yearFirst) return `${yearFirst[1]}-${yearFirst[2].padStart(2, "0")}-${yearFirst[3].padStart(2, "0")}${yearFirst[4] ? ` ${yearFirst[4].padStart(2, "0")}:${yearFirst[5]}` : ""}`;
   const dayFirst = text.match(/(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
@@ -66,10 +71,10 @@ export function estimateOpeningFromPortCutoff(value?: string | null) {
   return hour ? `${date} ${hour}:${minute}` : date;
 }
 
-/** Uses the opening time printed in the SO; otherwise estimates it from the CY cut-off. */
-export function resolveOpeningTime(openingText?: string | null, portCutoffText?: string | null) {
+/** Uses the recorded opening time, or estimates it from CY or the general cut-off. */
+export function resolveOpeningTime(openingText?: string | null, portCutoffText?: string | null, cutoffText?: string | null) {
   if (openingText?.trim()) return { value: formatOperationalTimeText(openingText), source: "SO" as const };
-  const value = estimateOpeningFromPortCutoff(portCutoffText);
+  const value = estimateOpeningFromPortCutoff(portCutoffText) ?? estimateOpeningFromPortCutoff(cutoffText);
   return value ? { value, source: "SYSTEM_ESTIMATED" as const } : undefined;
 }
 

@@ -43,7 +43,6 @@ export function resolveSiCutoff(input: {
   originalSiText?: string;
   latestDeadlineText?: string;
   otherCutoffTexts?: Array<string | undefined>;
-  rule?: "PREVIOUS_DAY_NOON";
   fallbackDays?: number;
 }): SiCutoffResolution {
   if (input.originalSiText) {
@@ -51,17 +50,9 @@ export function resolveSiCutoff(input: {
   }
 
   const conflictingDeadlines = (input.otherCutoffTexts ?? []).filter(text => text && formatOperationalTimeText(text) !== formatOperationalTimeText(input.latestDeadlineText ?? ""));
-  if (!input.latestDeadlineText || (!input.rule && conflictingDeadlines.length)) return { source: "NEEDS_REVIEW" };
+  if (!input.latestDeadlineText || conflictingDeadlines.length) return { source: "NEEDS_REVIEW" };
 
-  const previousDay = input.rule === "PREVIOUS_DAY_NOON" ? subtractDays(input.latestDeadlineText, 1) : undefined;
-  // The notice also includes a separate weekend rule. Leave weekend cutoffs
-  // for review rather than applying the weekday rule to them.
-  if (input.rule && (!previousDay || [5, 6].includes(new Date(previousDay.slice(0, 10)).getUTCDay()))) {
-    return { source: "NEEDS_REVIEW" };
-  }
-  const effectiveText = previousDay
-    ? `${previousDay.slice(0, 10)} 12:00`
-    : subtractDays(input.latestDeadlineText, input.fallbackDays ?? 2);
+  const effectiveText = subtractDays(input.latestDeadlineText, input.fallbackDays ?? 2);
   return effectiveText
     ? { effectiveText, estimatedFromText: input.latestDeadlineText, source: "SYSTEM_ESTIMATED" }
     : { source: "NEEDS_REVIEW" };
